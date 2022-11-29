@@ -1,0 +1,142 @@
+[build-system]
+requires = [
+    "setuptools>=61",
+    "wheel"
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+    name = "examples"
+    description = "IDAES Process Systems Engineering Examples"
+    readme = "README.md"
+    version = "2.0.0a1"
+    license = {text="BSD"}
+    requires-python = ">=3.7"
+    authors = [
+        {name="The IDAES Project"},
+        {name="Dan Gunter", email="dkgunter@lbl.gov"}
+    ]
+    classifiers = [
+            "Development Status :: 3 - Alpha",
+            "Intended Audience :: End Users/Desktop",
+            "Intended Audience :: Science/Research",
+            "License :: OSI Approved :: BSD License",
+            "Natural Language :: English",
+            "Operating System :: MacOS",
+            "Operating System :: Microsoft :: Windows",
+            "Operating System :: Unix",
+            "Programming Language :: Python",
+            "Programming Language :: Python :: 3",
+            "Programming Language :: Python :: 3.7",
+            "Programming Language :: Python :: 3.8",
+            "Programming Language :: Python :: 3.9",
+            "Programming Language :: Python :: 3.10",
+            "Programming Language :: Python :: Implementation :: CPython",
+            "Topic :: Scientific/Engineering :: Mathematics",
+            "Topic :: Scientific/Engineering :: Chemistry",
+            "Topic :: Software Development :: Libraries :: Python Modules",
+    ]
+    dependencies = [
+        # "idaes-pse",
+        # "idaes-pse>=2.0.0a3",
+        "idaes-pse @ git+https://github.com/IDAES/idaes-pse",
+        "pytest~=7.1.3",
+        "Markdown~=3.4.1",
+        "tkhtmlview==0.1.1.post5",
+        "matplotlib~=3.6.0",
+        "numpy~=1.23.3",
+        "pandas",
+        "setuptools~=63.4.1",
+        "pyomo~=6.4.2",
+        "pyyaml~=6.0",
+        "PySimpleGUI~=4.60.4",
+        "pecos>=0.2.0",
+        # used by notebooks in Examples/SurrMod/FlowsheetOptimization
+        # pinning to latest stable version as of 9/29/2022
+        "tensorflow==2.10.0",
+        "protobuf==3.19.5"
+    ]
+    keywords = ["IDAES", "energy systems", "chemical engineering", "process modeling"]
+
+[project.optional-dependencies]
+dev = [
+    "jupyter-book ~= 0.13.1",
+    # "jupyter-cache ~= 0.4.3",
+    "jupyter-cache",
+    # the older version of nbmake goes with the older
+    # version of nbclient, which is required by jupyter-cache
+    # "nbclient ~= 0.5.13",
+    "nbclient",
+    # After 1.3.3 we stop getting a deprecation warning.
+    # See https://github.com/treebeardtech/nbmake/issues/68
+    #"nbmake >= 1.3.3",
+    "nbmake",
+    # markdown in Sphinx
+    "myst-nb ~= 0.13.2",
+    "myst-parser ~= 0.15.2",
+    # parallel pytest
+    "pytest-xdist ~= 3.0.2",
+    # pytest reporting
+    "pytest-reportlog ~= 0.1.2",
+    # For jupyter notebook testing
+    "black[jupyter] ~= 22.8.0"
+]
+
+[project.urls]
+github = "https://github.com/idaes/examples"
+issues = "https://github.com/idaes/examples/issues"
+
+[project.scripts]
+idaesx = "idaes_examples.build:main"
+
+[tool.setuptools]
+include-package-data = true
+zip-safe = false
+
+[tool.setuptools.packages.find]
+include = ["idaes_examples"]
+
+[tool.setuptools.package-data]
+idaes_examples = [
+    "*.template",
+    "*.json",
+    "*.yaml",
+    "*.svg",
+    "*.png",
+    "*.jpg",
+    "*.csv",
+    "*.ipynb",
+    "*.txt",
+    "*.js",
+    "*.css",
+    "*.html",
+    "*.json.gz",
+    "*.dat",
+    "*.h5",
+    "*.pb",  # for Keras Surrogate folder
+    "*.data-00000-of-00001",  # for Keras Surrogate folder
+    "*.index",  # for Keras Surrogate folder
+    "*.trc",
+    "*.xlsx",  # idaes/dmf/tests/data_files - tabular import test files
+]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+# The '--ignore-glob' args make sure only notebooks
+# ending in _test.ipynb are run
+addopts = """\
+     -n=auto \
+     --nbmake \
+     --nbmake-timeout=1200 \
+     --ignore-glob=*_doc.ipynb \
+     --ignore-glob=*_exercise.ipynb \
+     --ignore-glob=*_solution.ipynb \
+     --ignore-glob=*_src*.ipynb \
+     --ignore-glob=*_usr.ipynb \
+     --ignore-glob=*_usr.ipynb \
+     --report-log=pytest-report.log\
+"""
+norecursedirs = ["my_workspace", ".ipynb_checkpoints"]
+testpaths = [
+    "idaes_examples/nb"
+]

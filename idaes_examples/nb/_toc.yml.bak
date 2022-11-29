@@ -1,0 +1,36 @@
+format: jb-book
+root: index
+parts:
+  - caption: Flowsheets
+    chapters:
+      # note: ordered alphabetically by Title in index
+      - file: custom_props/index  # Custom property packages
+        sections:
+          - file: custom_props/custom_physical_property_packages_doc
+          - file: custom_props/custom_reaction_property_packages_doc
+          - file: custom_props/Parameter_estimation_PR_doc
+          - file: custom_props/Dictionary_Txy_diagrams_doc
+      - file: custom_units/index # Custom unit models
+        sections:
+          - file: custom_units/custom_compressor_doc
+          - file: custom_units/custom_heater_doc
+      - file: data_recon/index # Data reconciliation
+        sections:
+          - file: data_recon/boiler_flowsheet_recon_doc
+          - file: data_recon/econ_recon_doc
+          - file: data_recon/econ_parmest_doc
+      - file: dae/index # Differential algebraic solvers
+        sections:
+          - file: dae/petsc_chem_doc
+          - file: dae/petsc_pid_doc
+      - file: hda/index # Hydrodealkylation
+        sections:
+          - file: hda/HDA_flowsheet_doc
+          - file: hda/HDA_flowsheet_with_distillation_doc
+      - file: surrogates/index # Surrogate modeling
+        sections:
+          - file: surrogates/flowsheet_optimization/alamo_flowsheet_optimization_doc
+          - file: surrogates/flowsheet_optimization/best_practices_optimization_doc
+          - file: surrogates/flowsheet_optimization/keras_flowsheet_optimization_doc
+          - file: surrogates/flowsheet_optimization/pysmo_flowsheet_optimization_doc
+          - file: surrogates/pysmo/pysmo_basics_doc

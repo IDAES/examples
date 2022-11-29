@@ -1,0 +1,17 @@
+# Basic configuration
+title: IDAES Examples
+author: The IDAES Team
+logo: logo.png
+execute:
+  execute_notebooks: auto
+  timeout: 600
+only_build_toc_files: true
+
+# Add citations in this file
+bibtex_bibfiles:
+  - references.bib
+
+# Sphinx configuration
+sphinx:
+  config:
+    bibtex_reference_style: author_year

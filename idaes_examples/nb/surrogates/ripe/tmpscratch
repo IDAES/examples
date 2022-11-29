@@ -1,0 +1,57 @@
+ ***************************************************************************
+ ALAMO version 2022.10.7. Built: WIN-64 Fri Oct 7 21:02:38 EDT 2022 
+
+ If you use this software, please cite:
+ Cozad, A., N. V. Sahinidis and D. C. Miller,
+ Automatic Learning of Algebraic Models for Optimization,
+ AIChE Journal, 60, 2211-2227, 2014.
+
+ ALAMO is powered by the BARON software from http://www.minlp.com/
+ ***************************************************************************
+ Licensee: Dan Gunter at US Department of Energy, dkgunter@lbl.gov.
+ ***************************************************************************
+ Reading input data
+ Checking input consistency and initializing data structures
+ Warning: powers of 1 will be discarded from the set of basis functions.
+ Warning: eliminating basis log(st)
+ 
+ Step 0: Initializing data set
+ User provided an initial data set of 3 data points
+ We will sample no more data points at this stage
+ ***************************************************************************
+ Iteration 1 (Approx. elapsed time 0.0 s)
+ 
+ Step 1: Model building using BIC
+ 
+ Model building for variable Z1
+ ----
+ BIC = 1.10 with Z1 = 0.57 * st**0.5
+ 
+ Calculating quality metrics on observed data set.
+ 
+ Quality metrics for output Z1
+ -----------------------------
+ SSE OLR:           0.850E-30
+ SSE:               0.159E-03
+ RMSE:              0.728E-02
+ R2:                1.00
+ R2 adjusted:       1.00
+ Model size:        1
+ BIC:               1.10
+ Cp:                -1.00
+ AICc:              -23.5
+ HQC:               -29.3
+ MSE:               0.159E-03
+ SSEp:              0.159E-03
+ RIC:               3.22
+ MADp:              1.29
+ 
+ Total execution time 0.0 s
+ Times breakdown
+     OLR time:        0.0 s in 16 ordinary linear regression problem(s)
+     MIP time:        0.0 s in 0 quadratic integer problem(s)
+     Simulation time: 0.0 s to simulate 0 point(s)
+     All other time:  0.0 s in 1 iteration(s)
+ 
+ Normal termination
+ ***************************************************************************

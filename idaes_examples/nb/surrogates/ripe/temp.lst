@@ -1,0 +1,160 @@
+ ***************************************************************************
+ ALAMO version 2022.10.7. Built: WIN-64 Fri Oct 7 21:02:38 EDT 2022 
+ 
+The options and data used in solving this problem are as follows:
+ 
+NINPUTS           =              1
+NOUTPUTS          =              1
+NTRANS            =              0
+NCVF              =              5
+NPENL             =            100
+NDATA             =              3
+NPREDATA          =              0
+NSAMPLE           =              0
+NVALDATA          =              0
+NVALSAMPLE        =              0
+NVALSETS          =              0
+PRFREQ            =              1
+INITIALPOINTS     =              3
+SAMPLER           =              1
+MODELER           =              1
+INITIALIZER       =              3
+BUILDER           =              1
+ENUM1             =          16384
+ENUMALL           =              0
+GREEDYBUILDER     =               T
+NDGELS            =            120
+SCREENER          =              0
+SISMULT           = 1 
+MAXSIM            =             10
+MINPOINTS         =              1
+MAXPOINTS         =              7
+OBJFUN            =              1
+SNOBFITP          = 0.5 
+SNOBFITRESOLUTION = 0.100000000000E-004 
+MAXTIME           = 1000 
+DATALIMITTERMS    =               T
+NUMLIMITBASIS     =               T
+CONVPEN           = 0 
+MONO              =              3
+MULTI2            =              0
+MULTI3            =              0
+RATIOS            =              0
+EXPFCNS           =               T
+LINFCNS           =               T
+LOGFCNS           =               T
+SINFCNS           =               F
+COSFCNS           =               F
+CONSTANT          =               F
+GRBFCNS           =               F
+PRBF              =               F
+LK                =               F
+NCUSTOMBAS        =              0
+OTHERBASIS        =              0
+USEGPU            =               F
+XSCALING          =               F
+SCALEZ            =               F
+MAXITER           =              1
+TOLESTERROR       = 0.999999977648E-002 
+TOLSSE            = 0 
+FUNFORM           =              1
+RBFPARAM          = 1 
+PRESET            = -111111 
+LINEARERROR       =               F
+SOLVEMIP          =               F
+DELTATERM         =               T
+SHORTCUT          =               T
+DIVE              =               T
+FIRSTFEAS         =               F
+MIPOPTCA          = 0.500000007451E-001 
+MIPOPTCR          = 0.999999974738E-004 
+CRTOL             = 0.100000000000E-002 
+CRNINITIAL        =              0
+CRMAXITER         =             10
+CRNVIOL           =              5
+CRNTRIALS         =            100
+CRNCUSTOM         =              0
+NGROUPS           =              0
+SIMULATOR         =      mysim
+SIMIN             =      input.txt
+SIMOUT            =      output.txt
+SCRATCH           =      almscr
+BARONEXE          =      almbaron.exe
+===========================================================================
+
+XLABELS        XMIN                  XMAX             XISINT
+st         0.00000000000         1.65091098500         F
+ZLABELS   TOLMEANERROR          TOLRELMETRIC          TOLABSMETRIC            MAXTERMS  ZISINT  TOLMAXERROR
+Z1         0.00000000000        0.100000000000E-005  0.100000000000E-005            5    F       0.500000000000E-001
+
+XDATA and ZDATA
+  1.512777561 0.703608801 
+  1.567937074 0.708311539 
+  1.62164293 0.710396917 
+
+MONOPOWERS
+0.5 1.5 2 
+===========================================================================
+Total number of bases considered =         5
+
+BASES considered
+ st
+ exp(st)
+ st**0.5
+ st**1.5
+ st**2
+===========================================================================
+ 
+ Step 0: Initializing data set
+ User provided an initial data set of 3 data points
+ We will sample no more data points at this stage
+ ***************************************************************************
+ Iteration 1 (Approx. elapsed time 0.0 s)
+ 
+ Step 1: Model building using BIC
+ 
+ Model building for variable Z1
+ sigma in almsurr1 =    1.00000000000000
+ ----
+ BIC = 1.10 with Z1 = 0.56503112463080173988317 * st**0.5
+ 
+ Calculating quality metrics on observed data set.
+ Errors on observed data points 
+ (for each data point: x, z, zmodel, square error, absolute error):
+  1.512777561 0.703608801 0.694960160025 0.747989907093E-004 1.22918317145 
+  1.567937074 0.708311539 0.707516685047 0 0.112218128562 
+  1.62164293 0.710396917 0.71953179251 0.834459505821E-004 1.28588332682 
+ Maximum absolute errors (%) on observed data points 
+  1.28588332682 
+ 
+ 
+ Quality metrics for output Z1
+ -----------------------------
+ SSE OLR:           0.850E-30
+ SSE:               0.159E-03
+ RMSE:              0.728E-02
+ R2:                1.00
+ R2 adjusted:       1.00
+ Model size:        1
+ BIC:               1.10
+ Cp:                -1.00
+ AICc:              -23.5
+ HQC:               -29.3
+ MSE:               0.159E-03
+ SSEp:              0.159E-03
+ RIC:               3.22
+ MADp:              1.29
+
+ BETAS and BASES chosen for this output
+  0.565031124630802      st**0.5
+ 
+ 
+ Total execution time 0.0 s
+ Times breakdown
+     OLR time:        0.0 s in 16 ordinary linear regression problem(s)
+     MIP time:        0.0 s in 0 quadratic integer problem(s)
+     Simulation time: 0.0 s to simulate 0 point(s)
+     All other time:  0.0 s in 1 iteration(s)
+ 
+ Normal termination
+ ***************************************************************************

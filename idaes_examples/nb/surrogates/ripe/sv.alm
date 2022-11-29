@@ -1,0 +1,23 @@
+linfcns 1
+funform 1
+trace 1
+tracefname temptrace.trc
+solvemip 1
+ninputs 1
+noutputs 1
+xlabels st
+modeler 1
+monomialpower 0.5 1 1.5 2 
+logfcns 1
+expfcns 1
+constant 0
+xmin 0
+xmax 1.650910985
+cvxbic 1
+initialpoints 3
+ndata 3
+begin_data
+1.512777561 0.703608801 
+1.567937074 0.708311539 
+1.62164293 0.710396917 
+end_data
