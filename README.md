@@ -7,6 +7,8 @@
   * Browse notebooks
   * Build documentation locally
   * Run tests
+    * Integration tests
+    * Unit tests
 * For Developers
   * Install
   * Run tests
@@ -61,23 +63,33 @@ Python support files and data may be used to keep the notebooks focused on the i
 Clone the repository from Github, setup your Python environment as you usually do, then run pip with the developer requirements:
 
 ```shell
-pip install -r requirements-dev.txt
+# to create a conda environment first:
+# conda create -n idaes-examples python=3; conda activate idaes-examples
+pip install -e .[dev]
 ```
+
+The configuration of the installation is stored in `pyproject.toml`.
 
 ### Run tests
 
 There are two ways to run tests: running all the notebooks (integration tests), and 
 testing that notebooks work without running all their code (unit tests).
 
-To run **integration tests**, from the *root* directory:
+#### Integration tests
+
+Run integration tests from the top-level (root) directory of the repository.
+In the root directory, tests are configured by `pyproject.toml`; see the *tool.pytest.ini_options* section.
 
 ```shell
 # from the root directory of the repository
 pytest
 ```
-
 If you want to *exclude* certain notebooks from the integration tests, see the _Preprocessing -> Jupyter notebook metadata_ section.
 
+#### Unit tests
+
+Run unit tests from the `idaes_examples` directory of the repository.
+In the idaes_examples directory, tests are configured by `idaes_examples/pytest.ini`. 
 To run the **unit tests** change to do the `idaes_examples` directory, then run the same command:
 
 ```shell
@@ -85,7 +97,6 @@ cd idaes_examples
 pytest
 ```
 
-Different tests are run in the idaes_examples directory because there is a *pytest.ini* file there. In the root directory, tests are configured by `pyproject.toml`, in the *tool.pytest.ini_options* section.
 
 ### Build documentation
 
