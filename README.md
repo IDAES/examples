@@ -147,7 +147,7 @@ There are two main steps to creating a new notebook example.
    2. Notebook filename *should* be in lowercase with underscores and ***must*** end with '_src.ipynb'. For example: 'my_example_src.ipynb'.
    3. Add -- in the same directory as the notebook -- any data files, images, or Python files needed for it to run.
 2. Add Jupyter notebook to the Jupyterbook table of contents in *idaes_examples/nb/_toc.yml*.
-   1. The notebook will be a *section*. If you added a new directory, you will create a new *chapter*, otherwise it will go under an existing one. See [Jupyterbook][1] documentation for more details.
+   1. The notebook will be a *section*. If you added a new directory, you will create a new *chapter*, otherwise it will go under an existing one. See [Jupyterbook][jb] documentation for more details.
    2. Refer to the notebook as '*path/to/notebook-name*_doc' (replace '_src' with '_doc' and drop the '.ipynb' extension). For example: 'machine_learning/my_example_doc'.
    3. If you created a new directory for this notebook, make sure you add an *index.md* file to it. See other *index.md* files for the expected format.
 
