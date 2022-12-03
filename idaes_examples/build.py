@@ -320,7 +320,11 @@ class Commands:
     @classmethod
     def gui(cls, args):
         browse.setup_logging(_log.getEffectiveLevel(), console=args.log_console)
-        nb = browse.Notebooks(srcdir=args.dir, user_dir=args.user_dir)
+        try:
+            nb = browse.Notebooks(srcdir=args.dir, user_dir=args.user_dir)
+        except Exception as err:
+            _log.error(f"Could not open notebooks: {err}")
+            return -1
         if args.console:
             for val in nb._sorted_values:
                 pth = Path(val.path).relative_to(Path.cwd())
@@ -389,8 +393,8 @@ def main():
         help=" -q means no sphinx status, -qq also turns off warnings",
         default=0,
     )
-    subp["gui"].add_argument("--console", action="store_true", dest="console")
-    subp["gui"].add_argument("--stderr", action="store_true", default=False,
+    subp["gui"].add_argument("--console", "-c", action="store_true", dest="console")
+    subp["gui"].add_argument("--stderr", "-e", action="store_true", default=False,
                              dest="log_console", help="Print logs to the console "
                                                       "(stderr) instead of redirecting "
                                                       "them to a file in ~/.idaes/logs")

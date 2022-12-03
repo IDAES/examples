@@ -101,6 +101,8 @@ class Notebooks:
         if user_dir:
             _log.debug(f"Loading notebooks from provided directory: {srcdir}")
             self._root = Path(srcdir)
+            if not self._root.is_dir():
+                raise ValueError(f"Invalid directory: {self._root}")
         else:
             _log.debug("Find notebook directory automatically")
             self._root = find_notebook_dir()
