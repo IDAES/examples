@@ -71,6 +71,7 @@ def allow_repo_root(src_path, func) -> Path:
     """This allows commands to (also) work if src_path is the repo root (as opposed
     to the directory with the notebooks in it).
     """
+    src_path = Path(src_path)
     if not (src_path / NB_ROOT).exists():
         mod = func.__module__.split(".")[0]
         if (src_path / mod / NB_ROOT).exists():

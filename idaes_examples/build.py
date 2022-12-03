@@ -319,17 +319,15 @@ class Commands:
 
     @classmethod
     def gui(cls, args):
-        browse._log.setLevel(_log.getEffectiveLevel())
-        nb = browse.Notebooks()
+        browse.setup_logging(_log.getEffectiveLevel(), console=args.log_console)
+        nb = browse.Notebooks(srcdir=args.dir, user_dir=args.user_dir)
         if args.console:
             for val in nb._sorted_values:
                 pth = Path(val.path).relative_to(Path.cwd())
                 print(f"{val.type}{' '*(10 - len(val.type))} {val.title} -> {pth}")
             status = 0
         else:
-            _log.info(f"Run GUI start")
             status = browse.gui(nb)
-            _log.info(f"Run GUI end")
         return status
 
     @staticmethod
@@ -375,7 +373,7 @@ def main():
     ):
         subp[name] = commands.add_parser(name, help=desc)
         subp[name].add_argument(
-            "-d", "--dir", help="Source directory (default=<current>)", default="."
+            "-d", "--dir", help="Source directory (default=<current>)", default=None
         )
         add_vb(subp[name], dest=f"vb_{name}")
     subp["build"].add_argument(
@@ -392,12 +390,21 @@ def main():
         default=0,
     )
     subp["gui"].add_argument("--console", action="store_true", dest="console")
+    subp["gui"].add_argument("--stderr", action="store_true", default=False,
+                             dest="log_console", help="Print logs to the console "
+                                                      "(stderr) instead of redirecting "
+                                                      "them to a file in ~/.idaes/logs")
     args = p.parse_args()
     subvb = getattr(args, f"vb_{args.command}")
     if subvb != args.vb:
         process_vb(_log, subvb)
     else:
         process_vb(_log, args.vb)
+    # give 'args.dir' a default of ".", but remember whether user gave this value
+    if args.dir is None:
+        args.dir, args.user_dir = ".", False
+    else:
+        args.user_dir = True
     func = getattr(Commands, args.command, None)
     if func is None:
         p.print_help()
