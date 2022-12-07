@@ -7,7 +7,7 @@ Revised: 4 December 2022
 
 For developers.
 
-Assume user = 'username'
+Assumptions: user = 'username'
 
 ## Setup
 
@@ -41,18 +41,22 @@ Note #2: The `idaes get-extensions` command makes *global* changes, so use the `
 
 # Create a new example
 
-Create and build a new example notebook.
+We will walk through the steps for a new example Jupyter Notebook
 
 ## Create a notebook
 
 Continue in the directory where you cloned the repository.
 Create a Jupyter notebook in an existing folder.
 
-First, change to a subdirectory and start the Jupyter notebook server:
+### Start Jupyter
+
+Change to a subdirectory and start the Jupyter notebook server:
 ```
 cd idaes_examples/nb/flowsheets
 jupyter notebook &
 ```
+
+### Add a markdown cell
 
 Then, in the Jupyter notebook browser, create a new blank note book ("New" -> "IPython 3 kernel").
 Name the notebook `my_notebook_src` and make the first cell a Markdown cell with the following text:
@@ -61,7 +65,9 @@ Name the notebook `my_notebook_src` and make the first cell a Markdown cell with
 This is my example notebook.
 ```
 
-Then, add 3 code cells with the following content (one statement per cell):
+### Add code cells
+
+Add 3 code cells with the following content (one statement per cell):
 ```
 import idaes
 
@@ -70,14 +76,18 @@ print(idaes.__version__)
 assert idaes.__version__.startswith('2')
 ```
 
+### Add tags
+
 To demonstrate how the tags work, we will add tags to a couple of these cells:
 1. To see current tags, select "View" -> "Cell toolbar" -> "Tags".
 2. Add the tag `noauto` to the cell with the print statement
 3. Add the tag `testing` to the cell with the assert statement
 
+### Save work
+
 Finally, save the notebook.
 
-## Add the notebook to the table of contents
+## Add the example to the table of contents
 
 For building and testing to 'see' a notebook it needs to be in the Jupyterbook table of contents.
 The following steps add the new notebook to the table of contents.
@@ -88,6 +98,7 @@ The following steps add the new notebook to the table of contents.
 4. Save the modified file.
 
 Note: Although the notebook was called `my_notebook_src`, the filename in the table of contents entry is `my_notebook_doc`.
+
 
 ## Test the example
 
