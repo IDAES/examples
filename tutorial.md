@@ -68,7 +68,7 @@ jupyter notebook &
 
 ### Add a markdown cell
 
-Then, in the Jupyter notebook browser, create a new blank note book ("New" -> "IPython 3 kernel").
+Then, in the Jupyter notebook browser, create a new blank note book.
 Name the notebook `my_notebook_src` and make the first cell a Markdown cell with the following text:
 ```
 # My notebook
