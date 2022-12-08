@@ -117,19 +117,34 @@ These generated files should ***not*** be added to the repository.
 If you want to run that preprocessing step separately, use `idaesx pre`.
 To remove pre-processed files, run `idaesx clean`.
 
-### Copyright headers
+A diagram of how preprocessing relates to notebook usage is shown below:
 
-You can add (and update) copyright headers to Python files _and_ Jupyter Notebooks using the 
-`addheader` command with the included `addheader.yml` configuration file:
-
-```bash
-# first see what would be changed (using -n)
-addheader -n -c addheader.yml
-# if this is OK, add the headers
-addheader -c addheader.yml
+```
+ ┌───────────────────┐
+ │                   │
+ │ example_src.ipynb │
+ │                   │
+ └──────┬────────────┘
+        │
+        ▼            ┌──────────────────┐     ┌──────┐
+ ┌────────────┐  ┌─► │example_test.ipynb├────►│pytest│
+ │ preprocess ├──┤   └──────────────────┘     └──────┘
+ └──────────┬─┘  │
+            │    │   ┌─────────────────┐      ┌───────────┐
+            │    └─► │example_doc.ipynb├─────►│jupyterbook│
+            │        └─────────────────┘      └───────────┘
+            │
+            │        ┌─────────────────┐     ┌───────────┐
+           ┌┴─┐  ┌──►│example_usr.ipynb├────►│ browse/run│
+           │OR├──┤   └─────────────────┘     └───────────┘
+           └──┘  │                                ▲
+                 │   ┌──────────────────────┐     │
+                 │   │example_exercise.ipynb├─────┘
+                 └──►│example_solution.ipynb│
+                     └──────────────────────┘
 ```
 
-All existing notebooks and Python files will be automatically discovered and modified as needed.
+
 
 ### Notebook names
 
@@ -139,6 +154,8 @@ Other extensions are automatically generated when running tests, building the do
 See the <a href="#table-nbtypes">table of notebook types</a> for details.
 
 ### How to create an example
+
+See `tutorial.md` in this directory for a more detailed step-by-step tutorial.
 
 There are two main steps to creating a new notebook example.
 
@@ -199,6 +216,21 @@ In order to make this happen, either manually edit the notebook source or use th
    "skip": ["test"]
 }
 ```
+
+### Copyright headers
+
+You can add (and update) copyright headers to Python files _and_ Jupyter Notebooks using the 
+`addheader` command with the included `addheader.yml` configuration file:
+
+```bash
+# first see what would be changed (using -n)
+addheader -n -c addheader.yml
+# if this is OK, add the headers
+addheader -c addheader.yml
+```
+
+All existing notebooks and Python files will be automatically discovered and modified as needed.
+
 
 <!-- 
    References 
