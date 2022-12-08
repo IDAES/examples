@@ -1,44 +1,23 @@
 ---
-Author: Dan Gunter
-Revised: 7 December 2022
+author: Dan Gunter
+date: 7 December 2022
+title: IDAES Examples Tutorial
 ---
 
-**Table of Contents**
-
-* IDAES Examples Tutorial
-  * Setup
-    * Fork and clone the repository
-    * Install in a Conda environment
-* How to create a new example
-  * Create a notebook
-    * Start Jupyter
-    * Add a markdown cell
-    * Add code cells
-    * Add tags
-    * Save work
-  * Add the example to the table of contents
-  * Test the example
-* How to copy an example from the examples
-  * Determine where the notebook goes in the
-  * Determine the new notebook filename
-  * Copy the notebook
-  * Fix tags
-  * Update copyright headers
-  * Test and build changes
-* Other tasks
-  * Run
-  * Rebuild the documentation
-  * Format the notebooks with Black
-    * Browse the notebooks
-
-# IDAES Examples Tutorial
+# Tutorial
 
 This is for developers. Users should refer to the "readme.md" file in this directory.
 
 Assumptions:
+
 * user = 'username'
 
+For more details on commands described here, see the `README.md` file in this
+directory.
+
 ## Setup
+
+This section describes how to download and install the `examples` repo.
 
 ### Fork and clone the repository
 
@@ -68,7 +47,9 @@ Note #1: The "pip install" step will provide time to brew some coffee, get a sna
 
 Note #2: The `idaes get-extensions` command makes *global* changes, so use the `--to` option or skip this step if you need to keep a specific version of the extensions installed for other work.
 
-# How to create a new example
+----
+
+# Creating a new example
 
 We will walk through the steps for a new example Jupyter Notebook
 
@@ -108,15 +89,32 @@ assert idaes.__version__.startswith('2')
 ### Add tags
 
 To demonstrate how the tags work, we will add tags to a couple of these cells:
+
 1. To see current tags, select "View" -> "Cell toolbar" -> "Tags".
-2. Add the tag `noauto` to the cell with the print statement
-3. Add the tag `testing` to the cell with the assert statement
+2. Add the tag `noauto` to the cell with the print statement. This will skip this cell 
+   in the versions of the notebook used for documentation and testing.
+3. Add the tag `testing` to the cell with the assert statement. This will only
+   include this cell in the version fo the notebook used for testing. 
+
+### Run preprocessing
+
+There is some custom Python code to preprocess each `_src` notebook into a different
+version (with different extensions) for documentation, testing, tutorial exercises, and
+tutorial solutions. This preprocessing step is run automatically in the build and
+test commands, but for demonstration purposes we can run it manually with:
+
+```shell
+idaesx pre
+````
+
+Then you can look in the directory `idaes_examples\nb\flowsheets` to see the
+generated versions of your tutorial notebook.
 
 ### Save work
 
 Finally, save the notebook.
 
-## Add the example to the table of contents
+## Add example to JupyterBook
 
 For building and testing to 'see' a notebook it needs to be in the Jupyterbook table of contents.
 The following steps add the new notebook to the table of contents.
@@ -140,13 +138,14 @@ pytest -k my_notebook
 
 Why `-k`? Although you can test *all* notebooks with the simple command `pytest`, since notebooks are found and tested with an extra level of indirection you can't simply name the notebook directly. Instead, testing a single notebook requires using a "-k" expression that will match the notebook.
 
+----
 
-# How to copy an example from the examples-pse repo
+# Copying an existing example
 
 In the transition period, there may be changes to example notebooks, etc. in `examples-pse` that need to be moved over into this repo.
 There are bulk migration scripts in the 'scripts/' directory, but the intent of this mini-tutorial is to help migrate one example notebook (though there is one file in that directory we will use).
 
-## Determine where the notebook goes in the "new" layout
+## Find notebook directory
 
 In `scripts/map.yml` there is a mapping of the notebook subdirectories in examples-pse, undder `src/` 
 to the subdirectories under `idaes_examples/nb/` in this repository.
@@ -159,24 +158,25 @@ map:
 This means that the notebook `src/Examples/DAE/petsc_chem_example.ipynb` in the examples-pse repo
 should be placed in `idaes_examples/dae/petsc_chem_src.ipynb` in the new repo.
 
-## Determine the new notebook filename
+## Copy notebook
 
 Filenames will mostly stay the same, **but** certain suffixes on the old files should 
 be stripped, and the new suffix `_src` added.
 
-So, all of the following..
+So, any of the following..
+
 * `foo_example.ipynb`
+* `foo_solution.ipynb`
 * `foo_solution_testing.ipynb`
 * `foo_testing.ipynb`
 * `foo.ipynb`
 
 ..should be copied to the file `foo_src.ipynb` in the new structure.
 
-## Copy the notebook
-
-You should probably back up the old version first. Then copy the file, e.g. in
-the previous example if `examples-pse` and `examples` were cloned in the same parent directory,
-you could do, from the `examples` top-level directory:
+Before copying the notebook, back up any old version(s) first.
+Then simply copy the file from the old location to the new one.
+For example, using  the previous example, if `examples-pse` and `examples` were cloned
+in the same parent directory, and the working directory is the `examples` root, do:
 ```shell
 # backup
 cp idaes_examples\nb\dae\petsc_chem_src.ipynb idaes_examples\nb\dae\petsc_chem_src.bak
@@ -191,9 +191,9 @@ select "View" -> "Cell toolbar" -> "Tags".
 You should go through the notebook and take out any `remove_cell` tags.
 
 You can also, if you want, use additional tags available in the new framework.
-See the 'Jupyter Notebook cell tags' section of the readme.md in this directory.
+See the 'Jupyter Notebook cell tags' section of the `README.md` in this directory.
 
-## Update copyright headers
+## Update copyright
 
 To add or update copyright headers, you can run `addheader` in the root directory.
 This will look at all files but should only change notebooks where needed.
@@ -206,7 +206,7 @@ and run Black formatting.
 
 # Other tasks
 
-## Run 'unit' tests for all examples
+## Run 'unit' tests
 
 To do quick sanity checks and other tests of the example notebooks, there are standard Python test files under `idaes_examples/nb`. To run those *instead* of the example notebooks, simply run pytest from the `idaes_examples` sub-directory:
 ```
