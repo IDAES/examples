@@ -37,7 +37,7 @@ Continue in the directory where you cloned the repository.
 Create a conda environment and install examples (and dependencies, including idaes-pse).
 
 ```
-conda create -y -n idaes-examples python=3
+conda create -y -n idaes-examples python=3.10
 conda activate idaes-examples
 pip install -e .[dev]
 idaes get-extensions
