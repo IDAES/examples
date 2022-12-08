@@ -28,7 +28,7 @@ Start a shell and change to directory where you will clone the repository.
 ```
 git clone  https://github.com/username/examples
 cd examples
-git remote add upstream  https://github.com/username/examples
+git remote add upstream  https://github.com/IDAES/examples
 ```
 
 ### Install in a Conda environment
