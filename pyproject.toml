@@ -79,7 +79,9 @@ dev = [
     # pytest reporting
     "pytest-reportlog ~= 0.1.2",
     # For jupyter notebook testing
-    "black[jupyter] ~= 22.8.0"
+    "black[jupyter] ~= 22.8.0",
+    # For adding copyright headers (see addheader.yml and the readme)
+    "addheader >= 0.3.0"
 ]
 
 [project.urls]
