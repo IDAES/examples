@@ -74,12 +74,23 @@ parts:
   - file: unit_models/operations/index
     sections:
     - file: unit_models/operations/compressor_doc
+    - file: unit_models/operations/feed_flash_doc
+    - file: unit_models/operations/feed_doc
+    - file: unit_models/operations/flash_doc
     - file: unit_models/operations/heater_doc
     - file: unit_models/operations/heat_exchanger_0d_doc
+    - file: unit_models/operations/heat_exchanger_1d_doc
+    - file: unit_models/operations/heat_exchanger_NTU_doc
+    - file: unit_models/operations/heat_exchanger_lc_doc
     - file: unit_models/operations/mixer_doc
+    - file: unit_models/operations/product_doc
     - file: unit_models/operations/pump_doc
+    - file: unit_models/operations/separator_doc
     - file: unit_models/operations/skeleton_unit_doc
+    - file: unit_models/operations/statejunction_doc
+    - file: unit_models/operations/translator_doc
     - file: unit_models/operations/turbine_doc
+    - file: unit_models/operations/valve_doc
   - file: unit_models/reactors/index
     sections:
     - file: unit_models/reactors/cstr_doc
