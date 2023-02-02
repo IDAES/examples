@@ -33,33 +33,40 @@ from idaes_examples.util import (
 
 use_file = False
 log_dir = Path.home() / ".idaes" / "logs"
-L_START, L_END = "-start-", "-end-"
 _log = logging.getLogger("idaes_examples")
+_log_stream = logging.StreamHandler()
+_log.addHandler(_log_stream)
 
 
-def setup_logging():
+def setup_logging(lvl, console=False):
+    """Log to a file, unless none can be opened.
+    """
     global use_file, log_dir
 
-    if log_dir.exists():
-        use_file = True
-    else:
-        try:
-            log_dir.mkdir(exist_ok=True, parents=True)
+    _log.setLevel(lvl)
+
+    handler = _log_stream  # use stderr by default and as a fallback
+    if not console:
+        if log_dir.exists():
             use_file = True
-        except OSError:
-            pass
-    if use_file:
-        _h = RotatingFileHandler(
-            log_dir / "nb_browser.log", maxBytes=64 * 1024, backupCount=5
-        )
-    else:
-        _h = logging.StreamHandler()
-    _h.setFormatter(
+        else:
+            try:
+                log_dir.mkdir(exist_ok=True, parents=True)
+                use_file = True
+            except OSError:
+                pass
+        if use_file:
+            _log.debug(f"Redirecting logs to: {log_dir}/nb_browser.log")
+            _log.removeHandler(handler)
+            handler = RotatingFileHandler(
+                log_dir / "nb_browser.log", maxBytes=64 * 1024, backupCount=5
+            )
+
+    handler.setFormatter(
         logging.Formatter("[%(levelname)s] %(asctime)s %(name)s::%(module)s "
                           "- %(message)s")
     )
-    _log.addHandler(_h)
-    _log.setLevel(logging.INFO)
+    _log.addHandler(handler)
 
 
 # -------------
@@ -89,9 +96,17 @@ class Notebooks:
 
     DEFAULT_SORT_KEYS = ("section", "name", "type")
 
-    def __init__(self, sort_keys=DEFAULT_SORT_KEYS):
+    def __init__(self, sort_keys=DEFAULT_SORT_KEYS, srcdir=None, user_dir=False):
         self._nb = {}
-        self._root = find_notebook_dir()
+        if user_dir:
+            _log.debug(f"Loading notebooks from provided directory: {srcdir}")
+            self._root = Path(srcdir)
+            if not self._root.is_dir():
+                raise ValueError(f"Invalid directory: {self._root}")
+        else:
+            _log.debug("Find notebook directory automatically")
+            self._root = find_notebook_dir()
+        _log.debug(f"Using notebook directory: {self._root}")
         self._root_key = "root"
         self._section_key_prefix = "s_"
         self._toc = read_toc(self._root)
@@ -373,7 +388,7 @@ FONT = ("Helvetica", 11)
 
 
 def gui(notebooks):
-    setup_logging()
+    _log.info(f"begin:run-gui")
     PySG.theme("Material2")
 
     nb_tree = notebooks.as_tree()
@@ -476,4 +491,5 @@ def gui(notebooks):
     jupyter.stop()
     _log.info("Close main window")
     window.close()
+    _log.info(f"end:run-gui")
     return 0
