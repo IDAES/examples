@@ -1,7 +1,7 @@
 # Usage: 
 # addheader -c addheader.yml
 ---
-root: idaes_examples/nb
+root: idaes_examples/notebooks
 text: file_header.txt
 patterns:
    - '~conf*.py'

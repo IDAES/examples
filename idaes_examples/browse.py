@@ -75,7 +75,7 @@ def find_notebook_dir() -> Path:
             pass
         else:
             p = Path(d)
-            if p.stem == "nb":
+            if p.stem == "notebooks":
                 _log.debug(f"find_noteboo_dir: root_path={p}")
                 root_path = p
                 break
@@ -156,7 +156,7 @@ class Notebooks:
                 # Make an entry for the base notebook
                 for nb in nblist:
                     if nb.type == Ext.USER.value:
-                        base_key = f"nb+{section}+{nb.name}+{nb.type}"
+                        base_key = f"notebooks+{section}+{nb.name}+{nb.type}"
                         td.insert(
                             section_key, key=base_key, text=nb.title, values=[nb.path]
                         )
@@ -165,7 +165,7 @@ class Notebooks:
                 if len(nblist) > 1:
                     for nb in nblist:
                         if nb.type != Ext.USER.value:
-                            sub_key = f"nb+{section}+{nb.name}+{nb.type}"
+                            sub_key = f"notebooks+{section}+{nb.name}+{nb.type}"
                             # The name of the sub-entry is its type, since it will be
                             # visually listed under the title of the base entry.
                             subtitle = nb.type.title()

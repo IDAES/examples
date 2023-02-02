@@ -58,6 +58,8 @@ This section is intended for people who are creating and modifying examples.
 The examples are primarily in Jupyter Notebooks.
 Python support files and data may be used to keep the notebooks focused on the interactive material.
 
+**For more information about the organization of the directories, see the *README.md* file in the *idaes_examples* directory.**
+
 ### Install
 
 Clone the repository from Github, setup your Python environment as you usually do, then run pip with the developer requirements:
