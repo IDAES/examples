@@ -48,7 +48,7 @@ def main():
     results = ripe.ripemodel(cdata,stoich = stoich,mechanisms=rxn_mechs,x0=cdata0,hide_output=False,sigma=sigma,deltaterm=0,expand_output=True)
 
     # Adaptive experimental design using error maximization sampling
-    [new_points, err] = ripe.ems(results,isotsim.sim,lb_conc,ub_conc,5,x=cdata,x0=cdata0)
+    [new_points, err] = ripe.ems(results, isotsim.sim, lb_conc, ub_conc, 5, x=cdata, x0=cdata0)
 
     # Implement EMS as described in the RIPE publication
     new_res = isotsim.sim(new_points)[0]
@@ -75,7 +75,7 @@ def main():
         results = ripe.ripemodel(new_cdata,stoich = stoich,mechanisms=rxn_mechs,x0=new_cdata0,sigma=sigma,expand_output=True)
 
         # Another call to EMS
-        [new_points, err] = ripe.ems(results,isotsim.sim,lb_conc,ub_conc,5,x=cdata,x0=cdata0)
+        [new_points, err] = ripe.ems(results, isotsim.sim, lb_conc, ub_conc, 5, x=cdata, x0=cdata0)
 
         # Update results
         new_res = isotsim.sim(new_points)[0]

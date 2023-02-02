@@ -59,7 +59,7 @@ def main():
 
 
     # Calculate steady-state concentration values from simulator cracsim.py
-    cdata = cracsim.sim(np.hstack((cdata0,np.expand_dims(Temp, axis=1))))
+    cdata = cracsim.sim(np.hstack((cdata0, np.expand_dims(Temp, axis=1))))
 
     # In this example, we know the true stoichiometries. Lets define them first for clarity
     t_stoich = [[-1,1,0,0,0,0,1,0,0],[-1,0,1,1,0,0,0,0,0],[0,0,0,-1,2,0,-2,0,0],[0,0,0,0,-1,-2,4,1,0]]
