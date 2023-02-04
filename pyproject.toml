@@ -141,6 +141,6 @@ addopts = """\
 norecursedirs = ["my_workspace", ".ipynb_checkpoints"]
 testpaths = [
     "idaes_examples/notebooks/docs",
-    "idaes_examples/notebooks/internal/active",
+    "idaes_examples/notebooks/active",
     "idaes_examples/shared"
 ]
