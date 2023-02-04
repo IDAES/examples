@@ -6,14 +6,19 @@ parts:
     sections:
     - file: docs/dae/petsc_chem_doc
     - file: docs/dae/petsc_pid_doc
+  # Flowsheets
   - file: docs/flowsheets/index
     sections:
     - file: docs/flowsheets/hda_flowsheet_with_costing_doc
     - file: docs/flowsheets/hda_flowsheet_with_distillation_doc
     - file: docs/flowsheets/methanol_synthesis_doc
+  - file: docs/flowsheets/CO2_adsorption_desorption
+    sections:
+      - file: docs/flowsheets/CO2_adsorption_desorption/CO2_Adsorption_Desorption_1DFixedBed_doc
   - file: docs/diagnostics/index
     sections:
     - file: docs/diagnostics/degeneracy_hunter_doc
+  # Custom models/properties
   - file: docs/custom/properties/index
     sections:
     - file: docs/custom/properties/custom_physical_property_packages_doc

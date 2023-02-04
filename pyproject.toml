@@ -6,7 +6,7 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [project]
-    name = "examples"
+    name = "idaes_examples"
     description = "IDAES Process Systems Engineering Examples"
     readme = "README.md"
     version = "2.0.0a1"
@@ -95,8 +95,8 @@ idaesx = "idaes_examples.build:main"
 include-package-data = true
 zip-safe = false
 
-[tool.setuptools.packages.find]
-include = ["idaes_examples"]
+[tool.setuptools.packages]
+find = {namespaces = false}
 
 [tool.setuptools.package-data]
 idaes_examples = [
@@ -141,5 +141,6 @@ addopts = """\
 norecursedirs = ["my_workspace", ".ipynb_checkpoints"]
 testpaths = [
     "idaes_examples/notebooks/docs",
-    "idaes_examples/notebooks/internal/active"
+    "idaes_examples/notebooks/internal/active",
+    "idaes_examples/lib"
 ]
