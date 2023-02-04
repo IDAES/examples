@@ -18,8 +18,8 @@ Author: A. Deshpande, Alex Noring, M. Zamarripa
 
 # NGCC cost evaluation using IDAES Costing Framework
 
-import pytest
-import idaes
+# import pytest
+# import idaes
 from idaes.models_extra.power_generation.costing.power_plant_capcost import (
     QGESSCosting,
     QGESSCostingData,
@@ -34,11 +34,11 @@ import pyomo.environ as pyo
 from pyomo.environ import units as pyunits
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 
-from idaes.core.solvers import use_idaes_solver_configuration_defaults
-import idaes.core.util.scaling as iscale
-from idaes.core.util import model_serializer as ms
-
-import ngcc_soec
+# from idaes.core.solvers import use_idaes_solver_configuration_defaults
+# import idaes.core.util.scaling as iscale
+# from idaes.core.util import model_serializer as ms
+#
+# from . import ngcc_soec
 
 
 def add_total_plant_cost(b, installation_labor=1.25, eng_fee=1.2,

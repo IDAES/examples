@@ -20,9 +20,7 @@ import idaes.models.unit_models as um  # um = unit models
 from idaes.core import FlowsheetBlockData, declare_process_block_class
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
-import gas_turbine
-import hrsg
-import steam_turbine
+from . import (gas_turbine, hrsg, steam_turbine)
 import idaes.core.util as iutil
 from idaes.core.solvers import get_solver
 from idaes.core.util.initialization import propagate_state
