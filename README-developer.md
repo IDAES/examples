@@ -33,30 +33,33 @@ This section describes the internal organization of the example notebooks and su
 
 ### Directories
 The examples are divided into a few top-level directories.
-These directories are used to separate different purposes for the contained files:
 
-* `docs`: Examples and tutorials that will be tested and also published in the online documentation.
-* `internal`: Examples and tutorials that will not be published in the online documentation.  
-  This directory has two 
-  subdirectories:
-    * `active`: Not published but tested against new PRs
-    * `archive`: Not published and *not* tested against new PRs
-* `_dev`: Notebooks for developers only.
-Currently, a set of noteboooks demonstrating cell tags (see top-level 
-  `README.md` for details).
+* `notebooks`: All the Jupyter notebooks and supporting data
+  * `docs`: Examples and tutorials that will be tested and also published in the online documentation.
+  * `active`: Not published but tested against new PRs
+  * `archive`: Not published and *not* tested against new PRs
+  * `_dev`: Notebooks for developers only.
+  Currently, a set of noteboooks demonstrating cell tags (see top-level 
+    `README.md` for details).
+* `mod`: Supporting Python modules (as a Python package).  
+  It is usually best to match the name of the Python subpackage with its notebook directory.
 
 ### Where to put a new notebook
 
 Use the following to decide where to put any new Jupyter notebook:
 
 1. Will it be included in the online docs?  
-**Yes**: Put under `docs`  
+**Yes**: Put under `notebooks/docs`  
 **No**: Go to 2
 2. Will it be actively maintained to handle any changes in IDAES core?  
-**Yes**: Put under `internal/active`  
-**No**: Put under `internal/archive`
+**Yes**: Put under `notebooks/active`  
+**No**: Put under `notebooks/archive`
 
-All these directories have their own subdirectories for grouping similar notebooks. Place the new notebook in an appropriate subdirectory.
+All these directories have their own subdirectories for grouping similar notebooks.
+Place the new notebook in an appropriate subdirectory.
+
+Data files and images should go in the same directory as the notebook.  
+Python modules should go under an appropriate subpackage under `mod`.
 
 ## Running tests
 
@@ -155,8 +158,8 @@ There are two main steps to creating a new notebook example.
    3. Notebook filename *should* be in lowercase with underscores and ***must*** end with '_src.ipynb'. For example: 
       'my_example_src.ipynb'.
    4. Add -- in the same directory as the notebook -- any data files or images it needs.
-   5. Additional Python modules should be put in an appropriate place under *idaes_examples/lib*.
-Then your notebook can write: `from idaes_examples.lib import <bla>`
+   5. Additional Python modules should be put in an appropriate place under *idaes_examples/mod*.
+Then your notebook can write: `from idaes_examples.mod.<subpackage> import <bla>`
 2. Add Jupyter notebook to the Jupyterbook table of contents in *idaes_examples/nb/_toc.yml*.
    1. The notebook will be a *section*. If you added a new directory, you will create a new *chapter*, otherwise it will go under an existing one. See [Jupyterbook][jb] documentation for more details.
    2. Refer to the notebook as '*path/to/notebook-name*_doc' (replace '_src' with '_doc' and drop the '.ipynb' extension). For example: 'machine_learning/my_example_doc'.

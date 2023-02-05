@@ -43,8 +43,8 @@ from idaes.models.unit_models import (PressureChanger,
                                       StoichiometricReactor,
                                       Flash)
 # Import thermodynamic and reaction property packages
-from idaes_examples.shared.hda import hda_ideal_VLE as thermo_props
-from idaes_examples.shared.hda import hda_reaction as reaction_props
+from idaes_examples.mod.hda import hda_ideal_VLE as thermo_props
+from idaes_examples.mod.hda import hda_reaction as reaction_props
 
 from idaes.models.unit_models.pressure_changer import ThermodynamicAssumption
 from idaes.core.util.model_statistics import degrees_of_freedom

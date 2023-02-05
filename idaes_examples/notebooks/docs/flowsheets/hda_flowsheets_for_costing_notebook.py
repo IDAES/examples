@@ -80,8 +80,8 @@ def hda_with_flash(tee=True):
         outlvl = idaeslog.ERROR
 
     # Import thermodynamic and reaction property packages
-    from idaes_examples.shared.hda import hda_ideal_VLE as thermo_props
-    from idaes_examples.shared.hda import hda_reaction as reaction_props
+    from idaes_examples.mod.hda import hda_ideal_VLE as thermo_props
+    from idaes_examples.mod.hda import hda_reaction as reaction_props
 
     # build flowsheet
     print('Building flowsheet...')
@@ -243,10 +243,10 @@ def hda_with_distillation(tee=True):
         outlvl = idaeslog.ERROR
 
     # Import thermodynamic and reaction property packages
-    from idaes_examples.shared.hda import hda_reaction as reaction_props
+    from idaes_examples.mod.hda import hda_reaction as reaction_props
     from idaes.models.properties.activity_coeff_models.\
         BTX_activity_coeff_VLE import BTXParameterBlock
-    from idaes_examples.shared.hda.hda_ideal_VLE import HDAParameterBlock
+    from idaes_examples.mod.hda.hda_ideal_VLE import HDAParameterBlock
 
     # build flowsheet
     print('Building flowsheet...')
