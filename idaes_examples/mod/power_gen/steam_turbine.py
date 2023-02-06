@@ -15,6 +15,7 @@ __author__ = "John Eslick"
 
 import re
 import os
+from pathlib import Path
 
 import pandas as pd
 
@@ -511,16 +512,20 @@ class SteamTurbineFlowsheetData(FlowsheetBlockData):
             display_units=pyo.units.MW,
         )
 
+    pfd_file = "steam_turbine_template.svg"
+
     def write_pfd(self, fname=None):
         """Add model results to the flowsheet template.  If fname is specified,
         this saves the resulting svg to a file.  If fname is not specified, it
         returns the svg string.
         Args:
             fname: Name of file to save svg.  If None, return the svg string
+            file_dir: If True, look for PFD file in the same directory as this module; otherwise in the
+                      current working directory (e.g., next to the Jupyter Notebook).
         Returns: (None or Str)
         """
-        infilename = os.path.join(this_file_dir(), "steam_turbine_template.svg")
-        with open(infilename, "r") as f:
+        input_file = Path.cwd() / self.pfd_file
+        with open(input_file, "r") as f:
             s = svg_tag(svg=f, tag_group=self.tags_steam_streams, outfile=fname)
         if fname is None:
             return s

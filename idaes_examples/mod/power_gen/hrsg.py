@@ -17,6 +17,7 @@ NGCC HRSG subsystem for a 690MWe with 97% CO2 capture
 __author__ = ["M. Zamarripa", "John Eslick"]
 
 import os
+from pathlib import Path
 
 import pandas as pd
 
@@ -1397,6 +1398,8 @@ class HrsgFlowsheetData(FlowsheetBlockData):
                         display_units="%",
                     )
 
+    pfd_file = "hrsg_template.svg"
+
     def write_pfd(self, fname=None):
         """Add model results to the flowsheet template.  If fname is specified,
         this saves the resulting svg to a file.  If fname is not specified, it
@@ -1407,8 +1410,8 @@ class HrsgFlowsheetData(FlowsheetBlockData):
 
         Returns: (None or Str)
         """
-        infilename = os.path.join(this_file_dir(), "hrsg_template.svg")
-        with open(infilename, "r") as f:
+        input_file = Path.cwd() / self.pfd_file
+        with open(input_file, "r") as f:
             s = svg_tag(svg=f, tag_group=self.tags_steam_streams)
         s = svg_tag(svg=s, tag_group=self.tags_flue_gas_streams, outfile=fname)
         if fname is None:
