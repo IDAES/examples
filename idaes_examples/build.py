@@ -30,7 +30,6 @@ from idaes_examples.util import (
     Ext,
     Tags,
 )
-from idaes_examples import browse
 
 # -------------
 #   Logging
@@ -319,6 +318,7 @@ class Commands:
 
     @classmethod
     def gui(cls, args):
+        from idaes_examples import browse
         browse._log.setLevel(_log.getEffectiveLevel())
         nb = browse.Notebooks()
         if args.console:
