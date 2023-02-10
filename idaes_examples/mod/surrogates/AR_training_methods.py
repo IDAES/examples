@@ -21,6 +21,7 @@ import os
 import numpy as np
 import pandas as pd
 import random as rn
+from typing import Set
 import tensorflow as tf
 
 # Import IDAES libraries
@@ -41,11 +42,11 @@ rn.seed(1342)
 tf.random.set_seed(62)
 
 
-def train_load_surrogates(retrain=False):
+def train_load_surrogates(retrain=False) -> Set[str]:
     """
     Method to check if surrogates exist, load if available and train if needed.
     """
-
+    trained_surr = set()
     if retrain is False:
         print('Loading existing surrogate models and training missing models.')
         print('Any training output will print below; otherwise, models will '
@@ -94,10 +95,13 @@ def train_load_surrogates(retrain=False):
         trainer.config.overwrite_files = True
 
         # Train surrogate (calls ALAMO through IDAES ALAMOPy wrapper)
-        success, alm_surr, msg = trainer.train_surrogate()
-
-        # save model to JSON
-        alm_surr.save_to_file('alamo_surrogate.json', overwrite=True)
+        try:
+            success, alm_surr, msg = trainer.train_surrogate()
+            # save model to JSON
+            alm_surr.save_to_file('alamo_surrogate.json', overwrite=True)
+            trained_surr.add("alamo")
+        except FileNotFoundError:  # no ALAMO
+            print("ALAMO executable not found!")
 
     # Train surrogates using PySMO
     input_data_train = data_training.iloc[:, :2]
@@ -133,6 +137,7 @@ def train_load_surrogates(retrain=False):
 
         # save model to JSON
         poly_surr.save_to_file('pysmo_poly_surrogate.json', overwrite=True)
+    trained_surr.add("pysmo_poly")
 
     if os.path.exists('pysmo_rbf_surrogate.json') and retrain is False:
         # surrogates JSON already exists, skip training
@@ -161,6 +166,7 @@ def train_load_surrogates(retrain=False):
 
         # save model to JSON
         rbf_surr.save_to_file('pysmo_rbf_surrogate.json', overwrite=True)
+    trained_surr.add("pysmo_rbf")
 
     if os.path.exists('pysmo_krig_surrogate.json') and retrain is False:
         # surrogates JSON already exists, skip training
@@ -188,6 +194,8 @@ def train_load_surrogates(retrain=False):
 
         # save model to JSON
         krig_surr.save_to_file('pysmo_krig_surrogate.json', overwrite=True)
+
+    trained_surr.add("pysmo_krig")
 
     # Train surrogates using Keras
 
@@ -250,6 +258,9 @@ def train_load_surrogates(retrain=False):
                                          output_scaler=output_scaler)
         keras_surrogate.save_to_folder('keras_surrogate')
 
+    trained_surr.add("keras")
+
     # ALAMO saves a single object, so we can load it when needed later
     # Keras saves a folder of files, and we can load them when needed later
     # PySMO saves a single object for each basis type, we can load them later
+    return trained_surr
