@@ -48,8 +48,7 @@ build-backend = "setuptools.build_meta"
         "Markdown~=3.4.1",
 #        "pecos>=0.2.0",
 #        # used by notebooks in Examples/SurrMod/FlowsheetOptimization
-#        # pinning to latest stable version as of 9/29/2022
-#        "tensorflow==2.10.0",
+        "tensorflow"
 #        "protobuf==3.19.5"
     ]
     keywords = ["IDAES", "energy systems", "chemical engineering", "process modeling"]

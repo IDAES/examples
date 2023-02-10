@@ -88,6 +88,36 @@ cd idaes_examples
 pytest
 ```
 
+#### Testing a subset of the notebooks
+
+To test just one notebook, you need to (a) make sure the correct configuration file is picked up,
+e.g., even if you're not in the root directory and (b) use the name of the *test* notebook not the source.
+
+For example, to test the `compressor_src.ipynb` notebook (in the `unit_models/operations` subdirectory)
+you need to add `-c` and the path to the top-level *pyproject.toml*, which has the pytest configuration,
+then use the name of the test notebook:
+
+```shell
+pytest -c ~\path/to/idaes-examples/pyproject.toml -v compressor_test.ipynb
+```
+
+If you want to test several related notebooks, or perhaps just not type the whole notebook filename,
+you can use the pytest `-k` flag to test all notebooks whose path matches a string (see pytest docs for details).
+So, for example, from the top-level directory if you want to test all the *docs/unit_models/operations* notebooks,
+you could take advantage of the fact that "operations" appears only in this particular path:
+
+```shell
+pytest -k operations
+# will match: 
+# docs/unit_models/operations/compressor_test.ipynb
+# docs/unit_models/operations/heat_exchanger_0d_test.ipynb
+# docs/unit_models/operations/mixer_test.ipynb
+# docs/unit_models/operations/heater_test.ipynb
+# docs/unit_models/operations/skeleton_unit_test.ipynb
+# docs/unit_models/operations/pump_test.ipynb
+# docs/unit_models/operations/turbine_test.ipynb
+```
+
 ## Building documentation
 
 **Note:** Building the documentation runs all the notebooks.
