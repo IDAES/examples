@@ -12,6 +12,7 @@
 #################################################################################
 import os
 import pandas as pd
+from pathlib import Path
 import numpy as np
 
 import pyomo.environ as pyo
@@ -1204,6 +1205,7 @@ class SoecFlowsheetData(FlowsheetBlockData):
     def streams_dataframe(self):
         return self._stream_table(self.tags_streams)
 
+    pfd_file = "soec_template.svg"
     def write_pfd(self, fname=None):
         """Add model results to the flowsheet template.  If fname is specified,
         this saves the resulting svg to a file.  If fname is not specified, it
@@ -1212,8 +1214,8 @@ class SoecFlowsheetData(FlowsheetBlockData):
             fname: Name of file to save svg.  If None, return the svg string
         Returns: (None or Str)
         """
-        infilename = os.path.join(this_file_dir(), "soec_template.svg")
-        with open(infilename, "r") as f:
+        input_file = Path.cwd() / self.pfd_file
+        with open(input_file, "r") as f:
             s = svg_tag(svg=f, tag_group=self.tags_streams, outfile=None)
         s = svg_tag(svg=s, tag_group=self.tags_output, outfile=None)
         s = svg_tag(svg=s, tag_group=self.tags_input, outfile=fname)
