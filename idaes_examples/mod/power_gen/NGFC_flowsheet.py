@@ -66,7 +66,7 @@ from idaes.models_extra.power_generation.properties.natural_gas_PR import (
     get_rxn,
 )
 
-from SOFC_ROM import (
+from idaes_examples.mod.power_gen.SOFC_ROM import (
     build_SOFC_ROM,
     initialize_SOFC_ROM,
 )
@@ -1660,7 +1660,8 @@ def pfd_result(outfile, m, df):
         tag_group[key] = ModelTag(expr=tag, format_string=format_string)
         tag_group.str_include_units = False
 
-    original_svg_file = os.path.join(this_file_dir(), "NGFC_results_template.svg")
+    original_svg_file = os.path.join(this_file_dir(),
+                                     "../../notebooks/archive/power_gen/ngfc/NGFC_results_template.svg")
     with open(original_svg_file, "r") as f:
         svg_tag(svg=f, tag_group=tag_group, outfile=outfile)
 
@@ -1673,7 +1674,7 @@ def main():
     reinit = False  # switch to True to re-initialize and re-solve
     resolve = False  # switch to True to re-solve only (for debugging)
 
-    if os.path.exists("NGFC_flowsheet_init.json.gz") and reinit is False:
+    if os.path.exists("../../notebooks/archive/power_gen/ngfc/NGFC_flowsheet_init.json.gz") and reinit is False:
         # already initialized, can build model and load results from json
         build_power_island(m)
         build_reformer(m)
@@ -1682,7 +1683,7 @@ def main():
         SOFC_ROM_setup(m)
         add_SOFC_energy_balance(m)
         add_result_constraints(m)
-        if os.path.exists("NGFC_flowsheet_solution.json.gz") and resolve is False:
+        if os.path.exists("../../notebooks/archive/power_gen/ngfc/NGFC_flowsheet_solution.json.gz") and resolve is False:
             # don't need to solve, can load results from json
             print('Loading solved model')
             ms.from_json(m, fname="NGFC_flowsheet_solution.json.gz")

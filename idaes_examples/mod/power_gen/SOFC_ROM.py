@@ -18,7 +18,7 @@ the NGFC flowsheet. The code for generating SOFC ROMS can be found on PNNL's
 Github page: https://github.com/NGFC-Lib/NGFC-Lib.
 """
 
-import os
+from pathlib import Path
 from pyomo.environ import Block, Constraint, Param, Var, exp, value, units
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
 from pyomo.common.fileutils import this_file_dir
@@ -47,8 +47,7 @@ def build_SOFC_ROM(m):
     m.SOFC = b = Block()
 
     # load kriging coefficients
-    fname = "kriging_coefficients.dat"
-    path = os.path.join(this_file_dir(), fname)
+    path = Path.cwd() / "kriging_coefficients.dat"
 
     with open(path) as file:
         text = file.readlines()
