@@ -34,13 +34,13 @@ This section describes the internal organization of the example notebooks and su
 ### Directories
 The examples are divided into a few top-level directories.
 
-* `notebooks`: All the Jupyter notebooks and supporting data
+* `notebooks`: All the active/tested Jupyter notebooks and supporting data
   * `docs`: Examples and tutorials that will be tested and also published in the online documentation.
   * `active`: Not published but tested against new PRs
-  * `archive`: Not published and *not* tested against new PRs
   * `_dev`: Notebooks for developers only.
   Currently, a set of noteboooks demonstrating cell tags (see top-level 
     `README.md` for details).
+* `archive`: Not published and *not* tested. Just for historical interest.
 * `mod`: Supporting Python modules (as a Python package).  
   It is usually best to match the name of the Python subpackage with its notebook directory.
 
@@ -53,7 +53,7 @@ Use the following to decide where to put any new Jupyter notebook:
 **No**: Go to 2
 2. Will it be actively maintained to handle any changes in IDAES core?  
 **Yes**: Put under `notebooks/active`  
-**No**: Put under `notebooks/archive`
+**No**: Put under `archive`
 
 All these directories have their own subdirectories for grouping similar notebooks.
 Place the new notebook in an appropriate subdirectory.
