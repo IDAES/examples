@@ -82,7 +82,7 @@ def find_notebook_dir() -> Path:
             pass
         else:
             p = Path(d)
-            if p.stem == "nb":
+            if p.stem == "notebooks":
                 _log.debug(f"find_noteboo_dir: root_path={p}")
                 root_path = p
                 break
@@ -98,6 +98,7 @@ class Notebooks:
 
     def __init__(self, sort_keys=DEFAULT_SORT_KEYS, srcdir=None, user_dir=False):
         self._nb = {}
+        self._title_keys = []
         if user_dir:
             _log.debug(f"Loading notebooks from provided directory: {srcdir}")
             self._root = Path(srcdir)
@@ -171,16 +172,17 @@ class Notebooks:
                 # Make an entry for the base notebook
                 for nb in nblist:
                     if nb.type == Ext.USER.value:
-                        base_key = f"nb+{section}+{nb.name}+{nb.type}"
+                        base_key = f"notebooks+{section}+{nb.name}+{nb.type}"
                         td.insert(
                             section_key, key=base_key, text=nb.title, values=[nb.path]
                         )
+                        self._title_keys.append(base_key)
                         break
                 # Make sub-entries for examples, tutorials, etc. (if there are any)
                 if len(nblist) > 1:
                     for nb in nblist:
                         if nb.type != Ext.USER.value:
-                            sub_key = f"nb+{section}+{nb.name}+{nb.type}"
+                            sub_key = f"notebooks+{section}+{nb.name}+{nb.type}"
                             # The name of the sub-entry is its type, since it will be
                             # visually listed under the title of the base entry.
                             subtitle = nb.type.title()
@@ -196,17 +198,30 @@ class Notebooks:
     def is_tree_root(self, key) -> bool:
         return key == self._root_key
 
-
 class Notebook:
     """Interface for metadata of one Jupyter notebook."""
+
+    MAX_TITLE_LEN = 50
 
     def __init__(self, name: str, section: Tuple, path: Path, nbtype="plain"):
         self.name, self._section = name, section
         self._path = path
-        self._long_desc, self._short_desc = "", name
+        self._long_desc = ""
+        # Default title of the notebook is its filename but this will be replaced with
+        # the title in the notebook, if one can be found
+        self._short_desc = self._shorten_title(name)
         self._lines = []
         self._get_description()
         self._type = nbtype
+    @classmethod
+    def _shorten_title(cls, text: str) -> str:
+        maxlen = cls.MAX_TITLE_LEN - 2  # take off 2 more for 2 dots
+        if len(text) <= maxlen:
+            result = text
+        else:
+            result = f"{text[:maxlen]}.."
+            _log.debug(f"shortened '{text}' to '{result}")
+        return result
 
     @property
     def section(self) -> str:
@@ -245,14 +260,13 @@ class Notebook:
                     for line in self._lines:
                         if line.strip().startswith("#"):
                             last_pound = line.rfind("#")
-                            self._short_desc = line[last_pound + 1 :].strip()
+                            self._short_desc = self._shorten_title(line[last_pound + 1 :].strip())
                             break
                     desc = True
                     break
         if not desc:
             self._short_desc, self._long_desc = "No description", "No description"
             self._lines = [self._short_desc]
-
 
 class Jupyter:
     """Run Jupyter notebooks."""
@@ -384,7 +398,7 @@ class NotebookDescription:
 #     GUI
 # -------------
 
-FONT = ("Helvetica", 11)
+FONT = ("Courier New", 11)
 
 
 def gui(notebooks):
@@ -411,14 +425,12 @@ def gui(notebooks):
         "Description", layout=[[description_widget]], expand_y=True, expand_x=True
     )
 
-    title_max = max(len(t) for t in notebooks.titles())
-
     nb_widget = PySG.Tree(
         nb_tree,
         border_width=0,
+        col0_width=int(Notebook.MAX_TITLE_LEN * 0.4) + 4,  # empirically determined (!)
         headings=[],
-        col0_width=title_max * 5 // 6,
-        auto_size_columns=True,
+        auto_size_columns=False,
         select_mode=PySG.TABLE_SELECT_MODE_EXTENDED,
         key="-TREE-",
         show_expanded=True,
@@ -455,7 +467,7 @@ def gui(notebooks):
     # create main window
     window = PySG.Window(
         "IDAES Notebook Browser", layout, size=(1200, 600), finalize=True,
-        #background_color="#F0FFFF"
+        # background_color="#F0FFFF"
     )
 
     nbdesc = NotebookDescription(notebooks, window["Description"].Widget)

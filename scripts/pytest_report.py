@@ -16,7 +16,7 @@ import re
 
 def write_failure(d, o):
     nodeid = o["nodeid"]
-    # "idaes_examples/nb/flowsheets/methanol_synthesis_test.ipynb::"
+    # "idaes_examples/notebooks/flowsheets/methanol_synthesis_test.ipynb::"
     m = re.match(r"(.*)\.[a-z]+::", nodeid)
     if m is None:
         print(f"Cannot understand nodeid = {nodeid}")

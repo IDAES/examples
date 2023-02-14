@@ -1,0 +1,78 @@
+format: jb-book
+parts:
+- caption: Flowsheets
+  chapters:
+  - file: docs/dae/index
+    sections:
+    - file: docs/dae/petsc_chem_doc
+    - file: docs/dae/petsc_pid_doc
+  # Flowsheets
+  - file: docs/flowsheets/index
+    sections:
+    - file: docs/flowsheets/hda_flowsheet_with_costing_doc
+    - file: docs/flowsheets/hda_flowsheet_with_distillation_doc
+    - file: docs/flowsheets/methanol_synthesis_doc
+  - file: docs/flowsheets/CO2_adsorption_desorption
+    sections:
+      - file: docs/flowsheets/CO2_adsorption_desorption/CO2_Adsorption_Desorption_1DFixedBed_doc
+  - file: docs/diagnostics/index
+    sections:
+    - file: docs/diagnostics/degeneracy_hunter_doc
+  # Custom models/properties
+  - file: docs/custom/properties/index
+    sections:
+    - file: docs/custom/properties/custom_physical_property_packages_doc
+    - file: docs/custom/properties/custom_reaction_property_packages_doc
+    - file: docs/custom/properties/dictionary_txy_diagrams_doc
+    - file: docs/custom/properties/parameter_estimation_pr_doc
+  - file: docs/custom/unit_models/custom/index
+    sections:
+    - file: docs/custom/unit_models/custom_compressor_doc
+    - file: docs/custom/unit_models/custom_heater_doc
+  - file: active/power_gen/ngcc/index
+    sections:
+    - file: active/power_gen/ngcc/ngcc_soec_doc
+    - file: active/power_gen/ngcc/ngcc_doc
+  # Surrogates
+  - file: docs/surrogates/index
+    sections:
+    - file: docs/surrogates/best_practices_optimization_doc
+  - file: docs/surrogates/pysmo/index
+    sections:
+    - file: docs/surrogates/pysmo/pysmo_basics_doc
+    - file: docs/surrogates/pysmo/pysmo_flowsheet_optimization_doc
+  - file: docs/surrogates/alamo/index
+    sections:
+    - file: docs/surrogates/alamo/alamo_flowsheet_optimization_doc
+  # moved to archive until Keras errors can be fixed
+  # - file: docs/surrogates/omlt/index
+  #  sections:
+  #  - file: docs/surrogates/omlt/keras_flowsheet_optimization_doc
+  - file: docs/unit_models/operations/index
+    sections:
+    - file: docs/unit_models/operations/compressor_doc
+    - file: docs/unit_models/operations/heater_doc
+    - file: docs/unit_models/operations/heat_exchanger_0d_doc
+    - file: docs/unit_models/operations/mixer_doc
+    - file: docs/unit_models/operations/pump_doc
+    - file: docs/unit_models/operations/skeleton_unit_doc
+    - file: docs/unit_models/operations/turbine_doc
+  - file: docs/unit_models/reactors/index
+    sections:
+    - file: docs/unit_models/reactors/cstr_doc
+    - file: docs/unit_models/reactors/equilibrium_reactor_doc
+    - file: docs/unit_models/reactors/gibbs_reactor_doc
+    - file: docs/unit_models/reactors/plug_flow_reactor_doc
+    - file: docs/unit_models/reactors/stoichiometric_reactor_doc
+  - file: docs/param_est/index
+    sections:
+    - file: docs/param_est/parameter_estimation_nrtl_using_state_block_doc
+    - file: docs/param_est/parameter_estimation_nrtl_using_unit_model_doc
+  - file: docs/tut/index
+    sections:
+    - file: docs/tut/flash_unit_doc
+    - file: docs/tut/hda_flowsheet_doc
+    - file: docs/tut/introduction_short_doc
+    - file: docs/tut/introduction_doc
+    - file: docs/tut/visualizer_tutorial_doc
+root: index

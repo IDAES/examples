@@ -30,7 +30,6 @@ from idaes_examples.util import (
     Ext,
     Tags,
 )
-from idaes_examples import browse
 
 # -------------
 #   Logging
@@ -50,9 +49,12 @@ _log.addHandler(_h)
 DEV_DIR = "_dev"  # special directory to include in preprocessing
 
 
-def preprocess(srcdir=None):
+def preprocess(srcdir=None, dev=False):
     src_path = allow_repo_root(Path(srcdir), main)
     src_path /= NB_ROOT
+    if dev:
+        src_path /= "_dev"
+        src_path /= NB_ROOT
     toc = read_toc(src_path)
     t0 = time.time()
     n = find_notebooks(src_path, toc, _preprocess)
@@ -244,13 +246,18 @@ def black(srcdir=None):
 # --------------------
 
 
-def jupyterbook(srcdir=None, quiet=0):
+def jupyterbook(srcdir=None, quiet=0, dev=False):
     # build commandline with path arg
     path = allow_repo_root(Path(srcdir), main)
     path /= NB_ROOT
+    if dev:
+        path /= "_dev"
+        path /= NB_ROOT
     if not path.is_dir():
         raise FileNotFoundError(f"Could not find directory: {path}")
     commandline = ["jupyter-book", "build", str(path)]
+    if dev:
+        commandline.extend(["--path-output", str(path)])
     if quiet > 0:
         quiet = min(quiet, 2)
         commandline.append(f"-{'q' * quiet}")
@@ -295,12 +302,13 @@ class Commands:
 
     @classmethod
     def build(cls, args):
+        sfx = " [dev]" if args.dev else ""
         if not args.no_pre:
-            cls.heading("Pre-process notebooks")
-            cls._run("pre-process notebooks", preprocess, srcdir=args.dir)
-        cls.heading("Build Jupyterbook")
-        return cls._run("build jupyterbook", jupyterbook, srcdir=args.dir,
-                        quiet=args.quiet)
+            cls.heading(f"Pre-process notebooks{sfx}")
+            cls._run(f"pre-process notebooks{sfx}", preprocess, srcdir=args.dir, dev=args.dev)
+        cls.heading(f"Build Jupyterbook{sfx}")
+        result = cls._run(f"build jupyterbook{sfx}", jupyterbook, srcdir=args.dir, quiet=args.quiet, dev=args.dev)
+        return result
 
     @classmethod
     def view(cls, args):
@@ -319,12 +327,9 @@ class Commands:
 
     @classmethod
     def gui(cls, args):
-        browse.setup_logging(_log.getEffectiveLevel(), console=args.log_console)
-        try:
-            nb = browse.Notebooks(srcdir=args.dir, user_dir=args.user_dir)
-        except Exception as err:
-            _log.error(f"Could not open notebooks: {err}")
-            return -1
+        from idaes_examples import browse
+        browse._log.setLevel(_log.getEffectiveLevel())
+        nb = browse.Notebooks()
         if args.console:
             for val in nb._sorted_values:
                 pth = Path(val.path).relative_to(Path.cwd())
@@ -392,6 +397,12 @@ def main():
         action="count",
         help=" -q means no sphinx status, -qq also turns off warnings",
         default=0,
+    )
+    subp["build"].add_argument(
+        "--dev",
+        action="store_true",
+        help="Build development notebooks (only)",
+        default=False
     )
     subp["gui"].add_argument("--console", "-c", action="store_true", dest="console")
     subp["gui"].add_argument("--stderr", "-e", action="store_true", default=False,

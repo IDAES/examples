@@ -14,7 +14,7 @@ src_suffix = "_src"
 src_suffix_len = 4
 
 
-NB_ROOT = "nb"  # root folder name
+NB_ROOT = "notebooks"  # root folder name
 NB_CELLS = "cells"  # key for list of cells in a Jupyter Notebook
 NB_META = "metadata"  # notebook-level metadata key
 NB_IDAES, NB_SKIP = "idaes", "skip" # key and sub-key for notebook skipping

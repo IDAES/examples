@@ -1,0 +1,8 @@
+format: jb-book
+parts:
+- caption: Testing
+  chapters:
+    - file: ex/index
+      sections:
+      - file: ex/notebook_tags_example_doc
+root: index
