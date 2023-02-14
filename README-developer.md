@@ -37,9 +37,7 @@ The examples are divided into a few top-level directories.
 * `notebooks`: All the active/tested Jupyter notebooks and supporting data
   * `docs`: Examples and tutorials that will be tested and also published in the online documentation.
   * `active`: Not published but tested against new PRs
-  * `_dev`: Notebooks for developers only.
-  Currently, a set of noteboooks demonstrating cell tags (see top-level 
-    `README.md` for details).
+  * `_dev`: Notebooks used as examples for development and testing only.
 * `archive`: Not published and *not* tested. Just for historical interest.
 * `mod`: Supporting Python modules (as a Python package).  
   It is usually best to match the name of the Python subpackage with its notebook directory.
@@ -214,12 +212,12 @@ Each source Jupyter notebook (ending in '_src.ipynb') is preprocessed to create 
 
 ### Jupyter Notebook cell tags
 
-Preprocessing uses the feature of Jupyter notebook [cell tags][celltags] to understand which additional notebooks to create.
+Preprocessing uses the feature of Jupyter notebook [cell tags][celltags] to understand which additional notebooks to 
+create.
 
 The following tags are understood by the preprocessing step:
 
 <a name="table-nbtags"></a>
-
 
 * testing: Remove this cell, except in the *testing* notebooks
 * exercise: The presence of this tag means a notebook is a tutorial.
@@ -232,6 +230,13 @@ The following tags are understood by the preprocessing step:
     notebook execution. The cell will be removed in all notebooks **except** _testing_ and _documentation_.         
 
 All other tags, including the standard [Jupyterbook tags][hidecell] for hiding or removing cells, will be ignored.
+
+#### Cell tags tutorial
+
+An example of these tags, with a tutorial on how to set them, is in the `_dev/notebooks/ex/notebook_tags_example_src.
+ipynb` 
+notebook. In this directory the pre-processed output notebooks have been added to Git so you can see what they look 
+like (without having to run `idaesx pre` yourself).
 
 ### Jupyter notebook metadata
 
