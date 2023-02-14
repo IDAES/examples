@@ -238,6 +238,10 @@ ipynb`
 notebook. In this directory the pre-processed output notebooks have been added to Git so you can see what they look 
 like (without having to run `idaesx pre` yourself).
 
+You can see the results by building the development notebooks into a documentation tree with `idaesx build 
+--dev` (from the same directory you would normally run).
+The output will be in `_dev/notebooks/_build/html`.
+
 ### Jupyter notebook metadata
 
 In addition to per-cell tags, the preprocessor also can look at notebook-level metadata.
