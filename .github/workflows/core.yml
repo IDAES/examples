@@ -1,0 +1,95 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - main
+  repository_dispatch:
+    # to run this, send a POST API call at repos/IDAES/idaes-pse/dispatches with the specified event_type
+    # e.g. `gh repos/IDAES/idaes-pse/dispatches -F event_type=ci_run_tests`
+    types: [ci_run_tests]
+  workflow_dispatch:
+    inputs:
+      git-ref:
+        description: Git hash (optional)
+        required: false
+  pull_request:
+    types:
+      - opened
+      # ready_for_review occurs when a draft PR is turned to non-draft
+      - ready_for_review
+      # synchronize occurs whenever commits are pushed to the PR branch
+      - synchronize
+
+concurrency:
+  # NOTE: the value of `group` should be chosen carefully,
+  # otherwise we might end up over- or under-canceling workflow runs
+  # e.g. if we want to have Codecov results for each commit on `main`,
+  # we should use something `github.sha` instead of `github.ref_name`
+  # to avoid over-canceling runs from `main`
+  # in which case we'd need to access the PR number from somewhere else rather than `github.ref_name`
+  # to avoid under-canceling runs from PRs
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
+
+env:
+  # default Python version to use for checks that do not require multiple versions
+  DEFAULT_PYTHON_VERSION: '3.8'
+  IDAES_CONDA_ENV_NAME_DEV: idaes-examples-dev
+  PYTEST_ADDOPTS: "--color=yes"
+
+defaults:
+  run:
+    # -l: login shell, needed when using Conda run:
+    shell: bash -l {0}
+
+jobs:
+  pytest:
+    # description: Run pytest with dev dependencies
+    name: pytest (py${{ matrix.python-version }}/${{ matrix.os }})
+    runs-on: ${{ matrix.runner-image }}
+#    needs: [code-formatting]
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - '3.8'
+#          - '3.9'
+#          - '3.10'
+#          - '3.11'
+        os:
+          - linux
+          - win64
+        include:
+          - os: linux
+            runner-image: ubuntu-20.04
+          - os: win64
+            runner-image: windows-2022
+#          - python-version: '3.8'
+#            # only generate coverage report for a single python version in the matrix
+#            # to avoid overloading Codecov
+#            cov-report: true
+    steps:
+      - uses: actions/checkout@v2
+#      - uses: ./.github/actions/display-debug-info
+      - name: Set up Conda environment
+        uses: conda-incubator/setup-miniconda@v2.1.1
+        with:
+          activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
+          python-version: ${{ matrix.python-version }}
+      - name: Set up idaes
+        uses: ./.github/actions/setup
+        with:
+          install-target: .[dev]
+#      - name: Add pytest CLI options for coverage
+#        if: matrix.cov-report
+#        run: |
+#          echo PYTEST_ADDOPTS="$PYTEST_ADDOPTS --cov --cov-report=xml" >> "$GITHUB_ENV"
+      - name: Run pytest
+        run: |
+          pytest -v
+#      - name: Upload coverage report to Codecov
+#        if: matrix.cov-report
+#        uses: codecov/codecov-action@v2
+#        with:
+#          fail_ci_if_error: true
