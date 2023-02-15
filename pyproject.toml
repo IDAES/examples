@@ -1,7 +1,8 @@
 [build-system]
 requires = [
     "setuptools>=61",
-    "wheel"
+    "wheel",
+    "setuptools_scm[toml]"
 ]
 build-backend = "setuptools.build_meta"
 
@@ -109,27 +110,6 @@ idaes_examples = [
     "*.index",  # for Keras Surrogate folder
     "*.trc",
     "*.xlsx",  # idaes/dmf/tests/data_files - tabular import test files
-]
-
-[tool.pytest.ini_options]
-minversion = "7.0"
-# The '--ignore-glob' args make sure only notebooks
-# ending in _test.ipynb are run
-addopts = """\
-     -n=auto \
-     --nbmake \
-     --nbmake-timeout=1200 \
-     --ignore-glob=*_doc.ipynb \
-     --ignore-glob=*_exercise.ipynb \
-     --ignore-glob=*_solution.ipynb \
-     --ignore-glob=*_src*.ipynb \
-     --ignore-glob=*_usr.ipynb \
-     --ignore-glob=*_usr.ipynb \
-     --report-log=pytest-report.log\
-"""
-norecursedirs = ["my_workspace", ".ipynb_checkpoints"]
-testpaths = [
-    "idaes_examples/notebooks/docs",
-    "idaes_examples/notebooks/active",
-    "idaes_examples/mod"
+    "*.yml",
+    "*.yaml"
 ]
