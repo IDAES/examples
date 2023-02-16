@@ -40,9 +40,10 @@ build-backend = "setuptools.build_meta"
     dependencies = [
         # Keep setuptools behavior relatively predictable(?)
         "setuptools~=63.4.1",
-        # "idaes-pse",
-        # "idaes-pse>=2.0.0a3",
-        "idaes-pse @ git+https://github.com/IDAES/idaes-pse",
+        # Get IDAES from last release. NOTE: [dev] overrides this!
+        "idaes-pse",
+        # Pyomo
+        "pyomo>=6.5.0",
         # For the small embedded GUI
         "PySimpleGUI~=4.60.4",
         "tkhtmlview==0.1.1.post5",
@@ -53,6 +54,8 @@ build-backend = "setuptools.build_meta"
 
 [project.optional-dependencies]
 dev = [
+    # Get IDAES out of main
+    "idaes-pse @ git+https://github.com/IDAES/idaes-pse",
     "jupyter-book ~= 0.13.1",
     # "jupyter-cache ~= 0.4.3",
     "jupyter-cache",
