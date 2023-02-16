@@ -10,7 +10,8 @@ parts:
   - file: docs/flowsheets/index
     sections:
     - file: docs/flowsheets/hda_flowsheet_with_costing_doc
-    - file: docs/flowsheets/hda_flowsheet_with_distillation_doc
+# temporarily archived 2/16/23 -dang
+#    - file: docs/flowsheets/hda_flowsheet_with_distillation_doc
     - file: docs/flowsheets/methanol_synthesis_doc
   - file: docs/flowsheets/CO2_adsorption_desorption
     sections:
