@@ -79,7 +79,12 @@ jobs:
           pwd
           ls idaes_examples
           pytest -v idaes_examples
-      - name: Upload pytest logs
+      - name: Upload pytest report log
+        uses: actions/upload-artifact@v3
+        with:
+          name: pytest_report
+          path: pytest-report.log
+      - name: Upload pytest-xdist worker logs
         uses: actions/upload-artifact@v3
         with:
           name: pytest_worker_logs
