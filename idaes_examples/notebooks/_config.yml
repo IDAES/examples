@@ -6,6 +6,7 @@ execute:
   execute_notebooks: auto
   timeout: 600
 only_build_toc_files: true
+exclude_patterns: [active/*]
 
 # Add citations in this file
 bibtex_bibfiles:
