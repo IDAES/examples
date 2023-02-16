@@ -88,4 +88,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: pytest_worker_logs
-          path: tests_*.log
+          path: "tests_*.log"
