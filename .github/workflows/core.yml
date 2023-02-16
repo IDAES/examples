@@ -77,5 +77,4 @@ jobs:
           install-target: .
       - name: Run pytest
         run: |
-          echo "Conda: $CONDA_PREFIX"
-          pytest -v ${CONDA_PREFIX}/lib/site-packages/idaes_examples
+          pytest -v idaes_examples
