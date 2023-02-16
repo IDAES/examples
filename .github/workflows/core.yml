@@ -74,7 +74,7 @@ jobs:
       - name: Install the code
         uses: ./.github/actions/install
         with:
-          install-target: .[dev]
+          install-target: .
       - name: Run pytest
         run: |
-          pytest -v
+          pytest -v ${CONDA_PREFIX}/lib/site-packages/idaes_examples
