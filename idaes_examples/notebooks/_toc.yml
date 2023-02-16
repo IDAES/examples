@@ -31,7 +31,7 @@ parts:
     - file: docs/custom/unit_models/custom_heater_doc
   - file: active/power_gen/ngcc/index
     sections:
-    - file: active/power_gen/ngcc/ngcc_soec_doc
+#    - file: active/power_gen/ngcc/ngcc_soec_doc
     - file: active/power_gen/ngcc/ngcc_doc
   # Surrogates
   - file: docs/surrogates/index
