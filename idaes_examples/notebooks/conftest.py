@@ -9,9 +9,15 @@ import logging
 import os
 from typing import List
 import pytest
+import time
 
 
 logging.basicConfig()
+
+
+def is_master():
+    worker = os.environ.get("PYTEST_XDIST_WORKER", "gw?")
+    return worker == "gw0"
 
 
 class NotebookPrep:
@@ -20,7 +26,7 @@ class NotebookPrep:
 
     worker_logs = {}
 
-    num_pre = -1
+    num_pre = 0
     num_test = 0
     num_coll = 0
 
@@ -50,7 +56,9 @@ class NotebookPrep:
                     fmt = "%(asctime)s %(name)s: %(message)s"
                 log = logging.getLogger(f"pytest_worker_{worker_id}")
                 log.setLevel(level)
-                h = logging.FileHandler(f"tests_{worker_id}.log")
+                logname = f"tests_{worker_id}.log"
+                Path(logname).unlink(True)
+                h = logging.FileHandler(logname)
                 h.setFormatter(logging.Formatter(fmt))
                 log.addHandler(h)
                 cls.worker_logs[worker_id] = log
@@ -59,11 +67,25 @@ class NotebookPrep:
     @classmethod
     def configure(cls, config: pytest.Config):
         log = cls.get_log(config)
-        if cls.num_pre < 0:
-            log.info("Preprocessing Jupyter notebooks")
-            cls.num_pre = 0
-            p = Path(build.__file__).parent
+        if is_master():
+            p = config.rootpath
+            log.info(f"Preprocessing Jupyter notebooks in {p}")
             cls.num_pre = build.preprocess(p)
+            # Write a marker file to indicate preprocessing is done
+            with open("pytest_pre.txt", "w") as f:
+                pass
+        else:
+            start_time, count = time.time(), 1
+            while True:
+                log.info(f"({count}) Wait for preprocessing")
+                time.sleep(1)
+                # Look for marker file that is relatively recent
+                p = Path("pytest_pre.txt")
+                if p.exists() and p.stat().st_ctime < start_time + 60:
+                    log.info(f"Preprocessing is complete")
+                    break
+                # Otherwise loop
+                count += 1
 
     @classmethod
     def filter_notebooks(cls, items: List):
