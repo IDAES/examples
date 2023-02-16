@@ -80,11 +80,13 @@ jobs:
           ls idaes_examples
           pytest -v idaes_examples
       - name: Upload pytest report log
+        if: success() || failure()
         uses: actions/upload-artifact@v3
         with:
           name: pytest_report
           path: pytest-report.log
       - name: Upload pytest-xdist worker logs
+        if: success() || failure()
         uses: actions/upload-artifact@v3
         with:
           name: pytest_worker_logs
