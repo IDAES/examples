@@ -61,9 +61,6 @@ Python modules should go under an appropriate subpackage under `mod`.
 
 ## Running tests
 
-There are two ways to run tests: running all the notebooks (integration tests), and 
-testing that notebooks work without running all their code (unit tests).
-
 ### Integration tests
 
 Run integration tests from the top-level (root) directory of the repository.
@@ -71,32 +68,18 @@ In the root directory, tests are configured by `pyproject.toml`; see the *tool.p
 
 ```shell
 # from the root directory of the repository
-pytest
-```
-If you want to *exclude* certain notebooks from the integration tests, see the _Preprocessing -> Jupyter notebook metadata_ section.
-
-### Unit tests
-
-Run unit tests from the `idaes_examples` directory of the repository.
-In the idaes_examples directory, tests are configured by `idaes_examples/pytest.ini`. 
-To run the **unit tests** change to do the `idaes_examples` directory, then run the same command:
-
-```shell
-cd idaes_examples
-pytest
+pytest idaes_examples
 ```
 
 #### Testing a subset of the notebooks
 
-To test just one notebook, you need to (a) make sure the correct configuration file is picked up,
-e.g., even if you're not in the root directory and (b) use the name of the *test* notebook not the source.
-
+To test just one notebook, you need to use the name of the *test* notebook not the source.
 For example, to test the `compressor_src.ipynb` notebook (in the `unit_models/operations` subdirectory)
 you need to add `-c` and the path to the top-level *pyproject.toml*, which has the pytest configuration,
 then use the name of the test notebook:
 
 ```shell
-pytest -c ~\path/to/idaes-examples/pyproject.toml -v compressor_test.ipynb
+pytest -v idaes_examples/notebooks/docs/unit_models/operations/compressor_test.ipynb
 ```
 
 If you want to test several related notebooks, or perhaps just not type the whole notebook filename,
@@ -105,7 +88,7 @@ So, for example, from the top-level directory if you want to test all the *docs/
 you could take advantage of the fact that "operations" appears only in this particular path:
 
 ```shell
-pytest -k operations
+pytest -v idaes_examples -k operations
 # will match: 
 # docs/unit_models/operations/compressor_test.ipynb
 # docs/unit_models/operations/heat_exchanger_0d_test.ipynb
