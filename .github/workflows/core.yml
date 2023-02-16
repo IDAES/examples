@@ -77,4 +77,6 @@ jobs:
           install-target: .[dev]
       - name: Run pytest
         run: |
+          pwd
+          ls idaes_examples
           pytest -v idaes_examples
