@@ -47,7 +47,9 @@ build-backend = "setuptools.build_meta"
         "PySimpleGUI~=4.60.4",
         "tkhtmlview==0.1.1.post5",
         "Markdown~=3.4.1",
-        "tensorflow"
+        "tensorflow",
+        # Fix OMLT version to match IDAES
+        "omlt==0.3.1"
     ]
     keywords = ["IDAES", "energy systems", "chemical engineering", "process modeling"]
 
