@@ -48,7 +48,8 @@ please reach out to us. Our primary public forum is the
 [idaes-pse discussions page](https://github.com/IDAES/idaes-pse/discussions),
 where you can post questions and also see if others have had a similar
 problem. You may also contact us directly by sending email to 
-[help@idaes.org] 
+[idaes-support@idaes.org](mailto:idaes-support@idaes.org).
+
 
 ## Bibliography
 
