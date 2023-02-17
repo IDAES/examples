@@ -10,6 +10,8 @@ build:
       - "idaesx pre"
       # Generate the Sphinx configuration for this Jupyter Book, so it builds.
       - "jupyter-book config sphinx idaes_examples/notebooks/"
+      # Install IDAES extensions
+      - "idaes get-extensions"
 
 python:
   install:
