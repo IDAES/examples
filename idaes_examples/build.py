@@ -83,7 +83,7 @@ nb_file_subs[Ext.DOC.value] = f"\\1_{Ext.DOC.value}.md"
 
 
 def _preprocess(nb_path: Path, **kwargs):
-    _log.info(f"Preprocess: {nb_path}")
+    _log.info(f"File: {nb_path}")
 
     def ext_path(p: Path, ext: Ext = None, name: str = None) -> Path:
         """Return new path with extension changed."""
@@ -94,15 +94,19 @@ def _preprocess(nb_path: Path, **kwargs):
 
     t0 = time.time()
 
-    # Check whether source was changed after any of the derived notebooks
+    # Check whether source was changed after the derived notebooks.
+    # Only consider types of derived notebooks that are always generated.
     src_mtime, changed = nb_path.stat().st_mtime, False
-    for ext in Ext:
+    for ext in (Ext.DOC, Ext.USER):
         p_ext = ext_path(nb_path, ext=ext)
-        if not p_ext.exists() or p_ext.stat().st_mtime <= src_mtime:
+        ext_mtime = p_ext.stat().st_mtime
+        if not p_ext.exists() or ext_mtime <= src_mtime:
             changed = True
             break
-    if not changed:
-        _log.info(f"Skip preprocessing notebook {nb_path} (source unchanged)")
+    if changed:
+        _log.debug(f"=> Preprocess {nb_path} (source changed)")
+    else:
+        _log.info(f"=> Skip {nb_path} (source unchanged)")
         return
 
     # Load input file
