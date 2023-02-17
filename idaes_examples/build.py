@@ -99,8 +99,7 @@ def _preprocess(nb_path: Path, **kwargs):
     src_mtime, changed = nb_path.stat().st_mtime, False
     for ext in (Ext.DOC, Ext.USER):
         p_ext = ext_path(nb_path, ext=ext)
-        ext_mtime = p_ext.stat().st_mtime
-        if not p_ext.exists() or ext_mtime <= src_mtime:
+        if not p_ext.exists() or p_ext.stat().st_mtime <= src_mtime:
             changed = True
             break
     if changed:
