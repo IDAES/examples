@@ -29,7 +29,8 @@ parts:
     sections:
     - file: docs/custom/unit_models/custom_compressor_doc
     - file: docs/custom/unit_models/custom_heater_doc
-  # note: directory active/ will not be included in the docs
+  # note: directory active/ will not be included in the docs, but
+  # it is kept here so it is visible to the 'idaesx' command (e.g. for preprocessing or browsing)
   - file: active/power_gen/ngcc/index
     sections:
     - file: active/power_gen/ngcc/ngcc_soec_doc
