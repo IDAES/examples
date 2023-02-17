@@ -1,7 +1,6 @@
 format: jb-book
 parts:
-- caption: Flowsheets
-  chapters:
+- chapters:
   - file: docs/dae/index
     sections:
     - file: docs/dae/petsc_chem_doc
@@ -13,7 +12,7 @@ parts:
 # temporarily archived 2/16/23 -dang
 #    - file: docs/flowsheets/hda_flowsheet_with_distillation_doc
     - file: docs/flowsheets/methanol_synthesis_doc
-  - file: docs/flowsheets/CO2_adsorption_desorption
+  - file: docs/flowsheets/CO2_adsorption_desorption/index
     sections:
       - file: docs/flowsheets/CO2_adsorption_desorption/CO2_Adsorption_Desorption_1DFixedBed_doc
   - file: docs/diagnostics/index
@@ -26,10 +25,11 @@ parts:
     - file: docs/custom/properties/custom_reaction_property_packages_doc
     - file: docs/custom/properties/dictionary_txy_diagrams_doc
     - file: docs/custom/properties/parameter_estimation_pr_doc
-  - file: docs/custom/unit_models/custom/index
+  - file: docs/custom/unit_models/index
     sections:
     - file: docs/custom/unit_models/custom_compressor_doc
     - file: docs/custom/unit_models/custom_heater_doc
+  # note: directory active/ will not be included in the docs
   - file: active/power_gen/ngcc/index
     sections:
     - file: active/power_gen/ngcc/ngcc_soec_doc
