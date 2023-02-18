@@ -6,14 +6,8 @@ build:
     python: "3.8"
   jobs:
     pre_build:
-      # Generate variations on the base notebook files, in particular one for docs.
-      - "idaesx pre"
-      # Generate the Sphinx configuration for this Jupyter Book, so it builds.
-      - "jupyter-book config sphinx idaes_examples/notebooks/"
-      # Install IDAES extensions
-      - "idaes get-extensions --extra petsc --verbose"
-      # Try and set up the path to include the IDAES ipopt (et al.)
-      - 'ib="$(idaes bin-directory)" && export PATH="${PATH}:$ib"'
+      # Turn off notebook execution (will use saved '*_doc.ipynb' files)
+      - "idaesx conf --execute off"
 
 python:
   install:
