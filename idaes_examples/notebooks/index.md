@@ -18,15 +18,16 @@ The examples in this documentation show how to create, configure, and solve IDAE
 Some of the examples are written in a tutorial style with separate "exercise" and "solution" sections to
 facilitate use in a group setting.
 
-All the examples are written in Python as [Jupyter](https://jupyter.org) notebooks.
-You can browse these notebooks online or download and run them locally on your own machine.
+All of the examples are written in Python as [Jupyter](https://jupyter.org) notebooks.
+You can browse these notebooks online or download them to and run on your own machine.
 The online examples have been created with the 
 [JupyterBook](https://jupyterbook.org) software package.
 
 ### Prerequisites
 
-Examples in this documentation are rigorously *tested* to ensure that work with the *latest* version of the IDAES 
-software. For more information on installing IDAES on your platform,
+Examples in this documentation are rigorously *tested* to ensure that they work with the *latest* version of the IDAES 
+software. 
+For more information on installing IDAES on your platform,
 please refer to the [IDAES documentation](https://idaes-pse.readthedocs.io/en/latest/index.html).
 
 ### Getting the source code
