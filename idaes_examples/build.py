@@ -11,6 +11,7 @@ import sys
 import time
 import traceback
 import webbrowser
+import yaml
 
 # package
 from idaes_examples.util import (
@@ -200,6 +201,7 @@ def _clean(nb_path: Path, **kwargs):
             _log.debug(f"Remove generated file '{gen_path}'")
             gen_path.unlink()
 
+
 # ---------------
 # List skipped
 # ---------------
@@ -213,8 +215,9 @@ def skipped(srcdir=None):
 
     # print results in 'smap'
     # - get column-width for tags
-    max_len = max((sum((len(tag) for tag in v)) + (2 * (len(v) - 1))
-                   for v in smap.values()))
+    max_len = max(
+        (sum((len(tag) for tag in v)) + (2 * (len(v) - 1)) for v in smap.values())
+    )
     # - print each result
     print()
     for k in sorted(list(smap.keys())):
@@ -233,6 +236,7 @@ def _skipped(nb_path: Path, smap=None, **kwargs):
         if skipped:
             smap[nb_path] = sorted(skipped)
 
+
 # -------------
 # Black
 # -------------
@@ -243,6 +247,7 @@ def black(srcdir=None):
     commandline = ["black", "--include", ".*_src\\.ipynb", str(src_path)]
     add_vb_flags(_log, commandline)
     check_call(commandline)
+
 
 # --------------------
 #  Jupyterbook (build)
@@ -308,10 +313,80 @@ class Commands:
         sfx = " [dev]" if args.dev else ""
         if not args.no_pre:
             cls.heading(f"Pre-process notebooks{sfx}")
-            cls._run(f"pre-process notebooks{sfx}", preprocess, srcdir=args.dir, dev=args.dev)
+            cls._run(
+                f"pre-process notebooks{sfx}", preprocess, srcdir=args.dir, dev=args.dev
+            )
         cls.heading(f"Build Jupyterbook{sfx}")
-        result = cls._run(f"build jupyterbook{sfx}", jupyterbook, srcdir=args.dir, quiet=args.quiet, dev=args.dev)
+        result = cls._run(
+            f"build jupyterbook{sfx}",
+            jupyterbook,
+            srcdir=args.dir,
+            quiet=args.quiet,
+            dev=args.dev,
+        )
         return result
+
+    @classmethod
+    def conf(cls, args):
+        root_dir = allow_repo_root(Path(args.dir), main)
+        config_file = root_dir / NB_ROOT / "_config.yml"
+        if not config_file.exists():
+            _log.error(f"Config file not found at: {config_file}")
+            _log.error(
+                f"Root directory can be set with '-d/--dir'. Current value: {root_dir.absolute()}"
+            )
+            return -1
+
+        if args.execute is None and args.timeout is None:
+            print("# --------------------------------")
+            with config_file.open("r", encoding="utf-8") as f:
+                for line in f:
+                    print(line, end="")
+            print("# --------------------------------")
+            return 0
+
+        with config_file.open("r", encoding="utf-8") as f:
+            conf = yaml.safe_load(f)
+        changed = False
+        # execute notebooks option
+        if args.execute is not None:
+            keys = ("execute", "execute_notebooks")
+            key_name = ".".join(keys)
+            allowed_values = {"auto", "force", "cache", "off"}
+            value = args.execute.lower()
+            if value not in allowed_values:
+                _log.error(f"Value {value} not in allowed: {allowed_values}")
+                return -1
+            try:
+                exec_nb = conf[keys[0]][keys[1]]
+            except KeyError:
+                _log.error(f"No key {key_name} found in: {config_file}")
+                return -1
+            if exec_nb == value:
+                _log.warning(f"Value for {key_name} is the same: {value}")
+            else:
+                _log.info(
+                    f"Changing value for {key_name} from '{exec_nb}' to '{value}'"
+                )
+                conf[keys[0]][keys[1]] = value
+                changed = True
+        # timeout option
+        if args.timeout is not None:
+            keys = ("execute", "timeout")
+            key_name = ".".join(keys)
+            value = args.timeout
+            if value < 5 or value > 60 * 60 * 24:
+                _log.error(
+                    f"Timeout value must be between 5 seconds and a day, got: {value}"
+                )
+                return -1
+            conf[keys[0]][keys[1]] = value
+            changed = True
+
+        if changed:
+            _log.info(f"Writing modified Jupyterbook config to file: {config_file}")
+            with config_file.open("w", encoding="utf-8") as f:
+                yaml.dump(conf, f)
 
     @classmethod
     def view(cls, args):
@@ -331,6 +406,7 @@ class Commands:
     @classmethod
     def gui(cls, args):
         from idaes_examples import browse
+
         browse._log.setLevel(_log.getEffectiveLevel())
         nb = browse.Notebooks()
         if args.console:
@@ -376,12 +452,13 @@ def main():
     subp = {}
     for name, desc in (
         ("pre", "Pre-process notebooks"),
+        ("conf", "Modify Jupyterbook configuration"),
         ("build", "Build Jupyterbook"),
         ("view", "View Jupyterbook"),
         ("clean", "Remove generated files"),
         ("black", "Format code in notebooks with Black"),
         ("gui", "Graphical notebook browser"),
-        ("skipped", "List notebooks tagged to skip some pre-processing")
+        ("skipped", "List notebooks tagged to skip some pre-processing"),
     ):
         subp[name] = commands.add_parser(name, help=desc)
         subp[name].add_argument(
@@ -405,13 +482,32 @@ def main():
         "--dev",
         action="store_true",
         help="Build development notebooks (only)",
-        default=False
+        default=False,
+    )
+    subp["conf"].add_argument(
+        "--execute",
+        dest="execute",
+        default=None,
+        help=f"Set JB config execute.execute_notebooks value",
+    )
+    subp["conf"].add_argument(
+        "--timeout",
+        dest="timeout",
+        type=int,
+        default=None,
+        help=f"Set JB config execute.timeout value",
     )
     subp["gui"].add_argument("--console", "-c", action="store_true", dest="console")
-    subp["gui"].add_argument("--stderr", "-e", action="store_true", default=False,
-                             dest="log_console", help="Print logs to the console "
-                                                      "(stderr) instead of redirecting "
-                                                      "them to a file in ~/.idaes/logs")
+    subp["gui"].add_argument(
+        "--stderr",
+        "-e",
+        action="store_true",
+        default=False,
+        dest="log_console",
+        help="Print logs to the console "
+        "(stderr) instead of redirecting "
+        "them to a file in ~/.idaes/logs",
+    )
     args = p.parse_args()
     subvb = getattr(args, f"vb_{args.command}")
     if subvb != args.vb:
