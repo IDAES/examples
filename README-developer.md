@@ -22,7 +22,7 @@ Clone the repository from Github, setup your Python environment as you usually d
 ```shell
 # to create a conda environment first:
 # conda create -n idaes-examples python=3; conda activate idaes-examples
-pip install -e .[dev]
+pip install -e .[dev,jb]
 ```
 
 The configuration of the installation is stored in `pyproject.toml`.

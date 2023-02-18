@@ -6,6 +6,8 @@ build:
     python: "3.8"
   jobs:
     pre_build:
+      # Create the _doc notebooks
+      - idaesx pre -v
       # Turn off notebook execution (will use saved '*_doc.ipynb' files)
       - idaesx conf -v --execute cache --timeout 600
       - idaesx conf
@@ -14,7 +16,7 @@ python:
     - method: pip
       path: .
       extra_requirements:
-        - dev
+        - jb
 
 sphinx:
   builder: html

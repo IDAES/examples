@@ -48,14 +48,26 @@ build-backend = "setuptools.build_meta"
         "PySimpleGUI~=4.60.4",
         "tkhtmlview==0.1.1.post5",
         "Markdown~=3.4.1",
-        "tensorflow"
     ]
     keywords = ["IDAES", "energy systems", "chemical engineering", "process modeling"]
 
 [project.optional-dependencies]
+# Just for developers (they should also add 'jb')
 dev = [
-    # Get IDAES out of main
+    # IDAES
     "idaes-pse @ git+https://github.com/IDAES/idaes-pse",
+    # parallel pytest
+    "pytest-xdist ~= 3.0.2",
+    # pytest reporting
+    "pytest-reportlog ~= 0.1.2",
+    # For jupyter notebook testing
+    "black[jupyter] ~= 22.8.0",
+    # For adding copyright headers (see addheader.yml and the readme)
+    "addheader >= 0.3.0",
+    "tensorflow"
+]
+# For Jupyterbook (e.g. readthedocs builds)
+jb = [
     "jupyter-book ~= 0.13.1",
     # "jupyter-cache ~= 0.4.3",
     "jupyter-cache",
@@ -67,14 +79,6 @@ dev = [
     # markdown in Sphinx
     "myst-nb ~= 0.13.2",
     "myst-parser ~= 0.15.2",
-    # parallel pytest
-    "pytest-xdist ~= 3.0.2",
-    # pytest reporting
-    "pytest-reportlog ~= 0.1.2",
-    # For jupyter notebook testing
-    "black[jupyter] ~= 22.8.0",
-    # For adding copyright headers (see addheader.yml and the readme)
-    "addheader >= 0.3.0"
 ]
 
 [project.urls]
