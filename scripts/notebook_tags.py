@@ -11,6 +11,7 @@ from idaes_examples.util import NB_META
 # dict keys
 IDAES, SKIP = "idaes", "skip"
 
+
 class Actions(Enum):
     add = "add"
     remove = "remove"
@@ -82,29 +83,29 @@ def main():
     args = p.parse_args()
     matches = get_action(args.action)
     if len(matches) == 0:
-        p.error(f"Action '{args.action}' not recognized")
+        p.error(f"!! Action '{args.action}' not recognized")
     elif len(matches) > 1:
-        p.error(f"Action '{args.action}' is ambiguous")
+        p.error(f"!! Action '{args.action}' is ambiguous")
     action = matches[0]
 
     # load notebook
-    print(f"| Load notebook '{args.notebook}'")
+    print(f"-> Load notebook '{args.notebook}'")
     with open(args.notebook, mode="r", encoding="utf-8") as nb_file:
         nb_data = json.load(nb_file)
 
     # run
-    print(f"| Perform action: {action.value}")
+    print(f"-> Perform action: {action.value}")
     if action == Actions.show:
         show_tags(nb_data)
     else:
         ok = modify_tags(nb_data, tags=args.tags, action=action)
         if ok:
             # if modified, write back new data
-            print("| Writing back changed notebook")
+            print("-> Writing back changed notebook")
             with open(args.notebook, mode="w", encoding="utf-8") as nb_file:
                 json.dump(nb_data, nb_file)
         else:
-            print("Notebook tags not changed")
+            print("__ Notebook tags not changed")
 
     return 0
 
