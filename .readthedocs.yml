@@ -13,7 +13,7 @@ build:
       # Install IDAES extensions
       - "idaes get-extensions --extra petsc --verbose"
       # Try and set up the path to include the IDAES ipopt (et al.)
-      - "export PATH=${PATH}:`idaes bin-directory`"
+      - 'ib="$(idaes bin-directory)" && export PATH="${PATH}:$ib"'
 
 python:
   install:
