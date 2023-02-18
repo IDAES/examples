@@ -38,8 +38,8 @@ It may also be installed as a Python package from [PyPI](https://pypi.org/) with
 pip install idaes-examples
 ```
 
-Please see the [README](https://github.com/IDAES/examples/README.md) file
-in the repository for more information.
+Please see the `README.md` file
+in the [repository](https://github.com/IDAES/examples) for more information.
 
 ## Getting help
 
