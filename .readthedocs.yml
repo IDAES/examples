@@ -7,7 +7,8 @@ build:
   jobs:
     pre_build:
       # Turn off notebook execution (will use saved '*_doc.ipynb' files)
-      - "idaesx conf --execute off"
+      - idaesx conf -v --execute off
+      - idaesx conf
 
 python:
   install:
