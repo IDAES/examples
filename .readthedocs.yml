@@ -9,7 +9,8 @@ build:
       # Turn off notebook execution (will use saved '*_doc.ipynb' files)
       - idaesx conf -v --execute off
       - idaesx conf
-
+    post_build:
+      - cat /home/docs/checkouts/readthedocs.org/user_builds/idaes-examples/checkouts/*/_readthedocs/html/reports/*_doc.log
 python:
   install:
     - method: pip
