@@ -4,7 +4,8 @@ parts:
   - file: docs/dae/index
     sections:
     - file: docs/dae/petsc_chem_doc
-    - file: docs/dae/petsc_pid_doc
+    # Moved to archive due to pid.create_model() errors
+    # - file: docs/dae/petsc_pid_doc
   # Flowsheets
   - file: docs/flowsheets/index
     sections:
@@ -74,7 +75,8 @@ parts:
     sections:
     - file: docs/tut/flash_unit_doc
     - file: docs/tut/hda_flowsheet_doc
-    - file: docs/tut/introduction_short_doc
-    - file: docs/tut/introduction_doc
+    # Moved to archive until their imports can be fixed
+    # - file: docs/tut/introduction_short_doc
+    # - file: docs/tut/introduction_doc
     - file: docs/tut/visualizer_tutorial_doc
 root: index

@@ -98,11 +98,13 @@ def _preprocess(nb_path: Path, **kwargs):
     # Check whether source was changed after the derived notebooks.
     # Only consider types of derived notebooks that are always generated.
     src_mtime, changed = nb_path.stat().st_mtime, False
-    for ext in (Ext.DOC, Ext.USER):
+    for ext in (Ext.DOC, Ext.USER, Ext.TEST):
         p_ext = ext_path(nb_path, ext=ext)
         if not p_ext.exists() or p_ext.stat().st_mtime <= src_mtime:
             changed = True
             break
+
+    # Stop if no changes (only now do we really know)
     if changed:
         _log.debug(f"=> Preprocess {nb_path} (source changed)")
     else:
@@ -143,6 +145,12 @@ def _preprocess(nb_path: Path, **kwargs):
     is_tutorial = had_tag & {Tags.EX, Tags.SOL}
     if is_tutorial:
         nb_names.extend([Ext.EX.value, Ext.SOL.value])
+        # Also check these files for changes
+        for ext in (Ext.EX, Ext.SOL):
+            p_ext = ext_path(nb_path, ext=ext)
+            if not p_ext.exists() or p_ext.stat().st_mtime <= src_mtime:
+                changed = True
+                break
 
     # allow notebook metadata to skip certain outputs (e.g. 'test')
     if NB_IDAES in nb[NB_META]:
