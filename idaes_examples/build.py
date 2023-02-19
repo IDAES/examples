@@ -294,16 +294,7 @@ def view_docs(srcdir=None):
 # ----------------
 #  Modify config
 # ----------------
-def modify_conf(config_file=None, execute=None, timeout=None):
-    # With no flags, print current config contents and stop
-    if execute is None and timeout is None:
-        print("# " + "-" * 50)
-        with config_file.open("r", encoding="utf-8") as f:
-            for line in f:
-                print(line, end="")
-        print("# " + "-" * 50)
-        return 0
-
+def modify_conf(config_file=None, show=False, execute=None, timeout=None, sphinx=False):
     # Load configuration file
     with config_file.open("r", encoding="utf-8") as f:
         conf = yaml.safe_load(f)
@@ -320,23 +311,43 @@ def modify_conf(config_file=None, execute=None, timeout=None):
         if orig != value:
             _log.info(f"Set value for {name} from '{orig}' to '{value}'")
             conf[k1][k2] = value
+            return True
+        return False
 
     # Set values, aborting on missing keys
     try:
-        update_value(execute, "execute", "execute_notebooks")
-        update_value(timeout, "execute", "timeout")
+        changed = update_value(execute, "execute", "execute_notebooks") or update_value(
+            timeout, "execute", "timeout"
+        )
     except KeyError:
         return -1
 
     # Update configurations
-    _log.info(f"Writing modified Jupyterbook config to file: {config_file}")
-    with config_file.open("w", encoding="utf-8") as f:
-        yaml.dump(conf, f)
-    _log.info(f"Updating Sphinx config file")
-    commandline = ["jupyter-book", "config", "sphinx", str(config_file.parent)]
-    check_call(commandline)
+    if changed:
+        Commands.subheading(f"Writing modified Jupyterbook config to file: {config_file}")
+        with config_file.open("w", encoding="utf-8") as f:
+            yaml.dump(conf, f)
+    if sphinx:
+        Commands.subheading(f"Updating Sphinx config file")
+        commandline = ["jupyter-book", "config", "sphinx", str(config_file.parent)]
+        check_call(commandline)
+
+    if show:
+        def file_hdr(name):
+            print(f"\n# {'-' * 10} {name} {'-' * 10}\n")
+        file_hdr(config_file)
+        with config_file.open("r", encoding="utf-8") as f:
+            for line in f:
+                print(line, end="")
+        if sphinx:
+            sphinx_conf = config_file.parent / "conf.py"
+            file_hdr(sphinx_conf)
+            with sphinx_conf.open("r", encoding="utf-8") as f:
+                for line in f:
+                    print(line, end="")
 
     return 0
+
 
 # -------------
 #  Commandline
@@ -388,8 +399,10 @@ class Commands:
             "Modify configuration",
             modify_conf,
             config_file=config_file,
+            show=args.show,
             execute=args.execute,
             timeout=args.timeout,
+            sphinx=args.sphinx,
         )
 
     @classmethod
@@ -451,7 +464,7 @@ def timeout_duration(s):
     """Parse a timeout into an int, raise a ValueError if out of range."""
     v = int(s)
     if v < 1 or v > 60 * 60 * 24:
-        raise ValueError(f"Timeout value ({v}) not between 1 second and 1 day")
+        raise ValueError("timeout")
     return v
 
 
@@ -508,8 +521,10 @@ def main():
         dest="timeout",
         type=timeout_duration,
         default=None,
-        help=f"Set JB config execute.timeout value",
+        help=f"Set JB config execute.timeout value (1..86400 seconds)",
     )
+    subp["conf"].add_argument("--show", action="store_true", help="Print config contents to console")
+    subp["conf"].add_argument("--sphinx", action="store_true", help="Run JB command to update Sphinx conf.py")
     subp["gui"].add_argument("--console", "-c", action="store_true", dest="console")
     subp["gui"].add_argument(
         "--stderr",

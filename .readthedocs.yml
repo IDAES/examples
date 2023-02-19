@@ -10,9 +10,7 @@ build:
       - idaesx pre -v
       # Use cached data instead of notebook execution (will use saved '*_doc.ipynb' files)
       # This also updates the Sphinx configuration (conf.py)
-      - idaesx conf -v --execute cache --timeout 600
-      - idaesx conf
-      - cat idaes_examples/notebooks/conf.py
+      - idaesx conf --execute cache --timeout 600 --sphinx --show
 python:
   install:
     - method: pip
