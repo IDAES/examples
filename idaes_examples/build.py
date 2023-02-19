@@ -291,6 +291,53 @@ def view_docs(srcdir=None):
     return 0
 
 
+# ----------------
+#  Modify config
+# ----------------
+def modify_conf(config_file=None, execute=None, timeout=None):
+    # With no flags, print current config contents and stop
+    if execute is None and timeout is None:
+        print("# " + "-" * 50)
+        with config_file.open("r", encoding="utf-8") as f:
+            for line in f:
+                print(line, end="")
+        print("# " + "-" * 50)
+        return 0
+
+    # Load configuration file
+    with config_file.open("r", encoding="utf-8") as f:
+        conf = yaml.safe_load(f)
+
+    def update_value(value, k1, k2):
+        """Update value in file at k1/k2."""
+        if value is None:
+            return
+        name = ".".join((k1, k2))
+        try:
+            orig = conf[k1][k2]
+        except KeyError:
+            raise KeyError(f"No key {name} found in: {config_file}")
+        if orig != value:
+            _log.info(f"Set value for {name} from '{orig}' to '{value}'")
+            conf[k1][k2] = value
+
+    # Set values, aborting on missing keys
+    try:
+        update_value(execute, "execute", "execute_notebooks")
+        update_value(timeout, "execute", "timeout")
+    except KeyError:
+        return -1
+
+    # Update configurations
+    _log.info(f"Writing modified Jupyterbook config to file: {config_file}")
+    with config_file.open("w", encoding="utf-8") as f:
+        yaml.dump(conf, f)
+    _log.info(f"Updating Sphinx config file")
+    commandline = ["jupyter-book", "config", "sphinx", str(config_file.parent)]
+    check_call(commandline)
+
+    return 0
+
 # -------------
 #  Commandline
 # -------------
@@ -328,6 +375,7 @@ class Commands:
 
     @classmethod
     def conf(cls, args):
+        cls.heading("Modify configuration files")
         root_dir = allow_repo_root(Path(args.dir), main)
         config_file = root_dir / NB_ROOT / "_config.yml"
         if not config_file.exists():
@@ -336,57 +384,13 @@ class Commands:
                 f"Root directory can be set with '-d/--dir'. Current value: {root_dir.absolute()}"
             )
             return -1
-
-        if args.execute is None and args.timeout is None:
-            print("# --------------------------------")
-            with config_file.open("r", encoding="utf-8") as f:
-                for line in f:
-                    print(line, end="")
-            print("# --------------------------------")
-            return 0
-
-        with config_file.open("r", encoding="utf-8") as f:
-            conf = yaml.safe_load(f)
-        changed = False
-        # execute notebooks option
-        if args.execute is not None:
-            keys = ("execute", "execute_notebooks")
-            key_name = ".".join(keys)
-            allowed_values = {"auto", "force", "cache", "off"}
-            value = args.execute.lower()
-            if value not in allowed_values:
-                _log.error(f"Value {value} not in allowed: {allowed_values}")
-                return -1
-            try:
-                exec_nb = conf[keys[0]][keys[1]]
-            except KeyError:
-                _log.error(f"No key {key_name} found in: {config_file}")
-                return -1
-            if exec_nb == value:
-                _log.warning(f"Value for {key_name} is the same: {value}")
-            else:
-                _log.info(
-                    f"Changing value for {key_name} from '{exec_nb}' to '{value}'"
-                )
-                conf[keys[0]][keys[1]] = value
-                changed = True
-        # timeout option
-        if args.timeout is not None:
-            keys = ("execute", "timeout")
-            key_name = ".".join(keys)
-            value = args.timeout
-            if value < 5 or value > 60 * 60 * 24:
-                _log.error(
-                    f"Timeout value must be between 5 seconds and a day, got: {value}"
-                )
-                return -1
-            conf[keys[0]][keys[1]] = value
-            changed = True
-
-        if changed:
-            _log.info(f"Writing modified Jupyterbook config to file: {config_file}")
-            with config_file.open("w", encoding="utf-8") as f:
-                yaml.dump(conf, f)
+        return cls._run(
+            "Modify configuration",
+            modify_conf,
+            config_file=config_file,
+            execute=args.execute,
+            timeout=args.timeout,
+        )
 
     @classmethod
     def view(cls, args):
@@ -443,6 +447,14 @@ class Commands:
         print(f"   {message}")
 
 
+def timeout_duration(s):
+    """Parse a timeout into an int, raise a ValueError if out of range."""
+    v = int(s)
+    if v < 1 or v > 60 * 60 * 24:
+        raise ValueError(f"Timeout value ({v}) not between 1 second and 1 day")
+    return v
+
+
 def main():
     p = argparse.ArgumentParser()
     add_vb(p)
@@ -488,12 +500,13 @@ def main():
         "--execute",
         dest="execute",
         default=None,
+        choices=["auto", "force", "cache", "off"],
         help=f"Set JB config execute.execute_notebooks value",
     )
     subp["conf"].add_argument(
         "--timeout",
         dest="timeout",
-        type=int,
+        type=timeout_duration,
         default=None,
         help=f"Set JB config execute.timeout value",
     )
