@@ -294,7 +294,7 @@ def view_docs(srcdir=None):
 # ----------------
 #  Modify config
 # ----------------
-def modify_conf(config_file=None, show=False, execute=None, timeout=None, sphinx=False):
+def modify_conf(config_file=None, cache_file=None, show=False, execute=None, timeout=None, sphinx=False):
     # Load configuration file
     with config_file.open("r", encoding="utf-8") as f:
         conf = yaml.safe_load(f)
@@ -318,7 +318,7 @@ def modify_conf(config_file=None, show=False, execute=None, timeout=None, sphinx
     try:
         changed = update_value(execute, "execute", "execute_notebooks") or update_value(
             timeout, "execute", "timeout"
-        )
+        ) or update_value(cache_file, "execute", "cache")
     except KeyError:
         return -1
 
@@ -399,6 +399,7 @@ class Commands:
             "Modify configuration",
             modify_conf,
             config_file=config_file,
+            cache_file=args.cache_file,
             show=args.show,
             execute=args.execute,
             timeout=args.timeout,
@@ -515,6 +516,12 @@ def main():
         default=None,
         choices=["auto", "force", "cache", "off"],
         help=f"Set JB config execute.execute_notebooks value",
+    )
+    subp["conf"].add_argument(
+        "--cache-file",
+        dest="cache_file",
+        default=None,
+        help=f"Set JB config execute.cache value",
     )
     subp["conf"].add_argument(
         "--timeout",
