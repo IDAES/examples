@@ -32,6 +32,7 @@ parts:
     - file: docs/custom/unit_models/custom_heater_doc
   # note: directory active/ will not be included in the docs, but
   # it is kept here so it is visible to the 'idaesx' command (e.g. for preprocessing or browsing)
+  # The 'file' entry generates a warning, but it is required by the TOC format
   - file: active/power_gen/ngcc/index
     sections:
     - file: active/power_gen/ngcc/ngcc_soec_doc
