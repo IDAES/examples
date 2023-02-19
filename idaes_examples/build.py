@@ -80,8 +80,7 @@ exclude_tags = {
 nb_file_pat = re.compile(f"([a-zA-Z0-9_\\-:.+]+){src_suffix}\\.ipynb")
 nb_file_subs = {e.value: f"\\1_{e.value}.ipynb" for e in Ext if e != Ext.DOC}
 # For MyST, replace .ipynb with .md in the 'doc' notebook's link
-# NO nb_file_subs[Ext.DOC.value] = f"\\1_{Ext.DOC.value}.md"
-nb_file_subs[Ext.DOC.value] = f"\\1_{Ext.DOC.value}.ipynb"
+nb_file_subs[Ext.DOC.value] = f"\\1_{Ext.DOC.value}.md"
 
 
 def _preprocess(nb_path: Path, **kwargs):
