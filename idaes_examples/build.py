@@ -71,7 +71,7 @@ exclude_tags = {
     Ext.TEST.value: {Tags.EX.value, Tags.NOAUTO.value},
     Ext.EX.value: {Tags.TEST.value, Tags.SOL.value, Tags.AUTO.value},
     Ext.SOL.value: {Tags.TEST.value, Tags.AUTO.value},
-    Ext.DOC.value: {Tags.TEST.value, Tags.NOAUTO.value},
+    Ext.DOC.value: {Tags.EX.value, Tags.TEST.value, Tags.NOAUTO.value},
     Ext.USER.value: {Tags.TEST.value, Tags.AUTO.value},  # same as _solution
 }
 
@@ -80,7 +80,8 @@ exclude_tags = {
 nb_file_pat = re.compile(f"([a-zA-Z0-9_\\-:.+]+){src_suffix}\\.ipynb")
 nb_file_subs = {e.value: f"\\1_{e.value}.ipynb" for e in Ext if e != Ext.DOC}
 # For MyST, replace .ipynb with .md in the 'doc' notebook's link
-nb_file_subs[Ext.DOC.value] = f"\\1_{Ext.DOC.value}.md"
+# NO nb_file_subs[Ext.DOC.value] = f"\\1_{Ext.DOC.value}.md"
+nb_file_subs[Ext.DOC.value] = f"\\1_{Ext.DOC.value}.ipynb"
 
 
 def _preprocess(nb_path: Path, **kwargs):
