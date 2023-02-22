@@ -73,7 +73,7 @@ jobs:
       - name: Install the code
         uses: ./.github/actions/install
         with:
-          install-target: .[dev]
+          install-target: .[dev,jb]
       - name: Run pytest
         run: |
           pwd
