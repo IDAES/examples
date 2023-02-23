@@ -61,5 +61,6 @@ def main():
 
     print(f"Wrote files for {n_failed} test failures (out of {n_tot} tests)")
 
+
 if __name__ == "__main__":
     main()

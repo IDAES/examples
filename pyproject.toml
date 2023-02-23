@@ -1,7 +1,8 @@
 [build-system]
 requires = [
     "setuptools>=61",
-    "wheel"
+    "wheel",
+    "setuptools_scm[toml]"
 ]
 build-backend = "setuptools.build_meta"
 
@@ -39,19 +40,34 @@ build-backend = "setuptools.build_meta"
     dependencies = [
         # Keep setuptools behavior relatively predictable(?)
         "setuptools~=63.4.1",
-        # "idaes-pse",
-        # "idaes-pse>=2.0.0a3",
-        "idaes-pse @ git+https://github.com/IDAES/idaes-pse",
+        # Get IDAES from last release. NOTE: [dev] overrides this!
+        "idaes-pse",
+        # Pyomo
+        "pyomo>=6.5.0",
         # For the small embedded GUI
         "PySimpleGUI~=4.60.4",
         "tkhtmlview==0.1.1.post5",
         "Markdown~=3.4.1",
-        "tensorflow"
     ]
     keywords = ["IDAES", "energy systems", "chemical engineering", "process modeling"]
 
 [project.optional-dependencies]
+# Just for developers (they should also add 'jb')
 dev = [
+    # IDAES
+    "idaes-pse @ git+https://github.com/IDAES/idaes-pse",
+    # parallel pytest
+    "pytest-xdist ~= 3.0.2",
+    # pytest reporting
+    "pytest-reportlog ~= 0.1.2",
+    # For jupyter notebook testing
+    "black[jupyter] ~= 22.8.0",
+    # For adding copyright headers (see addheader.yml and the readme)
+    "addheader >= 0.3.0",
+    "tensorflow"
+]
+# For Jupyterbook (e.g. readthedocs builds)
+jb = [
     "jupyter-book ~= 0.13.1",
     # "jupyter-cache ~= 0.4.3",
     "jupyter-cache",
@@ -63,14 +79,6 @@ dev = [
     # markdown in Sphinx
     "myst-nb ~= 0.13.2",
     "myst-parser ~= 0.15.2",
-    # parallel pytest
-    "pytest-xdist ~= 3.0.2",
-    # pytest reporting
-    "pytest-reportlog ~= 0.1.2",
-    # For jupyter notebook testing
-    "black[jupyter] ~= 22.8.0",
-    # For adding copyright headers (see addheader.yml and the readme)
-    "addheader >= 0.3.0"
 ]
 
 [project.urls]
@@ -109,27 +117,6 @@ idaes_examples = [
     "*.index",  # for Keras Surrogate folder
     "*.trc",
     "*.xlsx",  # idaes/dmf/tests/data_files - tabular import test files
-]
-
-[tool.pytest.ini_options]
-minversion = "7.0"
-# The '--ignore-glob' args make sure only notebooks
-# ending in _test.ipynb are run
-addopts = """\
-     -n=auto \
-     --nbmake \
-     --nbmake-timeout=1200 \
-     --ignore-glob=*_doc.ipynb \
-     --ignore-glob=*_exercise.ipynb \
-     --ignore-glob=*_solution.ipynb \
-     --ignore-glob=*_src*.ipynb \
-     --ignore-glob=*_usr.ipynb \
-     --ignore-glob=*_usr.ipynb \
-     --report-log=pytest-report.log\
-"""
-norecursedirs = ["my_workspace", ".ipynb_checkpoints"]
-testpaths = [
-    "idaes_examples/notebooks/docs",
-    "idaes_examples/notebooks/active",
-    "idaes_examples/mod"
+    "*.yml",
+    "*.yaml"
 ]

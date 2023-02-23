@@ -1,23 +1,23 @@
 version: 2
 
 build:
-  os: ubuntu-22.04
+  os: ubuntu-20.04
   tools:
     python: "3.8"
   jobs:
     pre_build:
-      # Generate variations on the base notebook files, in particular one for docs.
-      - "idaesx pre"
-      # Generate the Sphinx configuration for this Jupyter Book, so it builds.
-      - "jupyter-book config sphinx idaes_examples/notebooks/"
-
+      # Create the _doc notebooks
+      - idaesx pre -v
+      # Use cached data instead of notebook execution (will use saved '*_doc.ipynb' files)
+      # This also updates the Sphinx configuration (conf.py)
+      - idaesx conf --execute cache --cache-file nbcache --timeout 600 --sphinx --show
 python:
   install:
     - method: pip
       path: .
       extra_requirements:
-        - dev
+        - jb
 
 sphinx:
   builder: html
-  fail_on_warning: true
+  fail_on_warning: false

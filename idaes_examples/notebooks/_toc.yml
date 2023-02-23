@@ -1,18 +1,19 @@
 format: jb-book
 parts:
-- caption: Flowsheets
-  chapters:
+- chapters:
   - file: docs/dae/index
     sections:
     - file: docs/dae/petsc_chem_doc
-    - file: docs/dae/petsc_pid_doc
+    # Moved to archive due to pid.create_model() errors
+    # - file: docs/dae/petsc_pid_doc
   # Flowsheets
   - file: docs/flowsheets/index
     sections:
     - file: docs/flowsheets/hda_flowsheet_with_costing_doc
-    - file: docs/flowsheets/hda_flowsheet_with_distillation_doc
+# temporarily archived 2/16/23 -dang
+#    - file: docs/flowsheets/hda_flowsheet_with_distillation_doc
     - file: docs/flowsheets/methanol_synthesis_doc
-  - file: docs/flowsheets/CO2_adsorption_desorption
+  - file: docs/flowsheets/CO2_adsorption_desorption/index
     sections:
       - file: docs/flowsheets/CO2_adsorption_desorption/CO2_Adsorption_Desorption_1DFixedBed_doc
   - file: docs/diagnostics/index
@@ -25,13 +26,17 @@ parts:
     - file: docs/custom/properties/custom_reaction_property_packages_doc
     - file: docs/custom/properties/dictionary_txy_diagrams_doc
     - file: docs/custom/properties/parameter_estimation_pr_doc
-  - file: docs/custom/unit_models/custom/index
+  - file: docs/custom/unit_models/index
     sections:
     - file: docs/custom/unit_models/custom_compressor_doc
     - file: docs/custom/unit_models/custom_heater_doc
+  # note: directory active/ will not be included in the docs, but
+  # it is kept here so it is visible to the 'idaesx' command (e.g. for preprocessing or browsing)
+  # The 'file' entry generates a warning, but it is required by the TOC format
   - file: active/power_gen/ngcc/index
     sections:
-    - file: active/power_gen/ngcc/ngcc_soec_doc
+    # Moved this one to 'held'
+    # - file: active/power_gen/ngcc/ngcc_soec_doc
     - file: active/power_gen/ngcc/ngcc_doc
   # Surrogates
   - file: docs/surrogates/index
@@ -72,7 +77,8 @@ parts:
     sections:
     - file: docs/tut/flash_unit_doc
     - file: docs/tut/hda_flowsheet_doc
-    - file: docs/tut/introduction_short_doc
-    - file: docs/tut/introduction_doc
+    # Moved to archive until their imports can be fixed
+    # - file: docs/tut/introduction_short_doc
+    # - file: docs/tut/introduction_doc
     - file: docs/tut/visualizer_tutorial_doc
 root: index

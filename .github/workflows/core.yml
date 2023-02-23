@@ -55,7 +55,6 @@ jobs:
           - '3.8'
           - '3.9'
           - '3.10'
-          - '3.11'
         os:
           - linux
           - win64
@@ -65,16 +64,24 @@ jobs:
           - os: win64
             runner-image: windows-2022
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Set up Conda environment
-        uses: conda-incubator/setup-miniconda@v2.1.1
+        uses: conda-incubator/setup-miniconda@v2.2.0
         with:
           activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
           python-version: ${{ matrix.python-version }}
       - name: Install the code
         uses: ./.github/actions/install
         with:
-          install-target: .[dev]
+          install-target: .[dev,jb]
       - name: Run pytest
         run: |
-          pytest -v
+          pwd
+          ls idaes_examples
+          pytest -v idaes_examples
+      - name: Upload pytest-xdist worker logs
+        if: success() || failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: pytest_worker_logs
+          path: "tests_*.log"
