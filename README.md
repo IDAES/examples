@@ -10,12 +10,14 @@ If you are a developer who wishes to modify or add new notebooks, please refer t
 ### Categories of examples
 
 In the source code repository, you may note that there are a number of examples that are not in the documentation.
-Overall, there are three categories of examples:
+There are two main categories of examples:
 
   - "Docs" examples (under `idaes_examples/notebooks/docs`), which are tested and built into this documentation.
-  - "Active" examples (under `idaes_examples/notebooks/active`) that *are* tested against the current version of IDAES.
-  - "Archived" examples (under `idaes_examples/archive`) that are no longer tested against the current version of 
-    IDAES.
+  - "Active" examples (under `idaes_examples/notebooks/active`) that are tested but *not* in the documentation.
+
+There is also a third category of "Held" examples (under `idaes_examples/notebooks/held`),
+which could in the next release of IDAES in Docs or Active, or could be removed.
+These are *not* tested and *not* in the docs, and should generally be ignored by non-developers.
 
 ## Installation
 
