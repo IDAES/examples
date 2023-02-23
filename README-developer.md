@@ -221,8 +221,6 @@ In order to make this happen, either manually edit the notebook source or use th
 }
 ```
 
-<a name="copyright_headers"></a>
-
 ## Copyright headers
 
 You can add (and update) copyright headers to Python files _and_ Jupyter Notebooks using the 
