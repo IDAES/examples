@@ -35,7 +35,8 @@ parts:
   # The 'file' entry generates a warning, but it is required by the TOC format
   - file: active/power_gen/ngcc/index
     sections:
-    - file: active/power_gen/ngcc/ngcc_soec_doc
+    # Moved this one to 'held'
+    # - file: active/power_gen/ngcc/ngcc_soec_doc
     - file: active/power_gen/ngcc/ngcc_doc
   # Surrogates
   - file: docs/surrogates/index
