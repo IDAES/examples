@@ -1,5 +1,7 @@
 <!-- Badges -->
 [![Tests](https://github.com/IDAES/examples/actions/workflows/core.yml/badge.svg)](https://github.com/IDAES/examples/actions/workflows/core.yml)
+&nbsp;
+[![Documentation](https://readthedocs.org/projects/idaes-examples/badge/?version=latest)](https://idaes-examples.readthedocs.io/en/latest/?badge=latest)
 
 # IDAES Examples
 
