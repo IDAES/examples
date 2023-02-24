@@ -1,3 +1,6 @@
+<!-- Badges -->
+[![Tests](https://github.com/IDAES/examples/actions/workflows/core.yml/badge.svg)](https://github.com/IDAES/examples/actions/workflows/core.yml)
+
 # IDAES Examples
 
 This repository contains example Jupyter Notebooks that demonstrate and  explain 
