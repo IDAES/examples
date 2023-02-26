@@ -14,6 +14,13 @@ This file provides details needed by developers to properly create and add new e
   * Jupyter Notebook file extensions
   * Jupyter Notebook cell tags
   * Jupyter notebook metadata
+* Packaging
+
+**Quickstart**, skip to sections:
+* [Installation](#installation)
+* [Running tests &rarr; Integration tests](#integration-tests)
+* [Building documentation](#building-documentation)
+
 
 ## Installation
 
@@ -235,6 +242,31 @@ addheader -c addheader.yml
 
 All existing notebooks and Python files will be automatically discovered and modified as needed.
 
+## Packaging
+
+Instructions to package and distribute the examples as idaes-examples in PyPI.
+Based on the PyPA [packaging projects](https://packaging.python.org/en/latest/tutorials/packaging-projects/)  documentation.
+
+First, make sure you've installed the *pkg* optional dependencies:
+```
+pip install -e .[dev,jb,pkg]
+```
+
+Then use the *build* command to make the distribution:
+```
+python -m build
+```
+Many lines of output later, you should see a message like:
+```
+Successfully built idaes_examples-x.y.z.tar.gz and idaes_examples-x.y.z-py3-none-any.whl
+```
+Next upload to [TestPyPI](https://packaging.python.org/en/latest/guides/using-testpypi/) (you need an account) with:
+```shell
+> python -m twine upload --repository testpypi dist/*
+Uploading distributions to https://test.pypi.org/legacy/
+Enter your username: __token__
+Enter your password: {{enter token here}}
+```
 
 <!-- 
    References 

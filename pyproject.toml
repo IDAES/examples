@@ -48,6 +48,8 @@ build-backend = "setuptools.build_meta"
         "PySimpleGUI~=4.60.4",
         "tkhtmlview==0.1.1.post5",
         "Markdown~=3.4.1",
+        # For Keras/OMLT
+        "tensorflow"
     ]
     keywords = ["IDAES", "energy systems", "chemical engineering", "process modeling"]
 
@@ -55,6 +57,7 @@ build-backend = "setuptools.build_meta"
 # Just for developers (they should also add 'jb')
 dev = [
     # IDAES
+    # -- for development, use github main
     "idaes-pse @ git+https://github.com/IDAES/idaes-pse",
     # parallel pytest
     "pytest-xdist ~= 3.0.2",
@@ -64,7 +67,11 @@ dev = [
     "black[jupyter] ~= 22.8.0",
     # For adding copyright headers (see addheader.yml and the readme)
     "addheader >= 0.3.0",
-    "tensorflow"
+]
+# For packaging
+pkg = [
+    "build",
+    "twine"
 ]
 # For Jupyterbook (e.g. readthedocs builds)
 jb = [
