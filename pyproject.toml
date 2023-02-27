@@ -38,8 +38,8 @@ build-backend = "setuptools.build_meta"
             "Topic :: Software Development :: Libraries :: Python Modules",
     ]
     dependencies = [
-        # Keep setuptools behavior relatively predictable(?)
-        "setuptools~=63.4.1",
+        # Don't version setuptools, various bits complain
+        "setuptools",
         # Get IDAES from last release. NOTE: [dev] overrides this!
         "idaes-pse",
         # Pyomo
@@ -58,6 +58,7 @@ build-backend = "setuptools.build_meta"
 dev = [
     # IDAES
     # -- for development, use github main
+    # NOTE: Need to manually comment this out when building the package
     "idaes-pse @ git+https://github.com/IDAES/idaes-pse",
     # parallel pytest
     "pytest-xdist ~= 3.0.2",
