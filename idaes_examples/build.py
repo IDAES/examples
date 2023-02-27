@@ -433,7 +433,12 @@ class Commands:
     def gui(cls, args):
         from idaes_examples import browse
 
-        browse._log.setLevel(_log.getEffectiveLevel())
+        cls.heading(f"Load notebooks into GUI")
+        nb_dir = browse.find_notebook_dir().parent
+        cls._run(
+            f"pre-process notebooks", preprocess, srcdir=nb_dir
+        )
+        browse.set_log_level(_log.getEffectiveLevel())
         nb = browse.Notebooks()
         if args.console:
             for val in nb._sorted_values:
@@ -443,6 +448,13 @@ class Commands:
         else:
             status = browse.gui(nb)
         return status
+
+    @classmethod
+    def where(cls, args):
+        from idaes_examples import browse
+        nb_dir = browse.find_notebook_dir()
+        print(f"{nb_dir}")
+
 
     @staticmethod
     def _run(name, func, **kwargs):
@@ -493,11 +505,13 @@ def main():
         ("black", "Format code in notebooks with Black"),
         ("gui", "Graphical notebook browser"),
         ("skipped", "List notebooks tagged to skip some pre-processing"),
+        ("where", "Print example notebook directory path"),
     ):
         subp[name] = commands.add_parser(name, help=desc)
-        subp[name].add_argument(
-            "-d", "--dir", help="Source directory (default=<current>)", default=None
-        )
+        if name != "where":
+            subp[name].add_argument(
+                "-d", "--dir", help="Source directory (default=<current>)", default=None
+            )
         add_vb(subp[name], dest=f"vb_{name}")
     subp["build"].add_argument(
         "--no-pre",
@@ -558,10 +572,11 @@ def main():
     else:
         process_vb(_log, args.vb)
     # give 'args.dir' a default of ".", but remember whether user gave this value
-    if args.dir is None:
-        args.dir, args.user_dir = ".", False
-    else:
-        args.user_dir = True
+    if hasattr(args, "dir"):
+        if args.dir is None:
+            args.dir, args.user_dir = ".", False
+        else:
+            args.user_dir = True
     func = getattr(Commands, args.command, None)
     if func is None:
         p.print_help()

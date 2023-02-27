@@ -69,6 +69,9 @@ def setup_logging(lvl, console=False):
     _log.addHandler(handler)
 
 
+def set_log_level(level):
+    _log.setLevel(level)
+
 # -------------
 
 

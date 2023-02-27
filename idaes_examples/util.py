@@ -10,6 +10,8 @@ from typing import Dict
 # third-party
 import yaml
 
+_log = logging.getLogger(__name__)
+
 src_suffix = "_src"
 src_suffix_len = 4
 
@@ -122,6 +124,7 @@ def find_notebooks(
                 filename += src_suffix
                 path = nbpath / f"{filename}.ipynb"
                 if path.exists():
+                    _log.debug(f"Found notebook at: {path}")
                     callback(path, **kwargs)
                     n += 1
                 else:
