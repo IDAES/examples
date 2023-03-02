@@ -14,17 +14,26 @@ parts:
   - file: docs/tut/ui/index
     sections:
     - file: docs/tut/ui/visualizer_tutorial_doc
+- caption: Common Workflows
+  chapters:
+  - file: docs/diagnostics/index
+    sections:
+    - file: docs/diagnostics/degeneracy_hunter_doc
+  - file: docs/param_est/index
+    sections:
+    - file: docs/param_est/parameter_estimation_nrtl_using_state_block_doc
+    - file: docs/param_est/parameter_estimation_nrtl_using_unit_model_doc
+  - file: docs/dae/index
+    sections:
+    - file: docs/dae/petsc_chem_doc
+    # Moved to archive due to pid.create_model() errors
+    # - file: docs/dae/petsc_pid_doc
 - caption: Flowsheets
   chapters:
-  - file: docs/flowsheets/index
-    sections:
     - file: docs/flowsheets/hda_flowsheet_with_costing_doc
-# temporarily archived 2/16/23 -dang
-#    - file: docs/flowsheets/hda_flowsheet_with_distillation_doc
+#   - file: docs/flowsheets/hda_flowsheet_with_distillation_doc
     - file: docs/flowsheets/methanol_synthesis_doc
-  - file: docs/flowsheets/CO2_adsorption_desorption/index
-    sections:
-      - file: docs/flowsheets/CO2_adsorption_desorption/CO2_Adsorption_Desorption_1DFixedBed_doc
+    - file: docs/flowsheets/CO2_adsorption_desorption/CO2_Adsorption_Desorption_1DFixedBed_doc
 - caption: Unit Models
   chapters:
   - file: docs/unit_models/operations/index
@@ -73,22 +82,6 @@ parts:
   # - file: docs/surrogates/omlt/index
   #  sections:
   #  - file: docs/surrogates/omlt/keras_flowsheet_optimization_doc
-- caption: Tools
-  chapters:
-  - file: docs/diagnostics/index
-    sections:
-    - file: docs/diagnostics/degeneracy_hunter_doc
-  - file: docs/param_est/index
-    sections:
-    - file: docs/param_est/parameter_estimation_nrtl_using_state_block_doc
-    - file: docs/param_est/parameter_estimation_nrtl_using_unit_model_doc
-- caption: DAE
-  chapters:
-  - file: docs/dae/index
-    sections:
-    - file: docs/dae/petsc_chem_doc
-    # Moved to archive due to pid.create_model() errors
-    # - file: docs/dae/petsc_pid_doc
   # -----------------------------
   #  active (not documented)
   # -----------------------------
