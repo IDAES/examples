@@ -1,4 +1,4 @@
-# Differential algebraic equations
+# Dynamic Modeling: Differential-Algebraic Equations
 
 These examples provide an overview of the PETSc time-stepping solver utilities in IDAES, which can be used to solve systems of differential algebraic equations (DAEs).
 [PETSc][petsc] is a solver suite developed primarily by Argonne National Lab.

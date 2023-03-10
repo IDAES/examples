@@ -117,7 +117,9 @@ def find_notebooks(
     n = 0
     for part in toc["parts"]:
         for chapter in part["chapters"]:
-            for filemap in chapter["sections"]:
+            # list of {'file': name} dicts for each section, or just one for each chapter
+            filemap_list = chapter.get("sections", [chapter])
+            for filemap in filemap_list:
                 filename = filemap["file"][:-4]  # strip "_doc" suffix
                 filename += src_suffix
                 path = nbpath / f"{filename}.ipynb"

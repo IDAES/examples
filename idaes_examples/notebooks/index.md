@@ -1,4 +1,4 @@
-# IDAES examples
+# Introduction
 
 This documentation contains examples for the IDAES platform.
 

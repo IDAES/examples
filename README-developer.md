@@ -15,6 +15,12 @@ This file provides details needed by developers to properly create and add new e
   * Jupyter Notebook cell tags
   * Jupyter notebook metadata
 
+**Quickstart**, skip to sections:
+* [Installation](#installation)
+* [Running tests &rarr; Integration tests](#integration-tests)
+* [Building documentation](#building-documentation)
+
+
 ## Installation
 
 Clone the repository from Github, setup your Python environment as you usually do, then run pip with the developer requirements:
