@@ -247,25 +247,54 @@ All existing notebooks and Python files will be automatically discovered and mod
 Instructions to package and distribute the examples as idaes-examples in PyPI.
 Based on the PyPA [packaging projects](https://packaging.python.org/en/latest/tutorials/packaging-projects/)  documentation.
 
-First, make sure you've installed the *pkg* optional dependencies:
-```
+Install dependencies for packaging into your current (virtual) Python environment:
+```shell
 pip install -e .[dev,jb,pkg]
 ```
 
-Then use the *build* command to make the distribution:
-```
-python -m build
-```
-Many lines of output later, you should see a message like:
-```
+Edit the `pyproject.toml` file:
+  1. Ensure that you have commented out the line under `[project.optional-dependencies]`, in the `dev` section,
+     that reads `"idaes-pse @ git+https://github.com/IDAES/idaes-pse"`.
+  2. Set the release version.  You should increment the version for each new release.
+
+**Build** the distribution:
+```shell
+> python -m build
+# Many lines of output later, you should see a message like:
 Successfully built idaes_examples-x.y.z.tar.gz and idaes_examples-x.y.z-py3-none-any.whl
 ```
-Next upload to [TestPyPI](https://packaging.python.org/en/latest/guides/using-testpypi/) (you need an account) with:
+
+If you have not already done so, create an account on [testpypi](https://test.pypi.org).
+
+Copy your API token from your account.
+To generate an API token, go to _Settings_ &rarr; _API Tokens_, and selecting _Add API Token_.
+You will paste this token in the commands below.
+
+**Upload** to [TestPyPI](https://packaging.python.org/en/latest/guides/using-testpypi/):
 ```shell
 > python -m twine upload --repository testpypi dist/*
 Uploading distributions to https://test.pypi.org/legacy/
 Enter your username: __token__
-Enter your password: {{enter token here}}
+Enter your password: {{paste token here}}
+```
+
+Create a new virtual environment and install the package from test.pypi into it:
+```shell
+pip install --extra-index-url https://test.pypi.org/simple/ idaes-examples
+```
+
+If the installation succeeds, you should be able to browse the notebooks using the built-in GUI:
+```shell
+idaesx gui
+```
+
+If it all looks good, you can repeat the **Upload** step with the real [PyPI](pypi.org) 
+(you will need to get an account and token, just as for test.pypi.org, above):
+```shell
+> python -m twine upload dist/*
+Uploading distributions to https://upload.pypi.org/legacy/
+Enter your username: __token__
+Enter your password: {{past token here}}
 ```
 
 <!-- 
@@ -278,4 +307,4 @@ Enter your password: {{enter token here}}
 
 ----
 Author: Dan Gunter  
-Last modified: 03 Feb 2023
+Last modified: 13 Mar 2023
