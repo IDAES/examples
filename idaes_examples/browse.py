@@ -252,7 +252,7 @@ class Notebook:
 
     def _get_description(self):
         desc = False
-        with self._path.open("r") as f:
+        with self._path.open("r", encoding="utf-8") as f:
             data = json.load(f)
         cells = data[NB_CELLS]
         if len(cells) > 0:
@@ -270,6 +270,7 @@ class Notebook:
         if not desc:
             self._short_desc, self._long_desc = "No description", "No description"
             self._lines = [self._short_desc]
+
 
 class Jupyter:
     """Run Jupyter notebooks."""
