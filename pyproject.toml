@@ -10,7 +10,7 @@ build-backend = "setuptools.build_meta"
     name = "idaes_examples"
     description = "IDAES Process Systems Engineering Examples"
     readme = "README.md"
-    version = "2.0.0a1"
+    version = "2.0.0a2"
     license = {text="BSD"}
     requires-python = ">=3.7"
     authors = [
@@ -38,8 +38,8 @@ build-backend = "setuptools.build_meta"
             "Topic :: Software Development :: Libraries :: Python Modules",
     ]
     dependencies = [
-        # Keep setuptools behavior relatively predictable(?)
-        "setuptools~=63.4.1",
+        # Don't version setuptools, various bits complain
+        "setuptools",
         # Get IDAES from last release. NOTE: [dev] overrides this!
         "idaes-pse",
         # Pyomo
@@ -48,6 +48,8 @@ build-backend = "setuptools.build_meta"
         "PySimpleGUI~=4.60.4",
         "tkhtmlview==0.1.1.post5",
         "Markdown~=3.4.1",
+        # For Keras/OMLT
+        "tensorflow"
     ]
     keywords = ["IDAES", "energy systems", "chemical engineering", "process modeling"]
 
@@ -55,7 +57,9 @@ build-backend = "setuptools.build_meta"
 # Just for developers (they should also add 'jb')
 dev = [
     # IDAES
-    "idaes-pse @ git+https://github.com/IDAES/idaes-pse",
+    # -- for development, use github main
+    # NOTE: Need to manually comment this out when building the package
+    #"idaes-pse @ git+https://github.com/IDAES/idaes-pse",
     # parallel pytest
     "pytest-xdist ~= 3.0.2",
     # pytest reporting
@@ -64,7 +68,11 @@ dev = [
     "black[jupyter] ~= 22.8.0",
     # For adding copyright headers (see addheader.yml and the readme)
     "addheader >= 0.3.0",
-    "tensorflow"
+]
+# For packaging
+pkg = [
+    "build",
+    "twine"
 ]
 # For Jupyterbook (e.g. readthedocs builds)
 jb = [
