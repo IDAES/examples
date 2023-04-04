@@ -53,7 +53,7 @@ def _valve_pressure_flow_cb(b):
     b.Cv.fix()
 
     b.flow_var = pyo.Reference(b.control_volume.properties_in[:].flow_mol)
-    b.pressure_flow_equation_scale = lambda x: x ** 2
+    b.pressure_flow_equation_scale = lambda x: x**2
 
     @b.Constraint(b.flowsheet().time)
     def pressure_flow_equation(b2, t):
@@ -62,7 +62,7 @@ def _valve_pressure_flow_cb(b):
         F = b2.control_volume.properties_in[t].flow_mol
         Cv = b2.Cv
         fun = b2.valve_function[t]
-        return F ** 2 == Cv ** 2 * (Pi ** 2 - Po ** 2) * fun ** 2
+        return F**2 == Cv**2 * (Pi**2 - Po**2) * fun**2
 
 
 def create_model(
@@ -96,13 +96,37 @@ def create_model(
     m = pyo.ConcreteModel(name=model_name)
     m.fs = FlowsheetBlock(**fs_cfg)
     # Create a property parameter block
-    m.fs.prop_water = iapws95.Iapws95ParameterBlock(phase_presentation=iapws95.PhaseType.LG)
+    m.fs.prop_water = iapws95.Iapws95ParameterBlock(
+        phase_presentation=iapws95.PhaseType.LG
+    )
     # Create the valve and tank models
-    m.fs.valve_1 = Valve(dynamic=False, has_holdup=False, pressure_flow_callback=_valve_pressure_flow_cb, material_balance_type=MaterialBalanceType.componentTotal, property_package=m.fs.prop_water)
-    m.fs.tank = Heater(has_holdup=True, material_balance_type=MaterialBalanceType.componentTotal, property_package=m.fs.prop_water)
-    m.fs.valve_2 = Valve(dynamic=False, has_holdup=False, pressure_flow_callback=_valve_pressure_flow_cb, material_balance_type=MaterialBalanceType.componentTotal, property_package=m.fs.prop_water)
+    m.fs.valve_1 = Valve(
+        dynamic=False,
+        has_holdup=False,
+        pressure_flow_callback=_valve_pressure_flow_cb,
+        material_balance_type=MaterialBalanceType.componentTotal,
+        property_package=m.fs.prop_water,
+    )
+    m.fs.tank = Heater(
+        has_holdup=True,
+        material_balance_type=MaterialBalanceType.componentTotal,
+        property_package=m.fs.prop_water,
+    )
+    m.fs.valve_2 = Valve(
+        dynamic=False,
+        has_holdup=False,
+        pressure_flow_callback=_valve_pressure_flow_cb,
+        material_balance_type=MaterialBalanceType.componentTotal,
+        property_package=m.fs.prop_water,
+    )
     # Add a controller
-    m.fs.ctrl = PIDController(process_var=m.fs.tank.control_volume.properties_out[:].pressure, manipulated_var=m.fs.valve_1.valve_opening, calculate_initial_integral=calc_integ, mv_bound_type=ControllerMVBoundType.SMOOTH_BOUND, type=ControllerType.PI)
+    m.fs.ctrl = PIDController(
+        process_var=m.fs.tank.control_volume.properties_out[:].pressure,
+        manipulated_var=m.fs.valve_1.valve_opening,
+        calculate_initial_integral=calc_integ,
+        mv_bound_type=ControllerMVBoundType.SMOOTH_BOUND,
+        controller_type=ControllerType.PI,
+    )
     # The control volume block doesn't assume the two phases are in equilibrium
     # by default, so I'll make that assumption here, I don't actually expect
     # liquid to form but who knows. The phase_fraction in the control volume is
@@ -139,11 +163,11 @@ def create_model(
     m.fs.tank.heat_duty.fix(0)
     m.fs.tank.control_volume.volume.fix(2.0)
 
-    #Fix controller settings
+    # Fix controller settings
     m.fs.ctrl.gain_p.fix(1e-6)
     m.fs.ctrl.gain_i.fix(1e-5)
-    #m.fs.ctrl.gain_d.fix(1e-6)
-    #m.fs.ctrl.derivative_of_error[m.fs.time.first()].fix(0)
+    # m.fs.ctrl.gain_d.fix(1e-6)
+    # m.fs.ctrl.derivative_of_error[m.fs.time.first()].fix(0)
     m.fs.ctrl.setpoint.fix(3e5)
     m.fs.ctrl.mv_ref.fix(0)
     m.fs.ctrl.mv_lb = 0.0
