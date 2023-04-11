@@ -77,7 +77,6 @@ parts:
   - file: docs/surrogates/alamo/index
     sections:
     - file: docs/surrogates/alamo/alamo_flowsheet_optimization_doc
-  moved to archive until Keras errors can be fixed
   - file: docs/surrogates/omlt/index
    sections:
    - file: docs/surrogates/omlt/keras_flowsheet_optimization_doc
