@@ -78,8 +78,8 @@ parts:
     sections:
     - file: docs/surrogates/alamo/alamo_flowsheet_optimization_doc
   - file: docs/surrogates/omlt/index
-   sections:
-   - file: docs/surrogates/omlt/keras_flowsheet_optimization_doc
+    sections:
+    - file: docs/surrogates/omlt/keras_flowsheet_optimization_doc
   # -----------------------------
   #  active (not documented)
   # -----------------------------
