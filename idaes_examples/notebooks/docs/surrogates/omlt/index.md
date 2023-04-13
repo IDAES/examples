@@ -1,1 +1,1 @@
-# OMLT: TensorFlow Keras surrogate modeling
+# OMLT: Optimization and Machine Learning Toolkit
