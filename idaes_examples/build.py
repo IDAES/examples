@@ -50,7 +50,7 @@ _log.addHandler(_h)
 DEV_DIR = "_dev"  # special directory to include in preprocessing
 
 
-def preprocess(srcdir=None, dev=False):
+def preprocess(srcdir=None, dev=False, show_solver=False):
     src_path = allow_repo_root(Path(srcdir), main)
     src_path /= NB_ROOT
     if dev:
@@ -60,7 +60,7 @@ def preprocess(srcdir=None, dev=False):
     t0 = time.time()
     n = find_notebooks(src_path, toc, _preprocess)
     for dev_file in (src_path / DEV_DIR).glob(f"*{src_suffix}.ipynb"):
-        _preprocess(dev_file)
+        _preprocess(dev_file, show_solver=show_solver)
     dur = time.time() - t0
     _log.info(f"Preprocessed {n} notebooks in {dur:.1f} seconds")
     return n
@@ -83,7 +83,7 @@ nb_file_subs = {e.value: f"\\1_{e.value}.ipynb" for e in Ext if e != Ext.DOC}
 nb_file_subs[Ext.DOC.value] = f"\\1_{Ext.DOC.value}.md"
 
 
-def _preprocess(nb_path: Path, **kwargs):
+def _preprocess(nb_path: Path, show_solver=None):
     _log.info(f"File: {nb_path}")
 
     def ext_path(p: Path, ext: Ext = None, name: str = None) -> Path:
@@ -98,11 +98,37 @@ def _preprocess(nb_path: Path, **kwargs):
     # Check whether source was changed after the derived notebooks.
     # Only consider types of derived notebooks that are always generated.
     src_mtime, changed = nb_path.stat().st_mtime, False
+    did_not_exist_files, stale_files = set(), False
     for ext in (Ext.DOC, Ext.USER, Ext.TEST):
         p_ext = ext_path(nb_path, ext=ext)
-        if not p_ext.exists() or p_ext.stat().st_mtime <= src_mtime:
-            changed = True
+        if not p_ext.exists():
+            did_not_exist_files.add(ext.value)
+        elif p_ext.stat().st_mtime <= src_mtime:
+            changed, stale_files = True, True
             break
+
+    # Load input file
+    with nb_path.open("r", encoding="utf-8") as nb_file:
+        nb = json.load(nb_file)
+
+    nb_names = [Ext.TEST.value, Ext.DOC.value, Ext.USER.value]
+
+    # allow notebook metadata to skip certain outputs (e.g. 'test')
+    do_not_create_files = set()
+    if NB_IDAES in nb[NB_META]:
+        for skip_ext in nb[NB_META][NB_IDAES].get(NB_SKIP, []):
+            nb_names.remove(skip_ext)
+            do_not_create_files.add(skip_ext)
+            _log.info(f"Skipping '{skip_ext}' for notebook '{nb_path}'")
+
+    # Check that only files we didn't want to create are not created,
+    # for the purposes of determining whether we can skip pre-processing
+    if did_not_exist_files != do_not_create_files:
+        _log.info(f"Some expected files not found: "
+                  f"extensions={did_not_exist_files - do_not_create_files}")
+        changed = True
+    elif did_not_exist_files:
+        _log.info(f"Missing files expected due to metadata: {did_not_exist_files}")
 
     # Stop if no changes (only now do we really know)
     if changed:
@@ -110,10 +136,6 @@ def _preprocess(nb_path: Path, **kwargs):
     else:
         _log.info(f"=> Skip {nb_path} (source unchanged)")
         return
-
-    # Load input file
-    with nb_path.open("r", encoding="utf-8") as nb_file:
-        nb = json.load(nb_file)
 
     # Get cells to exclude, also ones with notebook xrefs
     had_tag = set()  # if tag occurred at all
@@ -132,7 +154,7 @@ def _preprocess(nb_path: Path, **kwargs):
             if cell_tags & ex_tags:
                 # add in reverse order to make delete easier
                 exclude_cells[name].insert(0, cell_index)
-        # Look for (and save) lines with cross references
+        # Look for (and save) lines with cross-references
         xref_lines = [
             i for i, line in enumerate(cell["source"]) if nb_file_pat.search(line)
         ]
@@ -141,7 +163,6 @@ def _preprocess(nb_path: Path, **kwargs):
 
     # Write output files
 
-    nb_names = [Ext.TEST.value, Ext.DOC.value, Ext.USER.value]
     is_tutorial = had_tag & {Tags.EX, Tags.SOL}
     if is_tutorial:
         nb_names.extend([Ext.EX.value, Ext.SOL.value])
@@ -152,11 +173,6 @@ def _preprocess(nb_path: Path, **kwargs):
                 changed = True
                 break
 
-    # allow notebook metadata to skip certain outputs (e.g. 'test')
-    if NB_IDAES in nb[NB_META]:
-        for skip_ext in nb[NB_META][NB_IDAES].get(NB_SKIP, []):
-            nb_names.remove(skip_ext)
-            _log.info(f"Skipping '{skip_ext}' for notebook '{nb_path}'")
 
     for name in nb_names:
         nb_copy = nb.copy()
@@ -174,6 +190,20 @@ def _preprocess(nb_path: Path, **kwargs):
         # Delete excluded cells
         for index in exclude_cells[name]:
             del nb_copy[NB_CELLS][index]  # indexes are in reverse order
+        # Hide solver output cell(s) in Jupyterbook documentation
+        if name == Ext.DOC.value and not show_solver:
+            for cell_index, cell in enumerate(nb_copy[NB_CELLS]):
+                if change_get_solver_import(cell):
+                    pass
+                elif suppress_output(cell):
+                    # add hide-output tag (once)
+                    try:
+                        tags = set(cell[NB_META]["tags"])
+                    except (IndexError, KeyError, TypeError):
+                        tags = set()
+                    tags.add("hide-output")
+                    cell[NB_META]["tags"] = list(tags)
+                    _log.debug(f"Hide solver output in cell {cell_index}")
         # Generate output file
         nbcopy_path = ext_path(nb_path, name=name)
         _log.debug(f"Generate '{name}' file: {nbcopy_path}")
@@ -184,7 +214,51 @@ def _preprocess(nb_path: Path, **kwargs):
             nb[NB_CELLS][i]["source"] = s
 
     dur = time.time() - t0
-    _log.info(f"Prepocessed notebook {nb_path} in {dur:.2f} seconds")
+    _log.info(f"Preprocessed notebook {nb_path} in {dur:.2f} seconds")
+
+
+# Regular expressions for suppress_output()
+ipopt_version_re = re.compile("Ipopt .*")       # Ipopt 3.13.2 ...
+solver_call_re = re.compile(r"\.solve\(\S+\)")  # solver.solve(m, ..)
+solver_import_re = re.compile(r"from\s+idaes\.core\.solvers\s+import\s+get_solver\s*$")
+
+
+def change_get_solver_import(cell: dict) -> bool:
+    if cell.get("cell_type", "") != "code":
+        return False
+    source = cell.get("source", [])
+    index, trailing_comma = -1, ""
+    for i, line in enumerate(source):
+        if solver_import_re.search(line):
+            index = i
+            break
+    if index >= 0:
+        source[index] = "from idaes_examples.mod.util import get_solver\n"
+        _log.debug(f"changed line at {index} to:\n@@ {source[index]}")
+        return True
+    return False
+
+
+def suppress_output(cell: dict) -> bool:
+    """Determine whether to suppress output of a given cell.
+    """
+    if cell.get("cell_type", "") != "code":
+        return False
+    # Look for a call to .solve() in the source
+    source = cell.get("source", [])
+    for line in source:
+        if solver_call_re.search(line):
+            return True
+    # Look for an Ipopt version in the output
+    outputs = cell.get("outputs", [])
+    for o in outputs:
+        if "name" not in o or o["name"] != "stdout":
+            continue
+        for line in o["text"]:
+            if ipopt_version_re.match(line):
+                return True
+    # Do not suppress
+    return False
 
 
 # -------------
@@ -302,7 +376,14 @@ def view_docs(srcdir=None):
 # ----------------
 #  Modify config
 # ----------------
-def modify_conf(config_file=None, cache_file=None, show=False, execute=None, timeout=None, sphinx=False):
+def modify_conf(
+    config_file=None,
+    cache_file=None,
+    show=False,
+    execute=None,
+    timeout=None,
+    sphinx=False,
+):
     # Load configuration file
     with config_file.open("r", encoding="utf-8") as f:
         conf = yaml.safe_load(f)
@@ -324,15 +405,19 @@ def modify_conf(config_file=None, cache_file=None, show=False, execute=None, tim
 
     # Set values, aborting on missing keys
     try:
-        changed = update_value(execute, "execute", "execute_notebooks") or update_value(
-            timeout, "execute", "timeout"
-        ) or update_value(cache_file, "execute", "cache")
+        changed = (
+            update_value(execute, "execute", "execute_notebooks")
+            or update_value(timeout, "execute", "timeout")
+            or update_value(cache_file, "execute", "cache")
+        )
     except KeyError:
         return -1
 
     # Update configurations
     if changed:
-        Commands.subheading(f"Writing modified Jupyterbook config to file: {config_file}")
+        Commands.subheading(
+            f"Writing modified Jupyterbook config to file: {config_file}"
+        )
         with config_file.open("w", encoding="utf-8") as f:
             yaml.dump(conf, f)
     if sphinx:
@@ -341,8 +426,10 @@ def modify_conf(config_file=None, cache_file=None, show=False, execute=None, tim
         check_call(commandline)
 
     if show:
+
         def file_hdr(name):
             print(f"\n# {'-' * 10} {name} {'-' * 10}\n")
+
         file_hdr(config_file)
         with config_file.open("r", encoding="utf-8") as f:
             for line in f:
@@ -366,7 +453,12 @@ class Commands:
     @classmethod
     def pre(cls, args):
         cls.heading("Pre-process notebooks")
-        return cls._run("pre-process notebooks", preprocess, srcdir=args.dir)
+        return cls._run(
+            "pre-process notebooks",
+            preprocess,
+            srcdir=args.dir,
+            show_solver=args.show_solver,
+        )
 
     @classmethod
     def skipped(cls, args):
@@ -377,20 +469,29 @@ class Commands:
     @classmethod
     def build(cls, args):
         sfx = " [dev]" if args.dev else ""
+        status_code = 0
         if not args.no_pre:
             cls.heading(f"Pre-process notebooks{sfx}")
-            cls._run(
-                f"pre-process notebooks{sfx}", preprocess, srcdir=args.dir, dev=args.dev
+            pre_kwargs = cls._extract_kwargs("pre", args)
+            status_code = cls._run(
+                f"pre-process notebooks{sfx}",
+                preprocess,
+                srcdir=args.dir,
+                dev=args.dev,
+                **pre_kwargs,
             )
-        cls.heading(f"Build Jupyterbook{sfx}")
-        result = cls._run(
-            f"build jupyterbook{sfx}",
-            jupyterbook,
-            srcdir=args.dir,
-            quiet=args.quiet,
-            dev=args.dev,
-        )
-        return result
+        if status_code:
+            _log.error(f"skip build because pre-process failed ({status_code})")
+        else:
+            cls.heading(f"Build Jupyterbook{sfx}")
+            status_code = cls._run(
+                f"build jupyterbook{sfx}",
+                jupyterbook,
+                srcdir=args.dir,
+                quiet=args.quiet,
+                dev=args.dev,
+            )
+        return status_code
 
     @classmethod
     def conf(cls, args):
@@ -400,7 +501,8 @@ class Commands:
         if not config_file.exists():
             _log.error(f"Config file not found at: {config_file}")
             _log.error(
-                f"Root directory can be set with '-d/--dir'. Current value: {root_dir.absolute()}"
+                "Root directory can be set with '-d/--dir'. Current value:"
+                f" {root_dir.absolute()}"
             )
             return -1
         return cls._run(
@@ -435,9 +537,7 @@ class Commands:
 
         cls.heading(f"Load notebooks into GUI")
         nb_dir = browse.find_notebook_dir().parent
-        cls._run(
-            f"pre-process notebooks", preprocess, srcdir=nb_dir
-        )
+        cls._run(f"pre-process notebooks", preprocess, srcdir=nb_dir)
         browse.set_log_level(_log.getEffectiveLevel())
         nb = browse.Notebooks()
         if args.console:
@@ -452,9 +552,9 @@ class Commands:
     @classmethod
     def where(cls, args):
         from idaes_examples import browse
+
         nb_dir = browse.find_notebook_dir()
         print(f"{nb_dir}")
-
 
     @staticmethod
     def _run(name, func, **kwargs):
@@ -479,6 +579,14 @@ class Commands:
     @staticmethod
     def subheading(message):
         print(f"   {message}")
+
+    @staticmethod
+    def _extract_kwargs(pfx: str, args: argparse.Namespace) -> dict:
+        """Extract keyword args starting with `<pfx>_` into a dict, stripping
+        off the prefix and separator in returned keys."""
+        s = pfx + "_"
+        n = len(s)
+        return {k[n:]: v for k, v in vars(args).items() if k.startswith(s)}
 
 
 def timeout_duration(s):
@@ -513,6 +621,13 @@ def main():
                 "-d", "--dir", help="Source directory (default=<current>)", default=None
             )
         add_vb(subp[name], dest=f"vb_{name}")
+    subp["pre"].add_argument(
+        "--show-solver",
+        "-S",
+        dest="show_solver",
+        action="store_true",
+        help="Do NOT hide solver output in generated documentation",
+    )
     subp["build"].add_argument(
         "--no-pre",
         action="store_true",
@@ -531,6 +646,16 @@ def main():
         action="store_true",
         help="Build development notebooks (only)",
         default=False,
+    )
+    subp["build"].add_argument(
+        "--show-solver",
+        "-S",
+        dest="pre_show_solver",
+        action="store_true",
+        help=(
+            "Do NOT hide solver output in generated documentation. This has no effect "
+            "if pre-processing is skipped."
+        ),
     )
     subp["conf"].add_argument(
         "--execute",
@@ -552,8 +677,12 @@ def main():
         default=None,
         help=f"Set JB config execute.timeout value (1..86400 seconds)",
     )
-    subp["conf"].add_argument("--show", action="store_true", help="Print config contents to console")
-    subp["conf"].add_argument("--sphinx", action="store_true", help="Run JB command to update Sphinx conf.py")
+    subp["conf"].add_argument(
+        "--show", action="store_true", help="Print config contents to console"
+    )
+    subp["conf"].add_argument(
+        "--sphinx", action="store_true", help="Run JB command to update Sphinx conf.py"
+    )
     subp["gui"].add_argument("--console", "-c", action="store_true", dest="console")
     subp["gui"].add_argument(
         "--stderr",
@@ -561,9 +690,11 @@ def main():
         action="store_true",
         default=False,
         dest="log_console",
-        help="Print logs to the console "
-        "(stderr) instead of redirecting "
-        "them to a file in ~/.idaes/logs",
+        help=(
+            "Print logs to the console "
+            "(stderr) instead of redirecting "
+            "them to a file in ~/.idaes/logs"
+        ),
     )
     args = p.parse_args()
     subvb = getattr(args, f"vb_{args.command}")

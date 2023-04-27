@@ -19,7 +19,7 @@ src_suffix_len = 4
 NB_ROOT = "notebooks"  # root folder name
 NB_CELLS = "cells"  # key for list of cells in a Jupyter Notebook
 NB_META = "metadata"  # notebook-level metadata key
-NB_IDAES, NB_SKIP = "idaes", "skip" # key and sub-key for notebook skipping
+NB_IDAES, NB_SKIP = "idaes", "skip"  # key and sub-key for notebook skipping
 
 
 class Tags(Enum):
@@ -101,9 +101,7 @@ def read_toc(src_path: Path) -> Dict:
     return toc
 
 
-def find_notebooks(
-    nbpath: Path, toc: Dict, callback, **kwargs
-) -> int:
+def find_notebooks(nbpath: Path, toc: Dict, callback, **kwargs) -> int:
     """Find and preprocess all notebooks in a Jupyterbook TOC.
 
     Args:
