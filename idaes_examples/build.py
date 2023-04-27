@@ -98,11 +98,37 @@ def _preprocess(nb_path: Path, show_solver=None):
     # Check whether source was changed after the derived notebooks.
     # Only consider types of derived notebooks that are always generated.
     src_mtime, changed = nb_path.stat().st_mtime, False
+    did_not_exist_files, stale_files = set(), False
     for ext in (Ext.DOC, Ext.USER, Ext.TEST):
         p_ext = ext_path(nb_path, ext=ext)
-        if not p_ext.exists() or p_ext.stat().st_mtime <= src_mtime:
-            changed = True
+        if not p_ext.exists():
+            did_not_exist_files.add(ext.value)
+        elif p_ext.stat().st_mtime <= src_mtime:
+            changed, stale_files = True, True
             break
+
+    # Load input file
+    with nb_path.open("r", encoding="utf-8") as nb_file:
+        nb = json.load(nb_file)
+
+    nb_names = [Ext.TEST.value, Ext.DOC.value, Ext.USER.value]
+
+    # allow notebook metadata to skip certain outputs (e.g. 'test')
+    do_not_create_files = set()
+    if NB_IDAES in nb[NB_META]:
+        for skip_ext in nb[NB_META][NB_IDAES].get(NB_SKIP, []):
+            nb_names.remove(skip_ext)
+            do_not_create_files.add(skip_ext)
+            _log.info(f"Skipping '{skip_ext}' for notebook '{nb_path}'")
+
+    # Check that only files we didn't want to create are not created,
+    # for the purposes of determining whether we can skip pre-processing
+    if did_not_exist_files != do_not_create_files:
+        _log.info(f"Some expected files not found: "
+                  f"extensions={did_not_exist_files - do_not_create_files}")
+        changed = True
+    elif did_not_exist_files:
+        _log.info(f"Missing files expected due to metadata: {did_not_exist_files}")
 
     # Stop if no changes (only now do we really know)
     if changed:
@@ -110,10 +136,6 @@ def _preprocess(nb_path: Path, show_solver=None):
     else:
         _log.info(f"=> Skip {nb_path} (source unchanged)")
         return
-
-    # Load input file
-    with nb_path.open("r", encoding="utf-8") as nb_file:
-        nb = json.load(nb_file)
 
     # Get cells to exclude, also ones with notebook xrefs
     had_tag = set()  # if tag occurred at all
@@ -132,7 +154,7 @@ def _preprocess(nb_path: Path, show_solver=None):
             if cell_tags & ex_tags:
                 # add in reverse order to make delete easier
                 exclude_cells[name].insert(0, cell_index)
-        # Look for (and save) lines with cross references
+        # Look for (and save) lines with cross-references
         xref_lines = [
             i for i, line in enumerate(cell["source"]) if nb_file_pat.search(line)
         ]
@@ -141,7 +163,6 @@ def _preprocess(nb_path: Path, show_solver=None):
 
     # Write output files
 
-    nb_names = [Ext.TEST.value, Ext.DOC.value, Ext.USER.value]
     is_tutorial = had_tag & {Tags.EX, Tags.SOL}
     if is_tutorial:
         nb_names.extend([Ext.EX.value, Ext.SOL.value])
@@ -152,11 +173,6 @@ def _preprocess(nb_path: Path, show_solver=None):
                 changed = True
                 break
 
-    # allow notebook metadata to skip certain outputs (e.g. 'test')
-    if NB_IDAES in nb[NB_META]:
-        for skip_ext in nb[NB_META][NB_IDAES].get(NB_SKIP, []):
-            nb_names.remove(skip_ext)
-            _log.info(f"Skipping '{skip_ext}' for notebook '{nb_path}'")
 
     for name in nb_names:
         nb_copy = nb.copy()
@@ -177,7 +193,9 @@ def _preprocess(nb_path: Path, show_solver=None):
         # Hide solver output cell(s) in Jupyterbook documentation
         if name == Ext.DOC.value and not show_solver:
             for cell_index, cell in enumerate(nb_copy[NB_CELLS]):
-                if suppress_output(cell):
+                if change_get_solver_import(cell):
+                    pass
+                elif suppress_output(cell):
                     # add hide-output tag (once)
                     try:
                         tags = set(cell[NB_META]["tags"])
@@ -196,19 +214,35 @@ def _preprocess(nb_path: Path, show_solver=None):
             nb[NB_CELLS][i]["source"] = s
 
     dur = time.time() - t0
-    _log.info(f"Prepocessed notebook {nb_path} in {dur:.2f} seconds")
+    _log.info(f"Preprocessed notebook {nb_path} in {dur:.2f} seconds")
 
 
 # Regular expressions for suppress_output()
 ipopt_version_re = re.compile("Ipopt .*")       # Ipopt 3.13.2 ...
 solver_call_re = re.compile(r"\.solve\(\S+\)")  # solver.solve(m, ..)
+solver_import_re = re.compile(r"from\s+idaes\.core\.solvers\s+import\s+get_solver\s*$")
+
+
+def change_get_solver_import(cell: dict) -> bool:
+    if cell.get("cell_type", "") != "code":
+        return False
+    source = cell.get("source", [])
+    index, trailing_comma = -1, ""
+    for i, line in enumerate(source):
+        if solver_import_re.search(line):
+            index = i
+            break
+    if index >= 0:
+        source[index] = "from idaes_examples.mod.util import get_solver\n"
+        _log.debug(f"changed line at {index} to:\n@@ {source[index]}")
+        return True
+    return False
 
 
 def suppress_output(cell: dict) -> bool:
     """Determine whether to suppress output of a given cell.
     """
-    cell_type = cell.get("cell_type", "")
-    if cell_type != "code":
+    if cell.get("cell_type", "") != "code":
         return False
     # Look for a call to .solve() in the source
     source = cell.get("source", [])
