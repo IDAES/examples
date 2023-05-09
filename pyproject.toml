@@ -36,48 +36,40 @@ classifiers = [
         "Topic :: Scientific/Engineering :: Mathematics",
         "Topic :: Scientific/Engineering :: Chemistry",
         "Topic :: Software Development :: Libraries :: Python Modules",
-    ]
-    dependencies = [
-        # Don't version setuptools, various bits complain
-        "setuptools",
-        # Get IDAES from last release. NOTE: [dev] overrides this!
-        "idaes-pse",
-        # Pyomo
-        "pyomo>=6.5.0",
-        # For the small embedded GUI
-        "PySimpleGUI~=4.60.4",
-        "tkhtmlview==0.1.1.post5",
-        "Markdown~=3.4.1",
-        # For Keras/OMLT
-        "tensorflow"
-    ]
-    keywords = ["IDAES", "energy systems", "chemical engineering", "process modeling"]
+]
+dependencies = [
+    # Don't version setuptools, various bits complain
+    "setuptools",
+    # Pyomo
+    "pyomo>=6.5.0",
+    "jupyter",
+]
+keywords = ["IDAES", "energy systems", "chemical engineering", "process modeling"]
 
 [project.optional-dependencies]
-# Just for developers (they should also add 'jb')
-dev = [
-    # IDAES
-    # -- for development, use github main
-    # NOTE: Need to manually comment this out when building the package
-    #"idaes-pse @ git+https://github.com/IDAES/idaes-pse",
+gui = [
+    # For the small embedded GUI
+    "PySimpleGUI~=4.60.4",
+    "tkhtmlview==0.1.1.post5",
+    "Markdown~=3.4.1",
+]
+surrogates = [
+    # For Keras/OMLT
+    "tensorflow",
+]
+idaes = [
+    "idaes-pse",  # installing IDAES (from release) is opt-in
+]
+testing = [
     # parallel pytest
     "pytest-xdist ~= 3.0.2",
     # pytest reporting
     "pytest-reportlog ~= 0.1.2",
-    # For jupyter notebook testing
-    "black[jupyter] ~= 22.8.0",
-    # For adding copyright headers (see addheader.yml and the readme)
-    "addheader >= 0.3.0",
-    # For the idaesx new terminal UI
-    "blessed ~= 1.20.0"
+    "nbclient",
+    "nbmake",
 ]
-# For packaging
-pkg = [
-    "build",
-    "twine"
-]
-# For Jupyterbook (e.g. readthedocs builds)
-jb = [
+# dependencies for building documentation
+docs = [
     "jupyter-book ~= 0.13.1",
     # "jupyter-cache ~= 0.4.3",
     "jupyter-cache",
@@ -85,11 +77,24 @@ jb = [
     # version of nbclient, which is required by jupyter-cache
     # "nbclient ~= 0.5.13",
     "nbclient",
-    "nbmake",
     "nbformat",
     # markdown in Sphinx
     "myst-nb ~= 0.13.2",
     "myst-parser ~= 0.15.2",
+]
+# For developers
+dev = [
+    "idaes-examples[testing,docs]",
+    # For jupyter notebook testing
+    "black[jupyter] ~= 22.8.0",
+    # For adding copyright headers (see addheader.yml and the readme)
+    "addheader >= 0.3.0",
+    "blessed ~= 1.20.0",
+]
+# For creating a package
+packaging = [
+    "build",
+    "twine"
 ]
 
 [project.urls]
