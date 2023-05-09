@@ -8,34 +8,35 @@ build-backend = "setuptools.build_meta"
 
 [project]
     name = "idaes_examples"
-    description = "IDAES Process Systems Engineering Examples"
-    readme = "README.md"
-    version = "2.0.0a2"
-    license = {text="BSD"}
+description = "IDAES Process Systems Engineering Examples"
+readme = "README.md"
+version = "2.0.0a2"
+license = {text="BSD"}
     requires-python = ">=3.7"
-    authors = [
-        {name="The IDAES Project"},
-        {name="Dan Gunter", email="dkgunter@lbl.gov"}
-    ]
-    classifiers = [
-            "Development Status :: 3 - Alpha",
-            "Intended Audience :: End Users/Desktop",
-            "Intended Audience :: Science/Research",
-            "License :: OSI Approved :: BSD License",
-            "Natural Language :: English",
-            "Operating System :: MacOS",
-            "Operating System :: Microsoft :: Windows",
-            "Operating System :: Unix",
-            "Programming Language :: Python",
-            "Programming Language :: Python :: 3",
+authors = [
+    {name="The IDAES Project"},
+    {name="Dan Gunter", email="dkgunter@lbl.gov"}
+]
+classifiers = [
+        "Development Status :: 3 - Alpha",
+        "Intended Audience :: End Users/Desktop",
+        "Intended Audience :: Science/Research",
+        "License :: OSI Approved :: BSD License",
+        "Natural Language :: English",
+        "Operating System :: MacOS",
+        "Operating System :: Microsoft :: Windows",
+        "Operating System :: Unix",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 3",
             "Programming Language :: Python :: 3.7",
-            "Programming Language :: Python :: 3.8",
-            "Programming Language :: Python :: 3.9",
-            "Programming Language :: Python :: 3.10",
-            "Programming Language :: Python :: Implementation :: CPython",
-            "Topic :: Scientific/Engineering :: Mathematics",
-            "Topic :: Scientific/Engineering :: Chemistry",
-            "Topic :: Software Development :: Libraries :: Python Modules",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: Implementation :: CPython",
+        "Topic :: Scientific/Engineering :: Mathematics",
+        "Topic :: Scientific/Engineering :: Chemistry",
+        "Topic :: Software Development :: Libraries :: Python Modules",
     ]
     dependencies = [
         # Don't version setuptools, various bits complain
