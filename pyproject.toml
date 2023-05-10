@@ -53,8 +53,9 @@ gui = [
     "tkhtmlview==0.1.1.post5",
     "Markdown~=3.4.1",
 ]
-surrogates = [
+omlt = [
     # For Keras/OMLT
+    "omlt",
     "tensorflow",
 ]
 idaes = [

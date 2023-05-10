@@ -1,4 +1,4 @@
---editable .[dev,surrogates]
+--editable .[dev,omlt]
 
 # `dmf` is needed because idaes.core.util.convergence.convergence_base imports idaes.core.dmf.resource
 idaes-pse[dmf] @ git+https://github.com/IDAES/idaes-pse@refs/pull/1133/merge
