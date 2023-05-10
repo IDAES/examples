@@ -36,8 +36,8 @@ Clone the repository from GitHub, set up your Python environment as you usually 
 
 ```shell
 # to create a conda environment first:
-# conda create -n idaes-examples python=3; conda activate idaes-examples
-pip install -e .[dev,jb]
+# conda create -n idaes-examples python=3.10; conda activate idaes-examples
+pip install -r requirements-dev.txt
 ```
 
 The configuration of the installation is stored in `pyproject.toml`.

@@ -10,10 +10,7 @@ build:
       - idaesx conf --execute cache --timeout 600 --sphinx --show
 python:
   install:
-    - method: pip
-      path: .
-      extra_requirements:
-        - jb
+    - requirements: requirements-dev.txt
 
 sphinx:
   builder: html
