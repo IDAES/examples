@@ -240,6 +240,45 @@ def _clean(nb_path: Path, **kwargs):
             gen_path.unlink()
 
 
+# ----------------------
+# Remove output cells
+# ----------------------
+
+
+def remove_outputs(srcdir=None):
+    src_path = allow_repo_root(Path(srcdir), main) / NB_ROOT
+    toc = read_toc(src_path)
+    t0 = time.time()
+    results = find_notebooks(src_path, toc, _ro)
+    dur = time.time() - t0
+    n = len(results)
+    n_removed = sum(results.values())
+    n_skipped = n - n_removed
+    _log.info(f"Processed {n} notebooks (removed code cells from {n_removed} / "
+              f"did nothing for {n_skipped}) in {dur:.1f} seconds")
+    Commands.subheading(f"removed {n_removed}, no action {n_skipped}")
+
+
+def _ro(nb_path: Path, **kwargs):
+    """Remove output cells"""
+    nb = json.load(nb_path.open("r", encoding="utf-8"))
+    changed = False
+    for cell in nb[NB_CELLS]:
+        if "cell_type" not in cell:
+            raise KeyError(f"Notebook cell missing key 'cell_type' in {nbpath}")
+        if cell["cell_type"] == "code":
+            if "outputs" not in cell:
+                raise KeyError(f"Notebook cell missing key 'outputs' in {nbpath}")
+            if cell["outputs"]:
+                cell["outputs"] = []
+                changed = True
+    if changed:
+        with nb_path.open("w", encoding="utf-8") as f:
+            json.dump(nb, f)
+        _log.debug(f"Removed code cell output(s) from {nb_path}")
+    return changed
+
+
 # ---------------
 # List skipped
 # ---------------
@@ -328,6 +367,7 @@ def jupyterbook(srcdir=None, quiet=0, dev=False):
 
 
 def _rename_cached_files(root_dir: Path, cache_dir: Path, conn: sqlite3.Connection):
+    root_dir = root_dir.absolute()
     for rec in conn.execute("select * from nbcache"):
         key, path = rec[1], Path(rec[2])
         name = path.relative_to(root_dir).as_posix()
@@ -446,6 +486,9 @@ class Commands:
     def build(cls, args):
         sfx = " [dev]" if args.dev else ""
         if not args.no_pre:
+            if not args.dev:
+                cls.heading(f"Remove code cell outputs")
+                cls._run(f"remove code cell outputs", remove_outputs, srcdir=args.dir)
             cls.heading(f"Pre-process notebooks{sfx}")
             cls._run(
                 f"pre-process notebooks{sfx}", preprocess, srcdir=args.dir, dev=args.dev
@@ -492,6 +535,11 @@ class Commands:
     def clean(cls, args):
         cls.heading("Remove generated notebooks")
         return cls._run("remove generated notebooks", clean, srcdir=args.dir)
+
+    @classmethod
+    def outputs(cls, args):
+        cls.heading("Remove output cells in source notebooks")
+        return cls._run("remove output cells", remove_outputs, srcdir=args.dir)
 
     @classmethod
     def black(cls, args):
@@ -569,6 +617,7 @@ def main():
         ("build", "Build Jupyterbook"),
         ("view", "View Jupyterbook"),
         ("clean", "Remove generated files"),
+        ("outputs", "Remove output cells in source files"),
         ("black", "Format code in notebooks with Black"),
         ("gui", "Graphical notebook browser"),
         ("skipped", "List notebooks tagged to skip some pre-processing"),
