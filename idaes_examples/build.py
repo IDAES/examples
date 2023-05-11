@@ -6,6 +6,7 @@ import json
 import logging
 from pathlib import Path
 import re
+import sqlite3
 from subprocess import check_call
 import sys
 import time
@@ -20,6 +21,7 @@ from idaes_examples.util import (
     add_vb_flags,
     allow_repo_root,
     NB_ROOT,
+    NB_CACHE,
     NB_CELLS,
     NB_META,
     NB_IDAES,
@@ -58,11 +60,16 @@ def preprocess(srcdir=None, dev=False):
         src_path /= NB_ROOT
     toc = read_toc(src_path)
     t0 = time.time()
-    n = find_notebooks(src_path, toc, _preprocess)
+    results = find_notebooks(src_path, toc, _preprocess)
     for dev_file in (src_path / DEV_DIR).glob(f"*{src_suffix}.ipynb"):
         _preprocess(dev_file)
     dur = time.time() - t0
-    _log.info(f"Preprocessed {n} notebooks in {dur:.1f} seconds")
+    n = len(results)
+    n_processed = sum(results.values())
+    n_skipped = n - n_processed
+    _log.info(f"Preprocessed {n} notebooks (changed {n_processed} / "
+              f"skipped {n_skipped}) in {dur:.1f} seconds")
+    Commands.subheading(f"did {n_processed}, skipped {n_skipped}")
     return n
 
 
@@ -83,7 +90,7 @@ nb_file_subs = {e.value: f"\\1_{e.value}.ipynb" for e in Ext if e != Ext.DOC}
 nb_file_subs[Ext.DOC.value] = f"\\1_{Ext.DOC.value}.md"
 
 
-def _preprocess(nb_path: Path, **kwargs):
+def _preprocess(nb_path: Path, **kwargs) -> bool:
     _log.info(f"File: {nb_path}")
 
     def ext_path(p: Path, ext: Ext = None, name: str = None) -> Path:
@@ -93,23 +100,26 @@ def _preprocess(nb_path: Path, **kwargs):
         _log.debug(f"Path[{name}] = '{p_new}'")
         return p_new
 
+    def update_changed(nb_path: Path, ext: Ext, mtime: float, d: dict):
+        p = ext_path(nb_path, ext=ext)
+        if not p.exists():
+            d["exists"].add(ext.value)
+        elif p.stat().st_mtime <= mtime:
+            d["mtime"].add(ext.value)
+
     t0 = time.time()
 
     # Check whether source was changed after the derived notebooks.
     # Only consider types of derived notebooks that are always generated.
     src_mtime, changed = nb_path.stat().st_mtime, False
+    changed_because = {"exists": set(), "mtime": set()}
     for ext in (Ext.DOC, Ext.USER, Ext.TEST):
-        p_ext = ext_path(nb_path, ext=ext)
-        if not p_ext.exists() or p_ext.stat().st_mtime <= src_mtime:
-            changed = True
-            break
+        update_changed(nb_path, ext, src_mtime, changed_because)
 
-    # Stop if no changes (only now do we really know)
-    if changed:
-        _log.debug(f"=> Preprocess {nb_path} (source changed)")
-    else:
+    # Stop if no changes
+    if not (changed_because["exists"] or changed_because["mtime"]):
         _log.info(f"=> Skip {nb_path} (source unchanged)")
-        return
+        return False
 
     # Load input file
     with nb_path.open("r", encoding="utf-8") as nb_file:
@@ -147,16 +157,36 @@ def _preprocess(nb_path: Path, **kwargs):
         nb_names.extend([Ext.EX.value, Ext.SOL.value])
         # Also check these files for changes
         for ext in (Ext.EX, Ext.SOL):
-            p_ext = ext_path(nb_path, ext=ext)
-            if not p_ext.exists() or p_ext.stat().st_mtime <= src_mtime:
-                changed = True
-                break
+            update_changed(nb_path, ext, src_mtime, changed_because)
 
     # allow notebook metadata to skip certain outputs (e.g. 'test')
     if NB_IDAES in nb[NB_META]:
         for skip_ext in nb[NB_META][NB_IDAES].get(NB_SKIP, []):
             nb_names.remove(skip_ext)
+            if skip_ext in changed_because["exists"]:
+                changed_because["exists"].remove(skip_ext)
             _log.info(f"Skipping '{skip_ext}' for notebook '{nb_path}'")
+
+    # Check again if we should skip
+    if not (changed_because["exists"] or changed_because["mtime"]):
+        _log.info(f"=> Skip {nb_path} (source unchanged)")
+        return False
+
+    # ..alright, baby, we're doing this!
+    why = "source is newer" if changed_because["mtime"] else "generated files missing"
+    _log.info(f"=> Preprocess {nb_path} ({why})")
+
+    # Remove 'id' if found in any cells
+    ids_removed = []
+    for cell_index, cell in enumerate(nb[NB_CELLS]):
+        if "id" in cell:
+            ids_removed.append(cell_index)
+            del cell["id"]
+    if ids_removed:
+        if len(ids_removed) > 1:
+            _log.info(f"Removed 'id' from {len(ids_removed)} cells")
+        else:
+            _log.info(f"Removed 'id' from cell {ids_removed[0]}")
 
     for name in nb_names:
         nb_copy = nb.copy()
@@ -184,8 +214,8 @@ def _preprocess(nb_path: Path, **kwargs):
             nb[NB_CELLS][i]["source"] = s
 
     dur = time.time() - t0
-    _log.info(f"Prepocessed notebook {nb_path} in {dur:.2f} seconds")
-
+    _log.info(f"Preprocessed notebook {nb_path} in {dur:.2f} seconds")
+    return True
 
 # -------------
 # Clean
@@ -281,6 +311,31 @@ def jupyterbook(srcdir=None, quiet=0, dev=False):
         add_vb_flags(_log, commandline)
     # run build
     check_call(commandline)
+    # post-process cache
+    if not dev:
+        Commands.subheading(f"Post-process Jupyterbook cache")
+        nbcache_dir = path / NB_CACHE
+        if not nbcache_dir.exists() or not nbcache_dir.is_dir():
+            raise FileNotFoundError(f"Cache directory not found: {nbcache_dir}")
+        nbcache_db = nbcache_dir / "global.db"
+        if not nbcache_db.exists() or not nbcache_db.is_file():
+            raise FileNotFoundError(f"Cache database not found: {nbcache_db}")
+        try:
+            conn = sqlite3.connect(nbcache_db)
+        except sqlite3.Error as err:
+            raise FileNotFoundError(f"Invalid cache database {nbcache_db}: {err}")
+        _rename_cached_files(path, nbcache_dir, conn)
+
+
+def _rename_cached_files(root_dir: Path, cache_dir: Path, conn: sqlite3.Connection):
+    for rec in conn.execute("select * from nbcache"):
+        key, path = rec[1], Path(rec[2])
+        name = path.relative_to(root_dir).as_posix()
+        if not name.endswith(".ipynb"):
+            _log.warning(f"Cached file does not end in .ipynb, skipping: {path}")
+            continue
+        new_name = name.replace("/", "--") + f"__{key}"
+        _log.debug(f"Rename cache dir. {key} -> {new_name}")
 
 
 # -------------
@@ -302,7 +357,14 @@ def view_docs(srcdir=None):
 # ----------------
 #  Modify config
 # ----------------
-def modify_conf(config_file=None, cache_file=None, show=False, execute=None, timeout=None, sphinx=False):
+def modify_conf(
+    config_file=None,
+    cache_file=None,
+    show=False,
+    execute=None,
+    timeout=None,
+    sphinx=False,
+):
     # Load configuration file
     with config_file.open("r", encoding="utf-8") as f:
         conf = yaml.safe_load(f)
@@ -324,15 +386,19 @@ def modify_conf(config_file=None, cache_file=None, show=False, execute=None, tim
 
     # Set values, aborting on missing keys
     try:
-        changed = update_value(execute, "execute", "execute_notebooks") or update_value(
-            timeout, "execute", "timeout"
-        ) or update_value(cache_file, "execute", "cache")
+        changed = (
+            update_value(execute, "execute", "execute_notebooks")
+            or update_value(timeout, "execute", "timeout")
+            or update_value(cache_file, "execute", "cache")
+        )
     except KeyError:
         return -1
 
     # Update configurations
     if changed:
-        Commands.subheading(f"Writing modified Jupyterbook config to file: {config_file}")
+        Commands.subheading(
+            f"Writing modified Jupyterbook config to file: {config_file}"
+        )
         with config_file.open("w", encoding="utf-8") as f:
             yaml.dump(conf, f)
     if sphinx:
@@ -341,8 +407,10 @@ def modify_conf(config_file=None, cache_file=None, show=False, execute=None, tim
         check_call(commandline)
 
     if show:
+
         def file_hdr(name):
             print(f"\n# {'-' * 10} {name} {'-' * 10}\n")
+
         file_hdr(config_file)
         with config_file.open("r", encoding="utf-8") as f:
             for line in f:
@@ -400,7 +468,8 @@ class Commands:
         if not config_file.exists():
             _log.error(f"Config file not found at: {config_file}")
             _log.error(
-                f"Root directory can be set with '-d/--dir'. Current value: {root_dir.absolute()}"
+                "Root directory can be set with '-d/--dir'. Current value:"
+                f" {root_dir.absolute()}"
             )
             return -1
         return cls._run(
@@ -435,9 +504,7 @@ class Commands:
 
         cls.heading(f"Load notebooks into GUI")
         nb_dir = browse.find_notebook_dir().parent
-        cls._run(
-            f"pre-process notebooks", preprocess, srcdir=nb_dir
-        )
+        cls._run(f"pre-process notebooks", preprocess, srcdir=nb_dir)
         browse.set_log_level(_log.getEffectiveLevel())
         nb = browse.Notebooks()
         if args.console:
@@ -452,9 +519,9 @@ class Commands:
     @classmethod
     def where(cls, args):
         from idaes_examples import browse
+
         nb_dir = browse.find_notebook_dir()
         print(f"{nb_dir}")
-
 
     @staticmethod
     def _run(name, func, **kwargs):
@@ -552,8 +619,12 @@ def main():
         default=None,
         help=f"Set JB config execute.timeout value (1..86400 seconds)",
     )
-    subp["conf"].add_argument("--show", action="store_true", help="Print config contents to console")
-    subp["conf"].add_argument("--sphinx", action="store_true", help="Run JB command to update Sphinx conf.py")
+    subp["conf"].add_argument(
+        "--show", action="store_true", help="Print config contents to console"
+    )
+    subp["conf"].add_argument(
+        "--sphinx", action="store_true", help="Run JB command to update Sphinx conf.py"
+    )
     subp["gui"].add_argument("--console", "-c", action="store_true", dest="console")
     subp["gui"].add_argument(
         "--stderr",
@@ -561,9 +632,11 @@ def main():
         action="store_true",
         default=False,
         dest="log_console",
-        help="Print logs to the console "
-        "(stderr) instead of redirecting "
-        "them to a file in ~/.idaes/logs",
+        help=(
+            "Print logs to the console "
+            "(stderr) instead of redirecting "
+            "them to a file in ~/.idaes/logs"
+        ),
     )
     args = p.parse_args()
     subvb = getattr(args, f"vb_{args.command}")

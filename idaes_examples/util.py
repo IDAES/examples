@@ -5,7 +5,7 @@ Common variables and methods for tests and scripts.
 from enum import Enum
 import logging
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List, Any
 
 # third-party
 import yaml
@@ -17,9 +17,10 @@ src_suffix_len = 4
 
 
 NB_ROOT = "notebooks"  # root folder name
+NB_CACHE = "nbcache"  # cache subdirectory
 NB_CELLS = "cells"  # key for list of cells in a Jupyter Notebook
 NB_META = "metadata"  # notebook-level metadata key
-NB_IDAES, NB_SKIP = "idaes", "skip" # key and sub-key for notebook skipping
+NB_IDAES, NB_SKIP = "idaes", "skip"  # key and sub-key for notebook skipping
 
 
 class Tags(Enum):
@@ -101,9 +102,7 @@ def read_toc(src_path: Path) -> Dict:
     return toc
 
 
-def find_notebooks(
-    nbpath: Path, toc: Dict, callback, **kwargs
-) -> int:
+def find_notebooks(nbpath: Path, toc: Dict, callback, **kwargs) -> Dict[Path, Any]:
     """Find and preprocess all notebooks in a Jupyterbook TOC.
 
     Args:
@@ -114,9 +113,9 @@ def find_notebooks(
         **kwargs: Additional arguments passed through to the callback
 
     Returns:
-        Number of notebooks processed
+        Mapping of paths to return values from calls to processed notebooks
     """
-    n = 0
+    results = {}
     for part in toc["parts"]:
         for chapter in part["chapters"]:
             # list of {'file': name} dicts for each section, or just one for each chapter
@@ -127,8 +126,7 @@ def find_notebooks(
                 path = nbpath / f"{filename}.ipynb"
                 if path.exists():
                     _log.debug(f"Found notebook at: {path}")
-                    callback(path, **kwargs)
-                    n += 1
+                    results[path] = callback(path, **kwargs)
                 else:
                     raise FileNotFoundError(f"Could not find notebook at: {path}")
-    return n
+    return results
