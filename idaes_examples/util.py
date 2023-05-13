@@ -11,13 +11,18 @@ from typing import Dict, List, Any
 import yaml
 
 _log = logging.getLogger(__name__)
+_h = logging.StreamHandler()
+_h.setFormatter(
+    logging.Formatter("[%(levelname)s] %(asctime)s %(module)s - %(message)s")
+)
+_log.addHandler(_h)
 
 src_suffix = "_src"
 src_suffix_len = 4
 
 
 NB_ROOT = "notebooks"  # root folder name
-NB_CACHE = "nbcache"  # cache subdirectory
+NB_CACHE = ".jupyter_cache"  # cache subdirectory
 NB_CELLS = "cells"  # key for list of cells in a Jupyter Notebook
 NB_META = "metadata"  # notebook-level metadata key
 NB_IDAES, NB_SKIP = "idaes", "skip"  # key and sub-key for notebook skipping
@@ -73,16 +78,50 @@ def add_vb_flags(logger, cmdline):
         cmdline.append(f"-{vbs}")
 
 
-def allow_repo_root(src_path, func) -> Path:
+def find_notebook_root(src_path) -> Path:
     """This allows commands to (also) work if src_path is the repo root (as opposed
     to the directory with the notebooks in it).
     """
-    src_path = Path(src_path)
-    if not (src_path / NB_ROOT).exists():
-        mod = func.__module__.split(".")[0]
-        if (src_path / mod / NB_ROOT).exists():
-            src_path /= mod
-    return src_path
+    level = logging.getLogger("")
+
+    def is_notebook_dir(p):
+        return (
+            (p / NB_ROOT).exists()
+            and (p / NB_ROOT).is_dir()
+            and (p / NB_ROOT / "_toc.yml").exists()
+            and (p / NB_ROOT / "_config.yml").exists()
+        )
+
+    result = None
+
+    src_path = Path(src_path).absolute()
+
+    _log.info(f"Find notebook root starting from: {src_path}")
+    # Try input dir
+    _log.debug(f"Find notebook root; try: {src_path}")
+    if is_notebook_dir(src_path):
+        result = src_path
+    else:
+        # Try (input dir / idaes_examples)
+        mod_path = src_path / "idaes_examples"
+        _log.debug(f"Find notebook root; try: {mod_path}")
+        if is_notebook_dir(mod_path):
+            result = mod_path
+        else:
+            # Try parents of input dir
+            _log.debug(f"Find notebook root; try parents of {src_path}")
+            while src_path.parent != src_path:
+                src_path = src_path.parent
+                _log.debug(f"Find notebook root; try: {src_path}")
+                if is_notebook_dir(src_path):
+                    result = src_path
+                    break
+
+    if result is None:
+        raise FileNotFoundError(f"Directory '{NB_ROOT}' not found")
+
+    _log.info(f"Find notebook root result: {result}")
+    return result
 
 
 def read_toc(src_path: Path) -> Dict:

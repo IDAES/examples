@@ -4,6 +4,7 @@ Build the examples
 import argparse
 import json
 import logging
+import os
 from pathlib import Path
 import re
 from subprocess import check_call
@@ -18,7 +19,7 @@ from idaes_examples.util import (
     add_vb,
     process_vb,
     add_vb_flags,
-    allow_repo_root,
+    find_notebook_root,
     NB_ROOT,
     NB_CACHE,
     NB_CELLS,
@@ -31,8 +32,9 @@ from idaes_examples.util import (
     src_suffix_len,
     Ext,
     ExtAll,
-    Tags,
+    Tags
 )
+from idaes_examples.util import _log as util_log
 
 # third-party
 from jupyter_cache import get_cache
@@ -58,7 +60,7 @@ DEV_DIR = "_dev"  # special directory to include in preprocessing
 
 
 def preprocess(srcdir=None, dev=False):
-    src_path = allow_repo_root(Path(srcdir), main)
+    src_path = find_notebook_root(Path(srcdir))
     src_path /= NB_ROOT
     if dev:
         src_path /= "_dev"
@@ -235,7 +237,7 @@ def _preprocess(nb_path: Path, **kwargs) -> bool:
 
 
 def clean(srcdir=None):
-    src_path = allow_repo_root(Path(srcdir), main) / NB_ROOT
+    src_path = find_notebook_root(Path(srcdir)) / NB_ROOT
     toc = read_toc(src_path)
     find_notebooks(src_path, toc, _clean)
 
@@ -258,7 +260,7 @@ def _clean(nb_path: Path, **kwargs):
 
 
 def remove_outputs(srcdir=None):
-    src_path = allow_repo_root(Path(srcdir), main) / NB_ROOT
+    src_path = find_notebook_root(Path(srcdir)) / NB_ROOT
     toc = read_toc(src_path)
     t0 = time.time()
     results = find_notebooks(src_path, toc, _ro)
@@ -299,7 +301,7 @@ def _ro(nb_path: Path, **kwargs):
 
 
 def skipped(srcdir=None):
-    src_path = allow_repo_root(Path(srcdir), main) / NB_ROOT
+    src_path = find_notebook_root(Path(srcdir)) / NB_ROOT
     toc = read_toc(src_path)
     smap = {}
     find_notebooks(src_path, toc, _skipped, smap=smap)
@@ -334,7 +336,7 @@ def _skipped(nb_path: Path, smap=None, **kwargs):
 
 
 def black(srcdir=None):
-    src_path = allow_repo_root(Path(srcdir), main) / NB_ROOT
+    src_path = find_notebook_root(Path(srcdir)) / NB_ROOT
     commandline = ["black", "--include", ".*_src\\.ipynb", str(src_path)]
     add_vb_flags(_log, commandline)
     check_call(commandline)
@@ -347,7 +349,7 @@ def black(srcdir=None):
 
 def _get_nb_path(source_dir: str, dev: bool) -> Path:
     """Get path to notebooks given source code directory."""
-    path = allow_repo_root(Path(source_dir), main)
+    path = find_notebook_root(Path(source_dir))
     path /= NB_ROOT
     if dev:
         path /= "_dev"
@@ -356,20 +358,24 @@ def _get_nb_path(source_dir: str, dev: bool) -> Path:
         raise FileNotFoundError(f"Could not find directory: {path}")
     return path
 
-
 def jupyterbook(srcdir=None, quiet=0, dev=False):
     path = _get_nb_path(srcdir, dev)
-    commandline = ["jupyter-book", "build", str(path)]
-    if dev:
-        commandline.extend(["--path-output", str(path)])
-    if quiet > 0:
-        quiet = min(quiet, 2)
-        commandline.append(f"-{'q' * quiet}")
-    else:
-        add_vb_flags(_log, commandline)
-    # run build
-    check_call(commandline)
-
+    cwd = os.getcwd()
+    _log.info(f"Running build in directory: {path}")
+    os.chdir(path)
+    try:
+        commandline = ["jupyter-book", "build", str(path)]
+        if dev:
+            commandline.extend(["--path-output", str(path)])
+        if quiet > 0:
+            quiet = min(quiet, 2)
+            commandline.append(f"-{'q' * quiet}")
+        else:
+            add_vb_flags(_log, commandline)
+        # run build
+        check_call(commandline)
+    finally:
+        os.chdir(cwd)
 
 # --------------
 # Merge outputs
@@ -419,7 +425,7 @@ def _merge_outputs(path: Path, cache=None):
 
 
 def view_docs(srcdir=None):
-    src_path = allow_repo_root(Path(srcdir), main) / NB_ROOT
+    src_path = find_notebook_root(Path(srcdir)) / NB_ROOT
     docs_path = src_path / "_build" / "html"
     if not docs_path.is_dir():
         raise FileNotFoundError(f"Could not find directory: {docs_path}")
@@ -541,7 +547,7 @@ class Commands:
     @classmethod
     def conf(cls, args):
         cls.heading("Modify configuration files")
-        root_dir = allow_repo_root(Path(args.dir), main)
+        root_dir = find_notebook_root(Path(args.dir))
         config_file = root_dir / NB_ROOT / "_config.yml"
         if not config_file.exists():
             _log.error(f"Config file not found at: {config_file}")
@@ -736,10 +742,9 @@ def main():
     )
     args = p.parse_args()
     subvb = getattr(args, f"vb_{args.command}")
-    if subvb != args.vb:
-        process_vb(_log, subvb)
-    else:
-        process_vb(_log, args.vb)
+    use_vb = subvb if subvb > args.vb else args.vb
+    for logger in _log, util_log:
+        process_vb(logger, use_vb)
     # give 'args.dir' a default of ".", but remember whether user gave this value
     if hasattr(args, "dir"):
         if args.dir is None:
