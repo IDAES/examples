@@ -39,6 +39,9 @@ class Ext(Enum):
     USER = "usr"
 
 
+ExtAll = {Ext.DOC, Ext.EX, Ext.SOL, Ext.TEST, Ext.USER}
+
+
 def add_vb(p, dest="vb"):
     p.add_argument(
         "-v",

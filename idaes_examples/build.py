@@ -6,7 +6,6 @@ import json
 import logging
 from pathlib import Path
 import re
-import sqlite3
 from subprocess import check_call
 import sys
 import time
@@ -31,8 +30,14 @@ from idaes_examples.util import (
     src_suffix,
     src_suffix_len,
     Ext,
+    ExtAll,
     Tags,
 )
+
+# third-party
+from jupyter_cache import get_cache
+import nbformat as nbf
+
 
 # -------------
 #   Logging
@@ -67,8 +72,10 @@ def preprocess(srcdir=None, dev=False):
     n = len(results)
     n_processed = sum(results.values())
     n_skipped = n - n_processed
-    _log.info(f"Preprocessed {n} notebooks (changed {n_processed} / "
-              f"skipped {n_skipped}) in {dur:.1f} seconds")
+    _log.info(
+        f"Preprocessed {n} notebooks (changed {n_processed} / "
+        f"skipped {n_skipped}) in {dur:.1f} seconds"
+    )
     Commands.subheading(f"did {n_processed}, skipped {n_skipped}")
     return n
 
@@ -188,6 +195,10 @@ def _preprocess(nb_path: Path, **kwargs) -> bool:
         else:
             _log.info(f"Removed 'id' from cell {ids_removed[0]}")
 
+    # Set notebook version
+    nb["nbformat"] = 4
+    nb["nbformat_minor"] = 3
+
     for name in nb_names:
         nb_copy = nb.copy()
         nb_copy[NB_CELLS] = nb[NB_CELLS].copy()
@@ -216,6 +227,7 @@ def _preprocess(nb_path: Path, **kwargs) -> bool:
     dur = time.time() - t0
     _log.info(f"Preprocessed notebook {nb_path} in {dur:.2f} seconds")
     return True
+
 
 # -------------
 # Clean
@@ -254,8 +266,10 @@ def remove_outputs(srcdir=None):
     n = len(results)
     n_removed = sum(results.values())
     n_skipped = n - n_removed
-    _log.info(f"Processed {n} notebooks (removed code cells from {n_removed} / "
-              f"did nothing for {n_skipped}) in {dur:.1f} seconds")
+    _log.info(
+        f"Processed {n} notebooks (removed code cells from {n_removed} / "
+        f"did nothing for {n_skipped}) in {dur:.1f} seconds"
+    )
     Commands.subheading(f"removed {n_removed}, no action {n_skipped}")
 
 
@@ -331,15 +345,20 @@ def black(srcdir=None):
 # --------------------
 
 
-def jupyterbook(srcdir=None, quiet=0, dev=False):
-    # build commandline with path arg
-    path = allow_repo_root(Path(srcdir), main)
+def _get_nb_path(source_dir: str, dev: bool) -> Path:
+    """Get path to notebooks given source code directory."""
+    path = allow_repo_root(Path(source_dir), main)
     path /= NB_ROOT
     if dev:
         path /= "_dev"
         path /= NB_ROOT
     if not path.is_dir():
         raise FileNotFoundError(f"Could not find directory: {path}")
+    return path
+
+
+def jupyterbook(srcdir=None, quiet=0, dev=False):
+    path = _get_nb_path(srcdir, dev)
     commandline = ["jupyter-book", "build", str(path)]
     if dev:
         commandline.extend(["--path-output", str(path)])
@@ -350,32 +369,48 @@ def jupyterbook(srcdir=None, quiet=0, dev=False):
         add_vb_flags(_log, commandline)
     # run build
     check_call(commandline)
-    # post-process cache
-    if not dev:
-        Commands.subheading(f"Post-process Jupyterbook cache")
-        nbcache_dir = path / NB_CACHE
-        if not nbcache_dir.exists() or not nbcache_dir.is_dir():
-            raise FileNotFoundError(f"Cache directory not found: {nbcache_dir}")
-        nbcache_db = nbcache_dir / "global.db"
-        if not nbcache_db.exists() or not nbcache_db.is_file():
-            raise FileNotFoundError(f"Cache database not found: {nbcache_db}")
+
+
+# --------------
+# Merge outputs
+# --------------
+
+
+def merge_outputs(srcdir=None, dev=False):
+    """Merge outputs from jupyter cache for all notebooks found in TOC."""
+    path = _get_nb_path(srcdir, dev)
+    toc = read_toc(path)
+    cache_dir = path / NB_CACHE
+    if not cache_dir.exists() or not cache_dir.is_dir():
+        raise FileNotFoundError(f"Cache directory not found: {cache_dir}")
+    cache = get_cache(cache_dir)
+    results = find_notebooks(path, toc, _merge_outputs, cache=cache)
+
+
+def _merge_outputs(path: Path, cache=None):
+    _log.debug(f"Base notebook: {path}")
+    name_base = path.stem[:-src_suffix_len]
+    count = 0
+    for ext in ExtAll:
+        ext_name = f"{name_base}_{ext.value}.ipynb"
+        ext_path = path.parent / ext_name
+        _log.debug(f"Merging {ext.value} notebook: {ext_path}")
         try:
-            conn = sqlite3.connect(nbcache_db)
-        except sqlite3.Error as err:
-            raise FileNotFoundError(f"Invalid cache database {nbcache_db}: {err}")
-        _rename_cached_files(path, nbcache_dir, conn)
-
-
-def _rename_cached_files(root_dir: Path, cache_dir: Path, conn: sqlite3.Connection):
-    root_dir = root_dir.absolute()
-    for rec in conn.execute("select * from nbcache"):
-        key, path = rec[1], Path(rec[2])
-        name = path.relative_to(root_dir).as_posix()
-        if not name.endswith(".ipynb"):
-            _log.warning(f"Cached file does not end in .ipynb, skipping: {path}")
-            continue
-        new_name = name.replace("/", "--") + f"__{key}"
-        _log.debug(f"Rename cache dir. {key} -> {new_name}")
+            node = nbf.read(ext_path, 4)
+            key, merged_nb = cache.merge_match_into_notebook(node)
+        except FileNotFoundError:
+            if ext == Ext.DOC:
+                _log.warning(f"{ext_path} not found")
+            else:
+                _log.debug(f"{ext_path} not found")
+        except KeyError:
+            _log.warning(f"{ext_path} not matched in cache")
+        else:
+            with open(ext_path, "w", encoding="utf-8") as f:
+                nbf.write(merged_nb, f)
+            count += 1
+            _log.info(f"Successfully merged {ext.value} notebook: {ext_path}")
+    return count
 
 
 # -------------
@@ -537,9 +572,14 @@ class Commands:
         return cls._run("remove generated notebooks", clean, srcdir=args.dir)
 
     @classmethod
-    def outputs(cls, args):
+    def remove_outputs(cls, args):
         cls.heading("Remove output cells in source notebooks")
         return cls._run("remove output cells", remove_outputs, srcdir=args.dir)
+
+    @classmethod
+    def merge(cls, args):
+        cls.heading("Merge cached output cells into source notebooks")
+        return cls._run("merge output cells", merge_outputs, srcdir=args.dir)
 
     @classmethod
     def black(cls, args):
@@ -615,9 +655,10 @@ def main():
         ("pre", "Pre-process notebooks"),
         ("conf", "Modify Jupyterbook configuration"),
         ("build", "Build Jupyterbook"),
+        ("merge", "Merge cached outputs into notebooks"),
         ("view", "View Jupyterbook"),
         ("clean", "Remove generated files"),
-        ("outputs", "Remove output cells in source files"),
+        ("remove_outputs", "Remove output cells in source files"),
         ("black", "Format code in notebooks with Black"),
         ("gui", "Graphical notebook browser"),
         ("skipped", "List notebooks tagged to skip some pre-processing"),
@@ -646,6 +687,12 @@ def main():
         "--dev",
         action="store_true",
         help="Build development notebooks (only)",
+        default=False,
+    )
+    subp["merge"].add_argument(
+        "--dev",
+        action="store_true",
+        help="Merge outputs in development notebooks (only)",
         default=False,
     )
     subp["conf"].add_argument(
