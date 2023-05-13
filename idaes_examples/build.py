@@ -358,6 +358,7 @@ def _get_nb_path(source_dir: str, dev: bool) -> Path:
         raise FileNotFoundError(f"Could not find directory: {path}")
     return path
 
+
 def jupyterbook(srcdir=None, quiet=0, dev=False):
     path = _get_nb_path(srcdir, dev)
     cwd = os.getcwd()
@@ -527,9 +528,6 @@ class Commands:
     def build(cls, args):
         sfx = " [dev]" if args.dev else ""
         if not args.no_pre:
-            if not args.dev:
-                cls.heading(f"Remove code cell outputs")
-                cls._run(f"remove code cell outputs", remove_outputs, srcdir=args.dir)
             cls.heading(f"Pre-process notebooks{sfx}")
             cls._run(
                 f"pre-process notebooks{sfx}", preprocess, srcdir=args.dir, dev=args.dev
