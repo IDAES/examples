@@ -5,7 +5,7 @@ Common variables and methods for tests and scripts.
 from enum import Enum
 import logging
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Dict, Any, Union
 
 # third-party
 import yaml
@@ -15,6 +15,7 @@ _h = logging.StreamHandler()
 _h.setFormatter(
     logging.Formatter("[%(levelname)s] %(asctime)s %(module)s - %(message)s")
 )
+
 _log.addHandler(_h)
 
 src_suffix = "_src"
@@ -124,7 +125,7 @@ def find_notebook_root(src_path) -> Path:
     return result
 
 
-def read_toc(src_path: Path) -> Dict:
+def read_toc(src_path: Union[Path, str]) -> Dict:
     """Read and parse Jupyterbook table of contents.
 
     Args:
@@ -136,7 +137,7 @@ def read_toc(src_path: Path) -> Dict:
     Raises:
         FileNotFoundError: If TOC file does not exist
     """
-    toc_path = src_path / "_toc.yml"
+    toc_path = Path(src_path) / "_toc.yml"
     if not toc_path.exists():
         raise FileNotFoundError(f"Could not find path: {toc_path}")
     with toc_path.open() as toc_file:
@@ -144,7 +145,7 @@ def read_toc(src_path: Path) -> Dict:
     return toc
 
 
-def find_notebooks(nbpath: Path, toc: Dict, callback, **kwargs) -> Dict[Path, Any]:
+def find_notebooks(nbpath: Union[Path, str], toc: Dict, callback, **kwargs) -> Dict[Path, Any]:
     """Find and preprocess all notebooks in a Jupyterbook TOC.
 
     Args:
@@ -157,6 +158,7 @@ def find_notebooks(nbpath: Path, toc: Dict, callback, **kwargs) -> Dict[Path, An
     Returns:
         Mapping of paths to return values from calls to processed notebooks
     """
+    nbpath = Path(nbpath)
     results = {}
     for part in toc["parts"]:
         for chapter in part["chapters"]:

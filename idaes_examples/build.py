@@ -526,15 +526,15 @@ class Commands:
 
     @classmethod
     def build(cls, args):
-        sfx = " [dev]" if args.dev else ""
+        dv = " [dev]" if args.dev else ""
         if not args.no_pre:
-            cls.heading(f"Pre-process notebooks{sfx}")
+            cls.heading(f"Pre-process notebooks{dv}")
             cls._run(
-                f"pre-process notebooks{sfx}", preprocess, srcdir=args.dir, dev=args.dev
+                f"pre-process notebooks{dv}", preprocess, srcdir=args.dir, dev=args.dev
             )
-        cls.heading(f"Build Jupyterbook{sfx}")
+        cls.heading(f"Build Jupyterbook{dv}")
         result = cls._run(
-            f"build jupyterbook{sfx}",
+            f"build jupyterbook{dv}",
             jupyterbook,
             srcdir=args.dir,
             quiet=args.quiet,
