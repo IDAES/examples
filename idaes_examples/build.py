@@ -32,7 +32,7 @@ from idaes_examples.util import (
     src_suffix_len,
     Ext,
     ExtAll,
-    Tags
+    Tags,
 )
 from idaes_examples.util import _log as util_log
 
@@ -377,6 +377,7 @@ def jupyterbook(srcdir=None, quiet=0, dev=False):
         check_call(commandline)
     finally:
         os.chdir(cwd)
+
 
 # --------------
 # Merge outputs
