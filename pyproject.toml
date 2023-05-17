@@ -86,6 +86,7 @@ jb = [
     # "nbclient ~= 0.5.13",
     "nbclient",
     "nbmake",
+    "nbformat",
     # markdown in Sphinx
     "myst-nb ~= 0.13.2",
     "myst-parser ~= 0.15.2",
