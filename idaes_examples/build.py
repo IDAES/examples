@@ -59,7 +59,12 @@ _log.addHandler(_h)
 DEV_DIR = "_dev"  # special directory to include in preprocessing
 
 
-def preprocess(srcdir=None, dev=False):
+def preprocess(srcdir=None, dev=False) -> int:
+    """Preprocess Jupyter notebooks.
+
+    Returns:
+        Number of notebooks considered for preprocessing.
+    """
     src_path = find_notebook_root(Path(srcdir))
     src_path /= NB_ROOT
     if dev:
@@ -616,6 +621,13 @@ class Commands:
         nb_dir = browse.find_notebook_dir()
         print(f"{nb_dir}")
 
+    @classmethod
+    def new(cls, args):
+        from idaes_examples import nbnew
+        status = nbnew.App().run()
+
+        return status
+
     @staticmethod
     def _run(name, func, **kwargs):
         try:
@@ -668,6 +680,7 @@ def main():
         ("gui", "Graphical notebook browser"),
         ("skipped", "List notebooks tagged to skip some pre-processing"),
         ("where", "Print example notebook directory path"),
+        ("new", "Terminal-based UI for starting a new notebook"),
     ):
         subp[name] = commands.add_parser(name, help=desc)
         if name != "where":
