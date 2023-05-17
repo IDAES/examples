@@ -81,7 +81,6 @@ def add_notebook(term: Terminal, curdir=None) -> Union[Path, None]:
         cwd = Path(curdir)
     root = find_notebook_root(cwd)
     dirs = get_notebook_dirs(root / "notebooks")
-    press_any_key(term)
     col = Colors(term)
     result = None
     with term.location():
@@ -113,14 +112,43 @@ def add_notebook(term: Terminal, curdir=None) -> Union[Path, None]:
             if create_notebook(term, notebook_path):
                 notebook_doc = notebook_path.stem[:-src_suffix_len] + "_doc"
                 new_toc = add_notebook_to_config(root, str(selected[0]), notebook_doc)
+                # write modified TOC
                 if new_toc is not None:
-                    print("New TOC:")
-                    yaml.dump(new_toc, stream=sys.stdout, indent=2)
+                    smart_dump(root / "notebooks", new_toc)
                     result = notebook_path
                 else:
                     print(f"{col.err}Failed to add notebook to config{col.reg}")
                     press_any_key(term)
     return result
+
+
+def smart_dump(p: Path, d: dict):
+    """Dump, preserving comments from original YAML.
+    Assumes that new file differs only by adding lines to original.
+    """
+    nl = "\n"
+    lines_out = yaml.dump(d, indent=2).split(nl)
+    toc_path = p / "_toc.yml"
+
+    with toc_path.open("r", encoding="utf-8") as f:
+        lines_in = f.read().split(nl)
+
+    result = []
+    i = 0
+    for line_in in lines_in:
+        s_in = line_in.strip()
+        if s_in and s_in[0] == "#":
+            result.append(line_in)
+        else:
+            while i < len(lines_out) and lines_out[i].strip() != s_in:
+                result.append(lines_out[i])
+                i += 1
+            result.append(lines_out[i])
+            i += 1
+
+    with toc_path.open("w", encoding="utf-8") as f:
+        for line in result:
+            f.write(line + nl)
 
 
 def create_notebook(term: Terminal, path: Path) -> bool:
@@ -138,7 +166,7 @@ def create_notebook(term: Terminal, path: Path) -> bool:
     return result
 
 
-def add_notebook_to_config(root: Path, dirname: str, path: str) -> bool:
+def add_notebook_to_config(root: Path, dirname: str, path: str) -> Union[dict, None]:
     entry = {"file": (Path(dirname) / path).as_posix()}
     dirname = Path(dirname).as_posix()
     print(f"Add notebook to section {dirname}: {path}")
@@ -259,6 +287,7 @@ class App:
         path = add_notebook(self.term)
         if path is None:
             return 1
+        print("All done! You can now edit your new notebook at:")
         print(path)
         return 0
 
