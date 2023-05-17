@@ -68,6 +68,8 @@ dev = [
     "black[jupyter] ~= 22.8.0",
     # For adding copyright headers (see addheader.yml and the readme)
     "addheader >= 0.3.0",
+    # For the idaesx new terminal UI
+    "blessed ~= 1.20.0"
 ]
 # For packaging
 pkg = [
