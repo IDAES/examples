@@ -29,10 +29,10 @@ parts:
     - file: docs/dae/petsc_pid_doc
 - caption: Flowsheets
   chapters:
-    - file: docs/flowsheets/hda_flowsheet_with_costing_doc
+  - file: docs/flowsheets/hda_flowsheet_with_costing_doc
 #   - file: docs/flowsheets/hda_flowsheet_with_distillation_doc
-    - file: docs/flowsheets/methanol_synthesis_doc
-    - file: docs/flowsheets/CO2_adsorption_desorption/CO2_Adsorption_Desorption_1DFixedBed_doc
+  - file: docs/flowsheets/methanol_synthesis_doc
+  - file: docs/flowsheets/CO2_adsorption_desorption/CO2_Adsorption_Desorption_1DFixedBed_doc
 - caption: Unit Models
   chapters:
   - file: docs/unit_models/operations/index
@@ -92,3 +92,4 @@ parts:
     # - file: active/power_gen/ngcc/ngcc_soec_doc
     - file: active/power_gen/ngcc/ngcc_doc
 root: index
+
