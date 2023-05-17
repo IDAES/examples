@@ -117,6 +117,9 @@ def find_notebook_root(src_path) -> Path:
                 if is_notebook_dir(src_path):
                     result = src_path
                     break
+                if is_notebook_dir(src_path / "idaes_examples"):
+                    result = src_path / "idaes_examples"
+                    break
 
     if result is None:
         raise FileNotFoundError(f"Directory '{NB_ROOT}' not found")
