@@ -79,7 +79,7 @@ def add_vb_flags(logger, cmdline):
         cmdline.append(f"-{vbs}")
 
 
-def find_notebook_root(src_path) -> Path:
+def find_notebook_root(src_path: Union[str, Path, None] = None) -> Path:
     """This allows commands to (also) work if src_path is the repo root (as opposed
     to the directory with the notebooks in it).
     """
@@ -95,7 +95,10 @@ def find_notebook_root(src_path) -> Path:
 
     result = None
 
-    src_path = Path(src_path).absolute()
+    if src_path is None:
+        src_path = Path.cwd().absolute()
+    else:
+        src_path = Path(src_path).absolute()
 
     _log.info(f"Find notebook root starting from: {src_path}")
     # Try input dir

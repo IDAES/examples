@@ -131,3 +131,13 @@ idaes_examples = [
     "*.yml",
     "*.yaml"
 ]
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "--strict-markers"
+markers = [
+    "unit",
+    "integration",
+    "component", 
+    "needs_solver"
+]
+testpaths = "idaes_examples"

@@ -23,42 +23,33 @@ from typing import List
 import pytest
 
 # package
-from idaes_examples.util import read_toc, find_notebooks
+from idaes_examples.util import read_toc, find_notebook_root,find_notebooks
 
 
-# -------------------
 #  Fixtures
-# -------------------
+# ----------
 
 @pytest.fixture(scope="module")
 def notebooks() -> List[Path]:
-    src_path = find_toc(Path(__file__).parent)
-    assert src_path is not None, "Cannot find _toc.yml"
-    toc = read_toc(src_path)
+    src_path = find_notebook_root()
+    assert src_path is not None, "Cannot find root directory"
+    nb_path = src_path / "notebooks"
+    assert nb_path.is_dir(), f"Cannot find 'notebooks' dir in root: {src_path}" 
+    toc = read_toc(nb_path)
 
     notebooks = []
 
     def add_notebook(p, **kwargs):
         notebooks.append(p)
 
-    find_notebooks(src_path, toc, callback=add_notebook)
+    find_notebooks(nb_path, toc, callback=add_notebook)
     return notebooks
 
 
-def find_toc(p: Path):
-    """Walk up from 'p' looking for the '_toc.yml' file"""
-    while p != p.parent:
-        if (p / "_toc.yml").exists():
-            return p
-        p = p.parent
-    return None
-
-
-# -------------------
 #  Tests
-# -------------------
+# -------
 
-def test_smoke(notebooks: List[Path]):
+def test_has_some_notebooks(notebooks: List[Path]):
     assert len(notebooks) > 0
     for nb_path in notebooks:
         assert nb_path.exists()
