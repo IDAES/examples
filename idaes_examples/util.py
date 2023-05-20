@@ -5,6 +5,7 @@ Common variables and methods for tests and scripts.
 from enum import Enum
 import logging
 from pathlib import Path
+import re
 from typing import Dict, Any, Union
 
 # third-party
@@ -180,3 +181,13 @@ def find_notebooks(nbpath: Union[Path, str], toc: Dict, callback, **kwargs) -> D
                 else:
                     raise FileNotFoundError(f"Could not find notebook at: {path}")
     return results
+
+
+_ext_re = re.compile(r"(.*_)\w+\.ipynb$")
+
+
+def new_ext(p: Path, e: str) -> Path:
+    """New path with extension 'src', etc. changed to input extension.
+    """
+    m = _ext_re.match(p.name)
+    return Path(*p.parts[:-1]) / f"{m.group(1)}{e}.ipynb"

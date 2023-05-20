@@ -14,8 +14,10 @@
 Tests for notebooks (without running them)
 """
 # stdlib
+import datetime
 import os
 from pathlib import Path
+import re
 import subprocess
 from typing import List
 
@@ -23,8 +25,8 @@ from typing import List
 import pytest
 
 # package
-from idaes_examples.util import read_toc, find_notebook_root,find_notebooks
-
+from idaes_examples.util import find_notebook_root, find_notebooks, read_toc
+from idaes_examples.util import ExtAll, new_ext, Ext
 
 #  Fixtures
 # ----------
@@ -76,3 +78,31 @@ def test_black():
                         break
                 print(f"FAILED: {name}")
         assert False, f"Black format check failed"
+
+def test_missing_stale(notebooks: List[Path]):
+    stale, missing = {}, []
+    for p in notebooks:
+        assert p.exists()
+        p_info = p.stat()
+        for ext in ExtAll:
+            q = new_ext(p, ext.value)
+            if ext is Ext.DOC:
+                if not q.exists():
+                    missing.append(q)
+            if q.exists():
+                q_info = q.stat()
+                delta = q_info.st_mtime - p_info.st_mtime
+                if delta < 0:
+                    td = datetime.timedelta(seconds=-delta)
+                    if not p in stale:
+                        stale[p] = []
+                    stale[p].append((q, td))
+    if missing or stale:
+        msg = []
+        if missing:
+            msg.append(f"{len(missing)} missing derived notebooks: {', '.join([str(m) for m in missing])}")
+        if stale:
+            msg.append(f"{len(stale)} notebooks with stale derivations (need to be re-executed):")
+            for i, (key, val) in enumerate(stale.items()):
+                msg.append(f"({i + 1})  {key}: {', '.join([f'{v[0].name} ({v[1]})' for v in val])}")
+        pytest.fail("\n".join(msg))
