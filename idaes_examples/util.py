@@ -2,6 +2,7 @@
 Common variables and methods for tests and scripts.
 """
 # stdlib
+import datetime
 from enum import Enum
 import logging
 from pathlib import Path
@@ -152,7 +153,9 @@ def read_toc(src_path: Union[Path, str]) -> Dict:
     return toc
 
 
-def find_notebooks(nbpath: Union[Path, str], toc: Dict, callback, **kwargs) -> Dict[Path, Any]:
+def find_notebooks(
+    nbpath: Union[Path, str], toc: Dict, callback, **kwargs
+) -> Dict[Path, Any]:
     """Find and preprocess all notebooks in a Jupyterbook TOC.
 
     Args:
@@ -183,11 +186,50 @@ def find_notebooks(nbpath: Union[Path, str], toc: Dict, callback, **kwargs) -> D
     return results
 
 
-_ext_re = re.compile(r"(.*_)\w+\.ipynb$")
+class NotebookCollection:
+    _ext_re = re.compile(r"(.*_)\w+\.ipynb$")
 
+    def __init__(self, root: Path = None):
+        """Constructor.
 
-def new_ext(p: Path, e: str) -> Path:
-    """New path with extension 'src', etc. changed to input extension.
-    """
-    m = _ext_re.match(p.name)
-    return Path(*p.parts[:-1]) / f"{m.group(1)}{e}.ipynb"
+        Raises:
+            FileNotFoundError: If notebooks can't be found
+        """
+        self._root = find_notebook_root(root)
+        self._nb = self._root / "notebooks"
+
+    def get_notebooks(self) -> list[Path]:
+        """Get a list of notebooks."""
+        toc = read_toc(self._nb)
+        notebooks = []
+
+        def add_notebook(p, **kwargs):
+            notebooks.append(p)
+
+        find_notebooks(self._nb, toc, callback=add_notebook)
+        return notebooks
+
+    def find_missing_stale(self):
+        stale, missing = {}, []
+        for p in self.get_notebooks():
+            assert p.exists()
+            p_info = p.stat()
+            for ext in ExtAll:
+                q = self._new_ext(p, ext.value)
+                if ext is Ext.DOC:
+                    if not q.exists():
+                        missing.append(q)
+                if q.exists():
+                    q_info = q.stat()
+                    delta = q_info.st_mtime - p_info.st_mtime
+                    if delta < 0:
+                        td = datetime.timedelta(seconds=-delta)
+                        if not p in stale:
+                            stale[p] = []
+                        stale[p].append((q, td))
+        return missing, stale
+
+    def _new_ext(self, p: Path, e: str) -> Path:
+        """New path with extension 'src', etc. changed to input extension."""
+        m = self._ext_re.match(p.name)
+        return Path(*p.parts[:-1]) / f"{m.group(1)}{e}.ipynb"

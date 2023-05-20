@@ -25,33 +25,23 @@ from typing import List
 import pytest
 
 # package
-from idaes_examples.util import find_notebook_root, find_notebooks, read_toc
-from idaes_examples.util import ExtAll, new_ext, Ext
+from idaes_examples.util import ExtAll, Ext, NotebookCollection
 
 #  Fixtures
 # ----------
 
+
 @pytest.fixture(scope="module")
-def notebooks() -> List[Path]:
-    src_path = find_notebook_root()
-    assert src_path is not None, "Cannot find root directory"
-    nb_path = src_path / "notebooks"
-    assert nb_path.is_dir(), f"Cannot find 'notebooks' dir in root: {src_path}" 
-    toc = read_toc(nb_path)
-
-    notebooks = []
-
-    def add_notebook(p, **kwargs):
-        notebooks.append(p)
-
-    find_notebooks(nb_path, toc, callback=add_notebook)
-    return notebooks
+def notebook_coll() -> NotebookCollection:
+    return NotebookCollection()
 
 
 #  Tests
 # -------
 
-def test_has_some_notebooks(notebooks: List[Path]):
+
+def test_has_some_notebooks(notebook_coll):
+    notebooks = notebook_coll.get_notebooks()
     assert len(notebooks) > 0
     for nb_path in notebooks:
         assert nb_path.exists()
@@ -73,36 +63,30 @@ def test_black():
                 tokens = line.split()
                 name = "??"
                 for i, tok in enumerate(tokens):
-                    if '\\' in tok or '/' in tok:
-                        name = ' '.join(tokens[i:])
+                    if "\\" in tok or "/" in tok:
+                        name = " ".join(tokens[i:])
                         break
                 print(f"FAILED: {name}")
         assert False, f"Black format check failed"
 
-def test_missing_stale(notebooks: List[Path]):
-    stale, missing = {}, []
-    for p in notebooks:
-        assert p.exists()
-        p_info = p.stat()
-        for ext in ExtAll:
-            q = new_ext(p, ext.value)
-            if ext is Ext.DOC:
-                if not q.exists():
-                    missing.append(q)
-            if q.exists():
-                q_info = q.stat()
-                delta = q_info.st_mtime - p_info.st_mtime
-                if delta < 0:
-                    td = datetime.timedelta(seconds=-delta)
-                    if not p in stale:
-                        stale[p] = []
-                    stale[p].append((q, td))
+
+def test_missing_stale(notebook_coll):
+    missing, stale = notebook_coll.find_missing_stale()
     if missing or stale:
         msg = []
         if missing:
-            msg.append(f"{len(missing)} missing derived notebooks: {', '.join([str(m) for m in missing])}")
+            msg.append(
+                f"{len(missing)} missing derived notebooks: "
+                f"{', '.join([str(m) for m in missing])}"
+            )
         if stale:
-            msg.append(f"{len(stale)} notebooks with stale derivations (need to be re-executed):")
+            msg.append(
+                f"{len(stale)} notebooks with stale derivations "
+                "(need to be re-executed):"
+            )
             for i, (key, val) in enumerate(stale.items()):
-                msg.append(f"({i + 1})  {key}: {', '.join([f'{v[0].name} ({v[1]})' for v in val])}")
+                msg.append(
+                    f"({i + 1})  {key}: "
+                    f"{', '.join([f'{v[0].name} ({v[1]})' for v in val])}"
+                )
         pytest.fail("\n".join(msg))
