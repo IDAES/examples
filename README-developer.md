@@ -139,11 +139,14 @@ idaesx build
 The output will be in *idaes_examples/nb/_build/html*. As a convenience, you can open that HTML file with the command `idaesx view`.
 
 ## Preprocessing notebooks
+Preprocessing creates separate copies of the Jupyter notebooks that are used for tests, tutorial exercise and solution, and documentation (see Notebook Names).
+These (derived) notebooks are also committed and saved in Git.
 
-The commands to run tests and build documentation both run a preprocessing step that creates separate copies of the Jupyter notebooks that are used for tests, tutorial exercise and solution, and documentation (see Notebook Names).
-These generated files should ***not*** be added to the repository.
-If you want to run that preprocessing step separately, use `idaesx pre`.
-To remove pre-processed files, run `idaesx clean`.
+To re-run the preprocessing, which will update any derived files that are
+out of date (older than the corresponding `*_src.ipynb` file):
+```shell
+idaesx pre
+```
 
 A diagram of how preprocessing relates to notebook usage is shown below:
 
