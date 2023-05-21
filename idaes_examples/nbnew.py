@@ -1,7 +1,10 @@
 """
 User interface for creating a new notebook
 """
+import pdb
+from enum import Enum
 from pathlib import Path
+import subprocess
 import sys
 from typing import Union, Tuple, Iterator
 
@@ -9,10 +12,16 @@ from blessed import Terminal
 import nbformat as nbf
 import yaml
 
-from idaes_examples.util import read_toc, find_notebook_root, src_suffix_len
+from idaes_examples.util import (
+    read_toc,
+    find_notebook_root,
+    src_suffix_len,
+    Ext,
+    change_notebook_ext,
+)
 
-
-ABORT = 255  # return code
+ABORT = 255  # return code for abort
+RETRY = 254  # return code for try again
 
 
 class Colors:
@@ -25,23 +34,32 @@ class Colors:
             term.red,
             term.black_on_green,
         )
+        self.star = f"\u2728"
+        self.question = f"\u2754"
 
 
 def press_any_key(term):
-    col = Colors(term)
-    print(f"{col.reg}Press any key to continue...")
-    with term.cbreak():
-        term.inkey()
+    c = Colors(term)
+    msg = f"{c.reg}Press any key to continue..."
+    n = term.length(msg)
+    y, x = term.get_location()
+    with term.location(x, y):
+        print(msg, end="", flush=True)
+        with term.cbreak():
+            term.inkey()
+    with term.location(x, y):
+        print(" " * n, end="", flush=True)
 
 
 def ask_yesno(t: Terminal, q: str, default=None) -> bool:
+    c = Colors(t)
     if default is True:
         yes_char, no_char = "Y", "n"
     elif default is False:
         yes_char, no_char = "y", "N"
     else:
         yes_char, no_char = "y", "n"
-    print(f"{q} [{yes_char}/{no_char}]? ", end="", flush=True)
+    print(f"{c.question}{q} [{yes_char}/{no_char}]? ", end="", flush=True)
 
     affirmed = None
     with t.cbreak():
@@ -49,21 +67,30 @@ def ask_yesno(t: Terminal, q: str, default=None) -> bool:
             yn = t.inkey().lower()
             if yn == "y":
                 affirmed = True
+                print(f"{c.em}yes", end="")
                 break
             elif yn == "n":
+                print(f"{c.em}no", end="")
                 affirmed = False
                 break
             elif ord(yn) == 13 and default is not None:
                 affirmed = default
+                print(f"{c.em}yes" if default else f"{c.em}no", end="")
                 break
-
+    print(f"{c.reg}")
     return affirmed
+
+
+class NotebookType(Enum):
+    reg = "regular"
+    tut = "tutorial"
 
 
 class AddNotebook:
     """Terminal-based UI for adding a new notebook to one of the existing
     directories in the table of contents.
     """
+
     def __init__(self, term: Terminal, path: Path = None):
         """Constructor.
 
@@ -93,35 +120,49 @@ class AddNotebook:
         dirs = self._get_notebook_dirs()
         result = None
 
-        with t.location():
-            done = False
-            while not done:
-                selected = ""
-                print(t.home + t.on_black + t.clear, end="")
-                print(self._hdr)
-                print(f"{c.title}Select an existing directory{c.reg}")
-                dm = self._dir_menu(dirs)
-                print(f"{c.title}>{c.reg} ", end="", flush=True)
+        run_done = False
+        while not run_done:
+            with t.location():
+                done = False
+                while not done:
+                    selected = ""
+                    print(t.home + t.on_black + t.clear, end="")
+                    print(self._hdr)
+                    print(f"{c.title}Select an existing directory{c.reg}")
+                    dm = self._dir_menu(dirs)
+                    print(f"{c.title}>{c.reg} ", end="", flush=True)
 
-                selected = self._select_dir(dm)
+                    selected = self._select_dir(dm)
 
-                filename = self._pick_notebook_name(selected)
-                done = filename is not None
+                    filename = self._pick_notebook_name(selected)
+                    done = filename is not None
 
-            section_path = selected[1]
-            notebook_path = section_path / filename
-            if self._create_notebook(notebook_path):
-                notebook_doc = notebook_path.stem[:-src_suffix_len] + "_doc"
-                new_toc = self._add_notebook_to_config(str(selected[0]), notebook_doc)
-                # write modified TOC
-                if new_toc is not None:
-                    self._write_new_toc(new_toc)
-                    result = notebook_path  # success!
-                else:
-                    print(f"{c.err}Failed to add notebook to config{c.reg}")
-                    press_any_key(t)
+                section_path = selected[1]
+                notebook_path = section_path / filename
+                notebook_type = self._get_notebook_type()
+                if self._create_notebook(notebook_path, notebook_type):
+                    notebook_doc = notebook_path.stem[:-src_suffix_len] + "_doc"
+                    new_toc = self._add_notebook_to_config(str(selected[0]), notebook_doc)
+                    # write modified TOC
+                    if new_toc is not None:
+                        self._write_new_toc(new_toc)
+                        result = notebook_path  # success!
+                        run_done = True
+                    else:
+                        print(f"Did {c.err}not{c.reg} change JupyterBook configuration")
+                        press_any_key(t)
 
         return result
+
+    def rpath(self, p: Path, to_root: bool = False, as_dir: bool = False) -> str:
+        """Get POSIX-style path relative to notebook directory or root."""
+        if to_root:
+            rel = p.relative_to(self.root)
+        else:
+            rel = p.relative_to(self.notebook_dir)
+        if as_dir and not p.is_dir():
+            return rel.parent.as_posix()
+        return rel.as_posix()
 
     # ---
     # Helper methods for run(), in order called
@@ -141,7 +182,9 @@ class AddNotebook:
                     toc_files.add(Path(chapter["file"]).parent)
         return sorted(((p, toc_dir / p) for p in toc_files))
 
-    def _dir_menu(self, dirs: Iterator[Tuple[Path, Path]]) -> dict[str, Tuple[Path, Path]]:
+    def _dir_menu(
+        self, dirs: Iterator[Tuple[Path, Path]]
+    ) -> dict[str, Tuple[Path, Path]]:
         letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
         c = self.colors
         dirs = list(dirs)
@@ -169,7 +212,7 @@ class AddNotebook:
         t, c = self.term, self.colors
 
         rel_path, full_path = selected
-        print(f"{c.reg}Add new notebook in {c.light}{rel_path}{c.reg}")
+        print(f"{c.star}Add new notebook in {c.light}{rel_path}{c.reg}")
 
         affirmed, nb_name = False, ""
         while not affirmed:
@@ -184,35 +227,109 @@ class AddNotebook:
                 print(f"{c.err}File exists!{c.reg} Operation canceled.")
                 press_any_key(t)
                 continue
-            affirmed = ask_yesno(t, f"Create {c.light}{nb_name}{c.reg}\nin "
-                                    f"{c.light}{full_path}{c.reg}", default=False)
+            rel_path = self.rpath(full_path)
+            affirmed = ask_yesno(
+                t,
+                f"Create {c.light}{nb_name}{c.reg} in {c.light}{rel_path}{c.reg}",
+                default=False,
+            )
             if not affirmed:
-                print("\nOperation canceled.")
-        print()
+                print("Operation canceled.")
 
         return nb_name
 
-    def _create_notebook(self, path: Path) -> bool:
+    def _get_notebook_type(self) -> NotebookType:
+        r = ask_yesno(self.term, "Will this notebook be a tutorial")
+        return NotebookType.tut if r else NotebookType.reg
+
+    def _create_notebook(self, path: Path, nb_type: NotebookType) -> bool:
         t, c = self.term, self.colors
 
         result = False
-        print(f"{c.reg}Create notebook at: {c.light}{path}{c.reg}")
+        tut_str = "tutorial " if nb_type is NotebookType.tut else ""
+        print(f"{c.star}Create {tut_str}notebook")
 
-        notebook = nbf.v4.new_notebook()
-        try:
-            with path.open("w", encoding="utf-8") as f:
-                nbf.write(notebook, f)
-            result = True
-        except IOError as err:
-            print(f"{c.err}Failed to write new notebook: {err}{c.reg}")
+        # Create source [ext=None] and all derived notebooks
+        ext = [None, Ext.DOC, Ext.TEST, Ext.USER]
+        if nb_type is NotebookType.tut:
+            ext.extend([Ext.EX, Ext.SOL])
+
+        created, result = [], True
+        for e in ext:
+            if e is None:
+                p = path
+            else:
+                p = change_notebook_ext(path, e.value)
+            notebook = nbf.v4.new_notebook()
+            try:
+                with p.open("w", encoding="utf-8") as f:
+                    nbf.write(notebook, f)
+                created.append(p)
+            except IOError as err:
+                print(f"{c.err}Failed to write new notebook: {err}{c.reg}")
+                result = False
+                break
+
+        if result:
+            commit_ok = self._git_commit(created)
+            if not commit_ok:
+                print(f"{c.err}Failed to commit files to Git{c.reg}")
+                result = False
+
+        if result:
+            print(
+                f"Created {len(created)} notebooks in "
+                f"{c.light}{self.rpath(path, as_dir=True)}{c.reg}:"
+            )
+            for p in created:
+                print(f"  {c.light}{p.name}{c.reg}")
+        else:
+            for p in created:
+                try:
+                    p.unlink()
+                except IOError:
+                    print(f"{c.err}Failed to clean up notebook: {p}")
 
         press_any_key(t)
         return result
 
+    def _git_commit(self, created: list[Path]) -> bool:
+        t, c = self.term, self.colors
+        self.git_command = "git"
+        print(f"{c.star}Add and commit files to git")
+
+        ok = False
+        file_list = [self.rpath(p, to_root=True) for p in created]
+        print(file_list)
+
+        command = [self.git_command, "add"] + file_list
+        try:
+            subprocess.run(command)
+        except subprocess.CalledProcessError as err:
+            print(f"Command {c.light}{' '.join(command)}{c.reg} failed ({err})")
+            print(f"{c.err}Could not stage files in git{c.reg}")
+        else:
+            nb_name = created[0].stem[:-4]
+            command = [self.git_command, "commit", "-m", f"\"New notebook '{nb_name}'\""]
+            try:
+                subprocess.run(command)
+            except subprocess.CalledProcessError as err:
+                print(f"Command {c.light}{' '.join(command)}{c.reg} failed ({err})")
+                print(f"{c.err}Could not commit staged files in git{c.reg}")
+            else:
+                ok = True
+                print(f"Added {len(created)} files")
+
+        return ok
+
     def _add_notebook_to_config(self, dirname: str, path: str) -> Union[dict, None]:
+        c = self.colors
+        print(f"{c.star}Update JupyterBook configuration")
+
         entry = {"file": (Path(dirname) / path).as_posix()}
         dirname = Path(dirname).as_posix()
-        print(f"Add notebook to section {dirname}: {path}")
+        print(f"Add {c.light}{path}{c.reg} notebook "
+              f"to section {c.light}{dirname}{c.reg}")
         toc = read_toc(self.root / "notebooks")
         found = False
         for part in toc["parts"]:
@@ -222,6 +339,14 @@ class AddNotebook:
                     if "sections" in item:
                         for section in chapter["sections"]:
                             if section.get("file", "").startswith(dirname):
+                                if entry in chapter["sections"]:
+                                    part_name = part.get('caption', '?')
+                                    chap_name = chapter.get('file', '?')
+                                    print(f"{c.err}Found existing entry in "
+                                          f"{c.light}_toc.yml{c.err} at{c.light}"
+                                          f"({part_name}).chapters.({chap_name})"
+                                          f"{c.err}!{c.reg}")
+                                    break
                                 chapter["sections"].append(entry)
                                 found = True
                                 break
@@ -229,6 +354,11 @@ class AddNotebook:
                     elif isinstance(item, dict) and item.get("file", "").startswith(
                         dirname
                     ):
+                        if entry in part["chapters"]:
+                            part_name = part.get("caption", "?")
+                            print(f"{c.err}Found existing entry in {c.reg}"
+                                  f"({part_name}).chapters{c.err}!{c.reg}")
+                            break
                         part["chapters"].append(entry)
                         found = True
                     if found:
@@ -256,8 +386,9 @@ class AddNotebook:
                 while i < len(lines_out) and lines_out[i].strip() != s_in:
                     result.append(lines_out[i])
                     i += 1
-                result.append(lines_out[i])
-                i += 1
+                if i < len(lines_out):
+                    result.append(lines_out[i])
+                    i += 1
 
         with toc_path.open("w", encoding="utf-8") as f:
             for line in result:
@@ -281,15 +412,18 @@ class App:
         return retcode
 
     def do_new(self) -> int:
-        path = AddNotebook(self.term).run()
+        adder = AddNotebook(self.term)
+        path = adder.run()
 
         if path is None:
             return ABORT
 
-        print("All done! You can now edit your new notebook at:")
-        print(path)
+        c = Colors(self.term)
+        print("Success! You can now edit your new notebook at:")
+        print(f"{c.light}{adder.rpath(path)}{c.reg}")
 
         return 0
+
 
 # For running standalone -- but usually invoked through `idaesx new`
 
