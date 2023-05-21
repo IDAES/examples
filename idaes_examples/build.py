@@ -244,29 +244,6 @@ def _preprocess(nb_path: Path, **kwargs) -> bool:
 def clean(srcdir=None):
     src_path = find_notebook_root(Path(srcdir)) / NB_ROOT
     toc = read_toc(src_path)
-    find_notebooks(src_path, toc, _clean)
-
-
-def _clean(nb_path: Path, **kwargs):
-    """Remove generated files"""
-    for e in Ext:
-        name = e.value
-        base_name = nb_path.stem[:-src_suffix_len]
-        gen_name = f"{base_name}_{name}.ipynb"
-        gen_path = nb_path.parent / gen_name
-        if gen_path.exists():
-            _log.debug(f"Remove generated file '{gen_path}'")
-            gen_path.unlink()
-
-
-# ----------------------
-# Remove output cells
-# ----------------------
-
-
-def remove_outputs(srcdir=None):
-    src_path = find_notebook_root(Path(srcdir)) / NB_ROOT
-    toc = read_toc(src_path)
     t0 = time.time()
     results = find_notebooks(src_path, toc, _ro)
     dur = time.time() - t0
@@ -382,48 +359,6 @@ def jupyterbook(srcdir=None, quiet=0, dev=False):
         check_call(commandline)
     finally:
         os.chdir(cwd)
-
-
-# --------------
-# Merge outputs
-# --------------
-
-
-def merge_outputs(srcdir=None, dev=False):
-    """Merge outputs from jupyter cache for all notebooks found in TOC."""
-    path = _get_nb_path(srcdir, dev)
-    toc = read_toc(path)
-    cache_dir = path / NB_CACHE
-    if not cache_dir.exists() or not cache_dir.is_dir():
-        raise FileNotFoundError(f"Cache directory not found: {cache_dir}")
-    cache = get_cache(cache_dir)
-    results = find_notebooks(path, toc, _merge_outputs, cache=cache)
-
-
-def _merge_outputs(path: Path, cache=None):
-    _log.debug(f"Base notebook: {path}")
-    name_base = path.stem[:-src_suffix_len]
-    count = 0
-    for ext in ExtAll:
-        ext_name = f"{name_base}_{ext.value}.ipynb"
-        ext_path = path.parent / ext_name
-        _log.debug(f"Merging {ext.value} notebook: {ext_path}")
-        try:
-            node = nbf.read(ext_path, 4)
-            key, merged_nb = cache.merge_match_into_notebook(node)
-        except FileNotFoundError:
-            if ext == Ext.DOC:
-                _log.warning(f"{ext_path} not found")
-            else:
-                _log.debug(f"{ext_path} not found")
-        except KeyError:
-            _log.warning(f"{ext_path} not matched in cache")
-        else:
-            with open(ext_path, "w", encoding="utf-8") as f:
-                nbf.write(merged_nb, f)
-            count += 1
-            _log.info(f"Successfully merged {ext.value} notebook: {ext_path}")
-    return count
 
 
 # -------------
@@ -578,18 +513,31 @@ class Commands:
 
     @classmethod
     def clean(cls, args):
-        cls.heading("Remove generated notebooks")
-        return cls._run("remove generated notebooks", clean, srcdir=args.dir)
-
-    @classmethod
-    def remove_outputs(cls, args):
-        cls.heading("Remove output cells in source notebooks")
-        return cls._run("remove output cells", remove_outputs, srcdir=args.dir)
-
-    @classmethod
-    def merge(cls, args):
-        cls.heading("Merge cached output cells into source notebooks")
-        return cls._run("merge output cells", merge_outputs, srcdir=args.dir)
+        if not args.yes:
+            stop = None
+            print(
+                "WARNING: This action will remove the results of execution for "
+                "ALL notebooks"
+            )
+            while stop is None:
+                response = input("Continue [y/N]? ")
+                if response == "":
+                    stop = True
+                elif len(response) > 1:
+                    print("Please answer with one letter: y or n")
+                else:
+                    r = response[0].lower()
+                    if r == "y":
+                        stop = False
+                    elif r == "n":
+                        stop = True
+                    else:
+                        print("Please answer with one letter: y or n")
+            if stop:
+                print("Action canceled")
+                return 0
+        cls.heading("Remove output cells in generated notebooks")
+        return cls._run("remove output cells", clean, srcdir=args.dir)
 
     @classmethod
     def black(cls, args):
@@ -624,6 +572,7 @@ class Commands:
     @classmethod
     def new(cls, args):
         from idaes_examples import nbnew
+
         status = nbnew.App().run()
 
         return status
@@ -672,10 +621,8 @@ def main():
         ("pre", "Pre-process notebooks"),
         ("conf", "Modify Jupyterbook configuration"),
         ("build", "Build Jupyterbook"),
-        ("merge", "Merge cached outputs into notebooks"),
         ("view", "View Jupyterbook"),
-        ("clean", "Remove generated files"),
-        ("remove_outputs", "Remove output cells in source files"),
+        ("clean", "Clean generated files"),
         ("black", "Format code in notebooks with Black"),
         ("gui", "Graphical notebook browser"),
         ("skipped", "List notebooks tagged to skip some pre-processing"),
@@ -707,10 +654,11 @@ def main():
         help="Build development notebooks (only)",
         default=False,
     )
-    subp["merge"].add_argument(
-        "--dev",
+    subp["clean"].add_argument(
+        "--yes",
+        "-y",
         action="store_true",
-        help="Merge outputs in development notebooks (only)",
+        help="Skip confirmation and perform action",
         default=False,
     )
     subp["conf"].add_argument(
