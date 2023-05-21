@@ -7,7 +7,7 @@ from enum import Enum
 import logging
 from pathlib import Path
 import re
-from typing import Dict, Any, Union
+from typing import Dict, List, Any, Union, Tuple
 
 # third-party
 import yaml
@@ -197,6 +197,7 @@ class NotebookCollection:
         """
         self._root = find_notebook_root(root)
         self._nb = self._root / "notebooks"
+        self._missing, self._stale = None, None
 
     def get_notebooks(self) -> list[Path]:
         """Get a list of notebooks."""
@@ -209,7 +210,33 @@ class NotebookCollection:
         find_notebooks(self._nb, toc, callback=add_notebook)
         return notebooks
 
-    def find_missing_stale(self):
+    @property
+    def missing(self) -> List[Path]:
+        """Derived notebooks that should be there, but are not.
+        Currently, this is notebooks of form `{name}_doc.ipynb` when there
+        is a notebook like `{name}_src.ipynb`.
+
+        Returns:
+            List of paths for the missing notebooks
+        """
+        self._find_missing_and_stale()
+        return self._missing
+
+    @property
+    def stale(self) -> Dict[Path, Tuple[Path, datetime.timedelta]]:
+        """Derived notebooks that are older than their source.
+        Notebooks of the form `{name}_{ext}.ipynb` that are newer than
+        their source `{name}_source.ipynb`.
+
+        Returns:
+            Map of source paths -> tuple of (stale path, time older than source).
+        """
+        self._find_missing_and_stale()
+        return self._stale
+
+    def _find_missing_and_stale(self) -> None:
+        if self._missing is not None:  # result cached
+            return
         stale, missing = {}, []
         for p in self.get_notebooks():
             assert p.exists()
@@ -227,7 +254,7 @@ class NotebookCollection:
                         if not p in stale:
                             stale[p] = []
                         stale[p].append((q, td))
-        return missing, stale
+        self._missing, self._stale = missing, stale
 
     def _new_ext(self, p: Path, e: str) -> Path:
         """New path with extension 'src', etc. changed to input extension."""

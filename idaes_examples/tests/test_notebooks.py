@@ -71,7 +71,8 @@ def test_black():
 
 
 def test_missing_stale(notebook_coll):
-    missing, stale = notebook_coll.find_missing_stale()
+    missing, stale = notebook_coll.missing, notebook_coll.stale
+    print(f"got: missing=[{missing}] stale=[{stale}]")
     if missing or stale:
         msg = []
         if missing:
