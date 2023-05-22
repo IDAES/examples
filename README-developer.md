@@ -48,8 +48,8 @@ Note: Below, `notebooks/*` refers to the directory `idaes_examples/notebooks`.
 
 If you want to add an example in an **existing section** of `notebooks/docs`, you can run
 `idaesx new` to get a guided terminal-based UI that will create a skeleton of the
-new notebook and add it to the table of contents. Then you just need to edit your
-notebook.
+new notebook and add it to the table of contents, and also add all the variations of the notebook (see [Notebook Names](#notebook-names)) and, if git is enabled and found, add and commit them to git. 
+Then you just need to edit your notebook.
 
 If you need to create a **new section** in `notebooks/docs` or `notebooks/held`:
 - add the appropriate subdirectory, e.g. `notebooks/docs/fantastic`
@@ -139,7 +139,7 @@ idaesx build
 The output will be in *idaes_examples/nb/_build/html*. As a convenience, you can open that HTML file with the command `idaesx view`.
 
 ## Preprocessing notebooks
-Preprocessing creates separate copies of the Jupyter notebooks that are used for tests, tutorial exercise and solution, and documentation (see Notebook Names).
+Preprocessing creates separate copies of the Jupyter notebooks that are used for tests, tutorial exercise and solution, and documentation (see [Notebook Names](#notebook-names)).
 These (derived) notebooks are also committed and saved in Git.
 
 To re-run the preprocessing, which will update any derived files that are
@@ -174,6 +174,8 @@ A diagram of how preprocessing relates to notebook usage is shown below:
                  └──►│example_solution.ipynb│
                      └──────────────────────┘
 ```
+
+<a name="notebook-names"></a>
 
 ## Notebook names
 
