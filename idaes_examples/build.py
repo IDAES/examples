@@ -573,7 +573,13 @@ class Commands:
     def new(cls, args):
         from idaes_examples import nbnew
 
-        status = nbnew.App().run()
+        app = nbnew.App()
+        if args.git == "none":
+            app.git_program = None
+        elif args.git is not None:
+            app.git_program = args.git
+
+        status = app.run()
 
         return status
 
@@ -700,6 +706,8 @@ def main():
             "them to a file in ~/.idaes/logs"
         ),
     )
+    subp["new"].add_argument("-g", "--git", help="Set Git executable (default=git). "
+                                                 "Use 'none' to disable Git.")
     args = p.parse_args()
     subvb = getattr(args, f"vb_{args.command}")
     use_vb = subvb if subvb > args.vb else args.vb

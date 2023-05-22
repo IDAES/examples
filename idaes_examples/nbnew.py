@@ -109,6 +109,15 @@ class AddNotebook:
 
         spc = " " * 10
         self._hdr = f"{self.colors.rev}{spc}add notebook{spc}{self.colors.reg}"
+        self._git = "git"
+
+    @property
+    def git_program(self):
+        return self._git
+
+    @git_program.setter
+    def git_program(self, value):
+        self._git = value
 
     def run(self) -> Union[Path, None]:
         """Run the UI.
@@ -295,14 +304,13 @@ class AddNotebook:
 
     def _git_commit(self, created: list[Path]) -> bool:
         t, c = self.term, self.colors
-        self.git_command = "git"
         print(f"{c.star}Add and commit files to git")
 
         ok = False
         file_list = [self.rpath(p, to_root=True) for p in created]
         print(file_list)
 
-        command = [self.git_command, "add"] + file_list
+        command = [self.git_program, "add"] + file_list
         try:
             subprocess.run(command)
         except subprocess.CalledProcessError as err:
@@ -310,7 +318,7 @@ class AddNotebook:
             print(f"{c.err}Could not stage files in git{c.reg}")
         else:
             nb_name = created[0].stem[:-4]
-            command = [self.git_command, "commit", "-m", f"\"New notebook '{nb_name}'\""]
+            command = [self.git_program, "commit", "-m", f"\"New notebook '{nb_name}'\""]
             try:
                 subprocess.run(command)
             except subprocess.CalledProcessError as err:
