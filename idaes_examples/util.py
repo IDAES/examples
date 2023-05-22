@@ -49,6 +49,8 @@ class Ext(Enum):
 
 ExtAll = {Ext.DOC, Ext.EX, Ext.SOL, Ext.TEST, Ext.USER}
 
+EXT_RE = re.compile(r"(.*_)\w+\.ipynb$")
+
 
 def add_vb(p, dest="vb"):
     p.add_argument(
@@ -187,8 +189,6 @@ def find_notebooks(
 
 
 class NotebookCollection:
-    _ext_re = re.compile(r"(.*_)\w+\.ipynb$")
-
     def __init__(self, root: Path = None):
         """Constructor.
 
@@ -242,7 +242,7 @@ class NotebookCollection:
             assert p.exists()
             p_info = p.stat()
             for ext in ExtAll:
-                q = self._new_ext(p, ext.value)
+                q = change_notebook_ext(p, ext.value)
                 if ext is Ext.DOC:
                     if not q.exists():
                         missing.append(q)
@@ -256,7 +256,8 @@ class NotebookCollection:
                         stale[p].append((q, td))
         self._missing, self._stale = missing, stale
 
-    def _new_ext(self, p: Path, e: str) -> Path:
-        """New path with extension 'src', etc. changed to input extension."""
-        m = self._ext_re.match(p.name)
-        return Path(*p.parts[:-1]) / f"{m.group(1)}{e}.ipynb"
+
+def change_notebook_ext(p: Path, e: str) -> Path:
+    """New path with extension 'src', etc. changed to input extension."""
+    m = EXT_RE.match(p.name)
+    return Path(*p.parts[:-1]) / f"{m.group(1)}{e}.ipynb"

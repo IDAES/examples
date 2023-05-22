@@ -1,7 +1,6 @@
 """
 User interface for creating a new notebook
 """
-import pdb
 from enum import Enum
 from pathlib import Path
 import subprocess
@@ -26,13 +25,14 @@ RETRY = 254  # return code for try again
 
 class Colors:
     def __init__(self, term):
-        self.reg, self.title, self.em, self.light, self.err, self.rev = (
+        self.reg, self.title, self.em, self.light, self.err, self.rev, self.prompt = (
             term.white_on_black,
             term.green,
             term.orange,
             term.steelblue,
             term.red,
-            term.black_on_green,
+            term.black_on_steelblue,
+            term.green
         )
         self.star = f"\u2728"
         self.question = f"\u2754"
@@ -107,8 +107,8 @@ class AddNotebook:
         self.root = find_notebook_root(self.cwd)
         self.notebook_dir = self.root / "notebooks"
 
-        spc = " " * 10
-        self._hdr = f"{self.colors.rev}{spc}add notebook{spc}{self.colors.reg}"
+        c, spc = self.colors, " " * 10
+        self._hdr = f"{c.rev}{spc}add notebook{spc}{c.reg}"
         self._git = "git"
 
     @property
@@ -139,7 +139,7 @@ class AddNotebook:
                     print(self._hdr)
                     print(f"{c.title}Select an existing directory{c.reg}")
                     dm = self._dir_menu(dirs)
-                    print(f"{c.title}>{c.reg} ", end="", flush=True)
+                    print(f"{c.prompt}>{c.reg} ", end="", flush=True)
 
                     selected = self._select_dir(dm)
 
@@ -227,7 +227,7 @@ class AddNotebook:
         while not affirmed:
             print(f"Type notebook name (without {c.light}_src.ipynb{c.reg} suffix)")
             print(f"(press {c.em}<Enter>{c.reg} to return to previous menu)")
-            name = input(f"{c.em}> {c.reg}")
+            name = input(f"{c.prompt}> {c.reg}")
             if not name:
                 affirmed, nb_name = True, None
                 continue
@@ -282,7 +282,6 @@ class AddNotebook:
         if result:
             commit_ok = self._git_commit(created)
             if not commit_ok:
-                print(f"{c.err}Failed to commit files to Git{c.reg}")
                 result = False
 
         if result:
@@ -303,24 +302,30 @@ class AddNotebook:
         return result
 
     def _git_commit(self, created: list[Path]) -> bool:
+        assert len(created) > 0
+
         t, c = self.term, self.colors
         print(f"{c.star}Add and commit files to git")
 
         ok = False
-        file_list = [self.rpath(p, to_root=True) for p in created]
-        print(file_list)
 
+        cwd = Path.cwd().absolute()
+        file_list = [str(p.relative_to(cwd)) for p in created]
         command = [self.git_program, "add"] + file_list
         try:
-            subprocess.run(command)
+            print(f"  Run command: {c.light}{' '.join(command)}{c.reg}")
+            proc = subprocess.run(command, capture_output=True, check=True)
         except subprocess.CalledProcessError as err:
-            print(f"Command {c.light}{' '.join(command)}{c.reg} failed ({err})")
+            print(f"Command {c.light}{' '.join(command)}{c.reg} failed: {err}")
             print(f"{c.err}Could not stage files in git{c.reg}")
         else:
             nb_name = created[0].stem[:-4]
-            command = [self.git_program, "commit", "-m", f"\"New notebook '{nb_name}'\""]
+            nb_loc = self.rpath(created[0].parent)
+            command = [self.git_program, "commit", "-m",
+                       f"New notebook {nb_name} in directory {nb_loc}"]
+            print(f"  Run command: {c.light}{' '.join(command)}{c.reg}")
             try:
-                subprocess.run(command)
+                proc = subprocess.run(command, capture_output=True, check=True)
             except subprocess.CalledProcessError as err:
                 print(f"Command {c.light}{' '.join(command)}{c.reg} failed ({err})")
                 print(f"{c.err}Could not commit staged files in git{c.reg}")
@@ -426,9 +431,13 @@ class App:
         if path is None:
             return ABORT
 
+        # Print success. Use some whitespace to clear out any cruft
+        # left on the screen from previous output of the terminal tool.
         c = Colors(self.term)
         print("Success! You can now edit your new notebook at:")
-        print(f"{c.light}{adder.rpath(path)}{c.reg}")
+        print(" " * 60)
+        print(f"{c.em}{adder.rpath(path)}{c.reg}{' ' * 40}")
+        print()
 
         return 0
 
