@@ -5,7 +5,7 @@ from enum import Enum
 from pathlib import Path
 import subprocess
 import sys
-from typing import Union, Tuple, Iterator
+from typing import Union, Tuple, Iterator, List
 
 from blessed import Terminal
 import nbformat as nbf
@@ -301,7 +301,7 @@ class AddNotebook:
         press_any_key(t)
         return result
 
-    def _git_commit(self, created: list[Path]) -> bool:
+    def _git_commit(self, created: List[Path]) -> bool:
         assert len(created) > 0
 
         t, c = self.term, self.colors
