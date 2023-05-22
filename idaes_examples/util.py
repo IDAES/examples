@@ -199,7 +199,7 @@ class NotebookCollection:
         self._nb = self._root / "notebooks"
         self._missing, self._stale = None, None
 
-    def get_notebooks(self) -> list[Path]:
+    def get_notebooks(self) -> List[Path]:
         """Get a list of notebooks."""
         toc = read_toc(self._nb)
         notebooks = []
