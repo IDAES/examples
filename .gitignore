@@ -152,3 +152,6 @@ variables.*
 pysmo_kriging_surrogate.json
 AR_PFD.png
 pytest_pre.lock
+
+# notebook cache DB file, related to --cached flag
+global.db
