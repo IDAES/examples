@@ -4,7 +4,6 @@ bibtex_bibfiles:
 exclude_patterns:
 - active/*
 execute:
-  cache: idaes_examples/notebooks/nbcache
   execute_notebooks: cache
   timeout: 600
 logo: logo.png

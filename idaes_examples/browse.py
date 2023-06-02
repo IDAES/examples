@@ -3,6 +3,9 @@ Graphical examples browser
 """
 # stdlib
 from importlib import resources
+if not hasattr(resources, "files"):
+    # importlib.resources.files() added in Python 3.9
+    import importlib_resources as resources
 import json
 import logging
 from logging.handlers import RotatingFileHandler
@@ -39,8 +42,7 @@ _log.addHandler(_log_stream)
 
 
 def setup_logging(lvl, console=False):
-    """Log to a file, unless none can be opened.
-    """
+    """Log to a file, unless none can be opened."""
     global use_file, log_dir
 
     _log.setLevel(lvl)
@@ -63,14 +65,16 @@ def setup_logging(lvl, console=False):
             )
 
     handler.setFormatter(
-        logging.Formatter("[%(levelname)s] %(asctime)s %(name)s::%(module)s "
-                          "- %(message)s")
+        logging.Formatter(
+            "[%(levelname)s] %(asctime)s %(name)s::%(module)s - %(message)s"
+        )
     )
     _log.addHandler(handler)
 
 
 def set_log_level(level):
     _log.setLevel(level)
+
 
 # -------------
 
@@ -201,6 +205,7 @@ class Notebooks:
     def is_tree_root(self, key) -> bool:
         return key == self._root_key
 
+
 class Notebook:
     """Interface for metadata of one Jupyter notebook."""
 
@@ -216,6 +221,7 @@ class Notebook:
         self._lines = []
         self._get_description()
         self._type = nbtype
+
     @classmethod
     def _shorten_title(cls, text: str) -> str:
         maxlen = cls.MAX_TITLE_LEN - 2  # take off 2 more for 2 dots
@@ -263,7 +269,9 @@ class Notebook:
                     for line in self._lines:
                         if line.strip().startswith("#"):
                             last_pound = line.rfind("#")
-                            self._short_desc = self._shorten_title(line[last_pound + 1 :].strip())
+                            self._short_desc = self._shorten_title(
+                                line[last_pound + 1 :].strip()
+                            )
                             break
                     desc = True
                     break
@@ -379,8 +387,8 @@ class NotebookDescription:
         text = re.sub(r"<h2>(.*?)</h2>", r"<h2 style='font-size: 110%'>\1</h2>", text)
         text = re.sub(r"<h3>(.*?)</h3>", r"<h3 style='font-size: 100%'>\1</h3>", text)
         return (
-            f"<div style='font-size: 80%; "
-            f'font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;\'>'
+            "<div style='font-size: 80%; "
+            'font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;\'>'
             f"{text}</div>"
         )
 
@@ -423,7 +431,7 @@ def gui(notebooks):
         write_only=True,
         background_color="white",
         key="Description",
-        **sbar_kwargs
+        **sbar_kwargs,
     )
     description_frame = PySG.Frame(
         "Description", layout=[[description_widget]], expand_y=True, expand_x=True
@@ -445,7 +453,7 @@ def gui(notebooks):
         vertical_scroll_only=True,
         header_border_width=0,
         header_background_color="white",
-        **sbar_kwargs
+        **sbar_kwargs,
     )
 
     open_widget = PySG.Button(
@@ -463,14 +471,17 @@ def gui(notebooks):
     layout = [
         [
             nb_widget,
-            #PySG.Frame("Notebooks", [[nb_widget]], expand_y=True, expand_x=True),
+            # PySG.Frame("Notebooks", [[nb_widget]], expand_y=True, expand_x=True),
             description_frame,
         ],
         [open_widget],
     ]
     # create main window
     window = PySG.Window(
-        "IDAES Notebook Browser", layout, size=(1200, 600), finalize=True,
+        "IDAES Notebook Browser",
+        layout,
+        size=(1200, 600),
+        finalize=True,
         # background_color="#F0FFFF"
     )
 
