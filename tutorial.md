@@ -39,7 +39,7 @@ Create a conda environment and install examples (and dependencies, including ida
 ```
 conda create -y -n idaes-examples python=3.10
 conda activate idaes-examples
-pip install -e '.[dev]'
+pip install -r requirements-dev.txt
 idaes get-extensions
 ```
 

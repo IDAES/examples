@@ -7,77 +7,71 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [project]
-    name = "idaes_examples"
-    description = "IDAES Process Systems Engineering Examples"
-    readme = "README.md"
-    version = "2.0.0a2"
-    license = {text="BSD"}
-    requires-python = ">=3.7"
-    authors = [
-        {name="The IDAES Project"},
-        {name="Dan Gunter", email="dkgunter@lbl.gov"}
-    ]
-    classifiers = [
-            "Development Status :: 3 - Alpha",
-            "Intended Audience :: End Users/Desktop",
-            "Intended Audience :: Science/Research",
-            "License :: OSI Approved :: BSD License",
-            "Natural Language :: English",
-            "Operating System :: MacOS",
-            "Operating System :: Microsoft :: Windows",
-            "Operating System :: Unix",
-            "Programming Language :: Python",
-            "Programming Language :: Python :: 3",
-            "Programming Language :: Python :: 3.7",
-            "Programming Language :: Python :: 3.8",
-            "Programming Language :: Python :: 3.9",
-            "Programming Language :: Python :: 3.10",
-            "Programming Language :: Python :: Implementation :: CPython",
-            "Topic :: Scientific/Engineering :: Mathematics",
-            "Topic :: Scientific/Engineering :: Chemistry",
-            "Topic :: Software Development :: Libraries :: Python Modules",
-    ]
-    dependencies = [
-        # Don't version setuptools, various bits complain
-        "setuptools",
-        # Get IDAES from last release. NOTE: [dev] overrides this!
-        "idaes-pse",
-        # Pyomo
-        "pyomo>=6.5.0",
-        # For the small embedded GUI
-        "PySimpleGUI~=4.60.4",
-        "tkhtmlview==0.1.1.post5",
-        "Markdown~=3.4.1",
-        # For Keras/OMLT
-        "tensorflow"
-    ]
-    keywords = ["IDAES", "energy systems", "chemical engineering", "process modeling"]
+name = "idaes-examples"
+description = "IDAES Process Systems Engineering Examples"
+readme = "README.md"
+version = "2.0.0a2"
+license = {text="BSD"}
+requires-python = ">=3.8"
+authors = [
+    {name="The IDAES Project"},
+    {name="Dan Gunter", email="dkgunter@lbl.gov"}
+]
+classifiers = [
+        "Development Status :: 3 - Alpha",
+        "Intended Audience :: End Users/Desktop",
+        "Intended Audience :: Science/Research",
+        "License :: OSI Approved :: BSD License",
+        "Natural Language :: English",
+        "Operating System :: MacOS",
+        "Operating System :: Microsoft :: Windows",
+        "Operating System :: Unix",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: Implementation :: CPython",
+        "Topic :: Scientific/Engineering :: Mathematics",
+        "Topic :: Scientific/Engineering :: Chemistry",
+        "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    # Don't version setuptools, various bits complain
+    "setuptools",
+    # Pyomo
+    "pyomo>=6.5.0",
+    "jupyter",
+    "importlib_resources ; python_version < '3.9'",  # importlib.resources.files()
+]
+keywords = ["IDAES", "energy systems", "chemical engineering", "process modeling"]
 
 [project.optional-dependencies]
-# Just for developers (they should also add 'jb')
-dev = [
-    # IDAES
-    # -- for development, use github main
-    # NOTE: Need to manually comment this out when building the package
-    #"idaes-pse @ git+https://github.com/IDAES/idaes-pse",
+gui = [
+    # For the small embedded GUI
+    "PySimpleGUI~=4.60.4",
+    "tkhtmlview==0.1.1.post5",
+    "Markdown~=3.4.1",
+]
+omlt = [
+    # For Keras/OMLT
+    "omlt",
+    "tensorflow",
+]
+idaes = [
+    "idaes-pse",  # installing IDAES (from release) is opt-in
+]
+testing = [
     # parallel pytest
     "pytest-xdist ~= 3.0.2",
     # pytest reporting
     "pytest-reportlog ~= 0.1.2",
-    # For jupyter notebook testing
-    "black[jupyter] ~= 22.8.0",
-    # For adding copyright headers (see addheader.yml and the readme)
-    "addheader >= 0.3.0",
-    # For the idaesx new terminal UI
-    "blessed ~= 1.20.0"
+    "nbclient",
+    "nbmake",
 ]
-# For packaging
-pkg = [
-    "build",
-    "twine"
-]
-# For Jupyterbook (e.g. readthedocs builds)
-jb = [
+# dependencies for building documentation
+docs = [
     "jupyter-book ~= 0.13.1",
     # "jupyter-cache ~= 0.4.3",
     "jupyter-cache",
@@ -85,11 +79,24 @@ jb = [
     # version of nbclient, which is required by jupyter-cache
     # "nbclient ~= 0.5.13",
     "nbclient",
-    "nbmake",
     "nbformat",
     # markdown in Sphinx
     "myst-nb ~= 0.13.2",
     "myst-parser ~= 0.15.2",
+]
+# For developers
+dev = [
+    "idaes-examples[gui,testing,docs]",
+    # For jupyter notebook testing
+    "black[jupyter] ~= 22.8.0",
+    # For adding copyright headers (see addheader.yml and the readme)
+    "addheader >= 0.3.0",
+    "blessed ~= 1.20.0",
+]
+# For creating a package
+packaging = [
+    "build",
+    "twine"
 ]
 
 [project.urls]
