@@ -2,15 +2,14 @@ format: jb-book
 parts:
 - caption: Tutorials
   chapters:
+  - file: docs/tut/index
+    sections:
+    - file: docs/tut/introduction_short_doc
+    - file: docs/tut/introduction_doc
   - file: docs/tut/core/index
     sections:
     - file: docs/tut/core/flash_unit_doc
     - file: docs/tut/core/hda_flowsheet_doc
-    # Moved to 'held' until their imports can be fixed
-    # - file: docs/tut/general/index
-    #   sections:
-    #   - file: docs/tut/introduction_short_doc
-    #   - file: docs/tut/introduction_doc
   - file: docs/tut/ui/index
     sections:
     - file: docs/tut/ui/visualizer_tutorial_doc
