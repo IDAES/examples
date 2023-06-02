@@ -85,7 +85,7 @@ docs = [
 ]
 # For developers
 dev = [
-    "idaes-examples[testing,docs]",
+    "idaes-examples[gui,testing,docs]",
     # For jupyter notebook testing
     "black[jupyter] ~= 22.8.0",
     # For adding copyright headers (see addheader.yml and the readme)
