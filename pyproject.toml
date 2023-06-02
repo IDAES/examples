@@ -43,6 +43,7 @@ dependencies = [
     # Pyomo
     "pyomo>=6.5.0",
     "jupyter",
+    "importlib_resources ; python_version < '3.9'",  # importlib.resources.files()
 ]
 keywords = ["IDAES", "energy systems", "chemical engineering", "process modeling"]
 
