@@ -72,8 +72,9 @@ class NotebookPrep:
     def configure(cls, config: pytest.Config):
         """Run preprocessing before tests.
 
-        For pytest-xdist, this needs to run once (on the 'master'), with all other workers waiting for the
-        preprocessing to complete. To achieve this simply, we create a lockfile in the current directory.
+        For pytest-xdist, this needs to run once (on the 'master'), with all
+        other workers waiting for the preprocessing to complete. To achieve this
+        simply, we create a lockfile in the current directory.
         """
         log = cls.get_log(config)
         lock_file_name = "pytest_pre.lock"
@@ -82,15 +83,21 @@ class NotebookPrep:
             p = config.rootpath
             log.info(f"Preprocessing Jupyter notebooks in {p}")
             cls.num_pre = build.preprocess(p)
+            if cls.num_pre == 0:
+                raise RuntimeError(
+                    f"Error in preprocessing of Jupyter notebooks: no notebooks found"
+                )
             # Write a marker file to indicate preprocessing is done
             with open(lock_file_name, "w") as f:
                 pass
         else:
             start_time = time.time()
-            count, max_count = 1, 60
+            count, max_count = 1, 10
             while count <= max_count:
-                log.info(f"({count}) Wait for preprocessing")
-                time.sleep(2)
+                log.info(
+                    f"({count}) Wait for preprocessing (lockfile={lock_file_name})"
+                )
+                time.sleep(1)
                 # Look for lockfile that is relatively recent (ignore stale ones)
                 p = Path(lock_file_name)
                 if p.exists() and p.stat().st_ctime < start_time + 60:
@@ -101,13 +108,15 @@ class NotebookPrep:
             if count > max_count:
                 end_time = time.time()
                 duration = int(round(end_time - start_time))
-                raise RuntimeError(f"Preprocessing not completed in {duration} seconds. "
-                                   f"Check logs of 'master' process: {cls.get_logfile_name('gw0')}")
+                raise RuntimeError(
+                    f"Preprocessing not completed in {duration} seconds. "
+                    f"Check logs of 'master' process: {cls.get_logfile_name('gw0')}"
+                )
 
     @classmethod
     def filter_notebooks(cls, items: List):
-        """Modify input list of pytest items in-place to remove Jupyter notebooks that are not in a
-        testing directory or which are not test notebooks.
+        """Modify input list of pytest items in-place to remove Jupyter notebooks that
+        are not in a testing directory or which are not test notebooks.
         """
         remove_items = []
         # Find items to remove in all items
@@ -133,7 +142,8 @@ class NotebookPrep:
     @classmethod
     def report(cls) -> List[str]:
         cls.get_log().info(
-            f"Jupyter notebooks: {cls.num_pre} preprocessed, {cls.num_coll} total, {cls.num_test} test"
+            f"Jupyter notebooks: {cls.num_pre} preprocessed, {cls.num_coll} total,"
+            f" {cls.num_test} test"
         )
         return [
             "-" * 20,

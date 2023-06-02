@@ -14,8 +14,10 @@
 Tests for notebooks (without running them)
 """
 # stdlib
+import datetime
 import os
 from pathlib import Path
+import re
 import subprocess
 from typing import List
 
@@ -23,42 +25,23 @@ from typing import List
 import pytest
 
 # package
-from idaes_examples.util import read_toc, find_notebooks
+from idaes_examples.util import ExtAll, Ext, NotebookCollection
 
-
-# -------------------
 #  Fixtures
-# -------------------
+# ----------
+
 
 @pytest.fixture(scope="module")
-def notebooks() -> List[Path]:
-    src_path = find_toc(Path(__file__).parent)
-    assert src_path is not None, "Cannot find _toc.yml"
-    toc = read_toc(src_path)
-
-    notebooks = []
-
-    def add_notebook(p, **kwargs):
-        notebooks.append(p)
-
-    find_notebooks(src_path, toc, callback=add_notebook)
-    return notebooks
+def notebook_coll() -> NotebookCollection:
+    return NotebookCollection()
 
 
-def find_toc(p: Path):
-    """Walk up from 'p' looking for the '_toc.yml' file"""
-    while p != p.parent:
-        if (p / "_toc.yml").exists():
-            return p
-        p = p.parent
-    return None
-
-
-# -------------------
 #  Tests
-# -------------------
+# -------
 
-def test_smoke(notebooks: List[Path]):
+
+def test_has_some_notebooks(notebook_coll):
+    notebooks = notebook_coll.get_notebooks()
     assert len(notebooks) > 0
     for nb_path in notebooks:
         assert nb_path.exists()
@@ -80,8 +63,31 @@ def test_black():
                 tokens = line.split()
                 name = "??"
                 for i, tok in enumerate(tokens):
-                    if '\\' in tok or '/' in tok:
-                        name = ' '.join(tokens[i:])
+                    if "\\" in tok or "/" in tok:
+                        name = " ".join(tokens[i:])
                         break
                 print(f"FAILED: {name}")
         assert False, f"Black format check failed"
+
+
+def test_missing_stale(notebook_coll):
+    missing, stale = notebook_coll.missing, notebook_coll.stale
+    print(f"got: missing=[{missing}] stale=[{stale}]")
+    if missing or stale:
+        msg = []
+        if missing:
+            msg.append(
+                f"{len(missing)} missing derived notebooks: "
+                f"{', '.join([str(m) for m in missing])}"
+            )
+        if stale:
+            msg.append(
+                f"{len(stale)} notebooks with stale derivations "
+                "(need to be re-executed):"
+            )
+            for i, (key, val) in enumerate(stale.items()):
+                msg.append(
+                    f"({i + 1})  {key}: "
+                    f"{', '.join([f'{v[0].name} ({v[1]})' for v in val])}"
+                )
+        pytest.fail("\n".join(msg))

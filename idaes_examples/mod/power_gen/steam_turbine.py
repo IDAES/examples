@@ -374,7 +374,7 @@ class SteamTurbineFlowsheetData(FlowsheetBlockData):
             outlvl=outlvl,
             solver=solver,
             optarg=optarg,
-            copy_disconneted_flow=False,
+            copy_disconnected_flow=False,
             calculate_inlet_cf=True,
             calculate_outlet_cf=True,
         )
