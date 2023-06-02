@@ -4,6 +4,7 @@ This file provides details needed by developers to properly create and add new e
 
 **Table of Contents**
 * Installation
+* Add a new example
 * File layout
 * Running tests
 * Building documentation
@@ -24,13 +25,14 @@ This file provides details needed by developers to properly create and add new e
 
 **Quickstart**, skip to sections:
 * [Installation](#installation)
+* [Add a new example](#add-a-new-example)
 * [Running tests &rarr; Integration tests](#integration-tests)
 * [Building documentation](#building-documentation)
 
 
 ## Installation
 
-Clone the repository from Github, setup your Python environment as you usually do, then run pip with the developer requirements:
+Clone the repository from GitHub, set up your Python environment as you usually do, then run pip with the developer requirements:
 
 ```shell
 # to create a conda environment first:
@@ -39,7 +41,22 @@ pip install -e .[dev,jb]
 ```
 
 The configuration of the installation is stored in `pyproject.toml`.
- 
+
+## Add a new example
+
+Note: Below, `notebooks/*` refers to the directory `idaes_examples/notebooks`.
+
+If you want to add an example in an **existing section** of `notebooks/docs`, you can run
+`idaesx new` to get a guided terminal-based UI that will create a skeleton of the
+new notebook and add it to the table of contents, and also add all the variations of the notebook (see [Notebook Names](#notebook-names)) and, if git is enabled and found, add and commit them to git. 
+Then you just need to edit your notebook.
+
+If you need to create a **new section** in `notebooks/docs` or `notebooks/held`:
+- add the appropriate subdirectory, e.g. `notebooks/docs/fantastic`
+- add a section into `notebooks/_toc.yml`, imitating an existing entry
+- create and populate a `notebooks/docs/fantastic/index.md` file
+- now you can add your notebook(s) manually, e.g. `notebooks/docs/fantastic/my_notebook_src.ipynb`, or use the `idaesx new` command
+
 ## File layout
 
 This section describes the internal organization of the example notebooks and supporting files.
@@ -58,6 +75,14 @@ The examples are divided into a few top-level directories.
 For guidance on where to put a new notebook, see the [Examples Standards][standards] page in the IDAES examples repo wiki.
 
 ## Running tests
+
+There are two sets of tests in this repo.
+Which one you run depends in which directory you run tests.
+
+If your current directory is the root of the repository:
+
+1. `pytest .`: Runs **Python test modules**, matching the usual patterns (e.g., `*_test.py`).
+2. `pytest idaes_examples`: Runs **Jupyter notebook tests.** Due to the presence of a special `conftest.py` file in this directory, Jupyter Notebooks will be preprocessed and then all test notebooks (their filename ending in `_test.ipynb`) will be executed.
 
 ### Integration tests
 
@@ -114,11 +139,14 @@ idaesx build
 The output will be in *idaes_examples/nb/_build/html*. As a convenience, you can open that HTML file with the command `idaesx view`.
 
 ## Preprocessing notebooks
+Preprocessing creates separate copies of the Jupyter notebooks that are used for tests, tutorial exercise and solution, and documentation (see [Notebook Names](#notebook-names)).
+These (derived) notebooks are also committed and saved in Git.
 
-The commands to run tests and build documentation both run a preprocessing step that creates separate copies of the Jupyter notebooks that are used for tests, tutorial exercise and solution, and documentation (see Notebook Names).
-These generated files should ***not*** be added to the repository.
-If you want to run that preprocessing step separately, use `idaesx pre`.
-To remove pre-processed files, run `idaesx clean`.
+To re-run the preprocessing, which will update any derived files that are
+out of date (older than the corresponding `*_src.ipynb` file):
+```shell
+idaesx pre
+```
 
 A diagram of how preprocessing relates to notebook usage is shown below:
 
@@ -146,6 +174,8 @@ A diagram of how preprocessing relates to notebook usage is shown below:
                  └──►│example_solution.ipynb│
                      └──────────────────────┘
 ```
+
+<a name="notebook-names"></a>
 
 ## Notebook names
 

@@ -68,6 +68,8 @@ dev = [
     "black[jupyter] ~= 22.8.0",
     # For adding copyright headers (see addheader.yml and the readme)
     "addheader >= 0.3.0",
+    # For the idaesx new terminal UI
+    "blessed ~= 1.20.0"
 ]
 # For packaging
 pkg = [
@@ -84,6 +86,7 @@ jb = [
     # "nbclient ~= 0.5.13",
     "nbclient",
     "nbmake",
+    "nbformat",
     # markdown in Sphinx
     "myst-nb ~= 0.13.2",
     "myst-parser ~= 0.15.2",
@@ -128,3 +131,13 @@ idaes_examples = [
     "*.yml",
     "*.yaml"
 ]
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "--strict-markers"
+markers = [
+    "unit",
+    "integration",
+    "component", 
+    "needs_solver"
+]
+testpaths = "idaes_examples"
