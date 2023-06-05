@@ -10,9 +10,9 @@ the  capabilities of the IDAES platform.
 
 Below are basic instructions to install, view, and run the examples.
 
-If you are a developer who wishes to modify or add new notebooks, please refer to the file *README-developer.md*.
+**For Developers**: If you are a developer who wishes to modify or add new notebooks, please refer to the file *README-developer.md*.
 
-### Categories of examples
+**Categories of examples**
 
 In the source code repository, you may note that there are a number of examples that are not in the documentation.
 There are two main categories of examples:

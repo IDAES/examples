@@ -2,15 +2,14 @@ format: jb-book
 parts:
 - caption: Tutorials
   chapters:
+  - file: docs/tut/index
+    sections:
+    - file: docs/tut/introduction_short_doc
+    - file: docs/tut/introduction_doc
   - file: docs/tut/core/index
     sections:
     - file: docs/tut/core/flash_unit_doc
     - file: docs/tut/core/hda_flowsheet_doc
-    # Moved to 'held' until their imports can be fixed
-    # - file: docs/tut/general/index
-    #   sections:
-    #   - file: docs/tut/introduction_short_doc
-    #   - file: docs/tut/introduction_doc
   - file: docs/tut/ui/index
     sections:
     - file: docs/tut/ui/visualizer_tutorial_doc
@@ -29,10 +28,10 @@ parts:
     - file: docs/dae/petsc_pid_doc
 - caption: Flowsheets
   chapters:
-    - file: docs/flowsheets/hda_flowsheet_with_costing_doc
+  - file: docs/flowsheets/hda_flowsheet_with_costing_doc
 #   - file: docs/flowsheets/hda_flowsheet_with_distillation_doc
-    - file: docs/flowsheets/methanol_synthesis_doc
-    - file: docs/flowsheets/CO2_adsorption_desorption/CO2_Adsorption_Desorption_1DFixedBed_doc
+  - file: docs/flowsheets/methanol_synthesis_doc
+  - file: docs/flowsheets/CO2_adsorption_desorption/CO2_Adsorption_Desorption_1DFixedBed_doc
 - caption: Unit Models
   chapters:
   - file: docs/unit_models/operations/index
@@ -92,3 +91,4 @@ parts:
     # - file: active/power_gen/ngcc/ngcc_soec_doc
     - file: active/power_gen/ngcc/ngcc_doc
 root: index
+
