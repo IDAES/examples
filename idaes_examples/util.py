@@ -20,9 +20,6 @@ _h.setFormatter(
 
 _log.addHandler(_h)
 
-src_suffix = "_src"
-src_suffix_len = 4
-
 
 NB_ROOT = "notebooks"  # root folder name
 NB_CACHE = ".jupyter_cache"  # cache subdirectory
@@ -49,7 +46,7 @@ class Ext(Enum):
 
 ExtAll = {Ext.DOC, Ext.EX, Ext.SOL, Ext.TEST, Ext.USER}
 
-EXT_RE = re.compile(r"(.*_)\w+\.ipynb$")
+EXT_RE = re.compile(r"(.*_)(\w+)\.ipynb$")
 
 
 def add_vb(p, dest="vb"):
@@ -178,7 +175,6 @@ def find_notebooks(
             filemap_list = chapter.get("sections", [chapter])
             for filemap in filemap_list:
                 filename = filemap["file"][:-4]  # strip "_doc" suffix
-                filename += src_suffix
                 path = nbpath / f"{filename}.ipynb"
                 if path.exists():
                     _log.debug(f"Found notebook at: {path}")
@@ -214,7 +210,7 @@ class NotebookCollection:
     def missing(self) -> List[Path]:
         """Derived notebooks that should be there, but are not.
         Currently, this is notebooks of form `{name}_doc.ipynb` when there
-        is a notebook like `{name}_src.ipynb`.
+        is a notebook like `{name}.ipynb`.
 
         Returns:
             List of paths for the missing notebooks
@@ -261,3 +257,26 @@ def change_notebook_ext(p: Path, e: str) -> Path:
     """New path with extension 'src', etc. changed to input extension."""
     m = EXT_RE.match(p.name)
     return Path(*p.parts[:-1]) / f"{m.group(1)}{e}.ipynb"
+
+
+def path_suffix(p: Path) -> Union[str, None]:
+    """Get suffix for a path to a notebook.
+
+    Args:
+        p: Input path, should be a file
+
+    Returns:
+        * None - if not a file or filename doesn't end in .ipynb
+        * {sfx} - if filename ends in `_{sfx}.ipynb` where `{sfx}` is in ExtAll
+        * "" - otherwise (i.e. a notebook that doesn't have a known suffix)
+    """
+    if not (p.is_file() and p.name.endswith(".ipynb")):
+        return None
+    u = p.stem.rfind("_")
+    if u == -1:
+        return ""
+    suffix = p.stem[u + 1 :]
+    for known in ExtAll:
+        if known.value == suffix:
+            return suffix
+    return ""
