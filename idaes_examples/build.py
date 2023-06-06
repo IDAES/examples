@@ -21,18 +21,15 @@ from idaes_examples.util import (
     add_vb_flags,
     find_notebook_root,
     NB_ROOT,
-    NB_CACHE,
     NB_CELLS,
     NB_META,
     NB_IDAES,
     NB_SKIP,
     read_toc,
     find_notebooks,
-    src_suffix,
-    src_suffix_len,
     Ext,
-    ExtAll,
     Tags,
+    path_suffix,
 )
 from idaes_examples.util import _log as util_log
 
@@ -73,8 +70,9 @@ def preprocess(srcdir=None, dev=False) -> int:
     toc = read_toc(src_path)
     t0 = time.time()
     results = find_notebooks(src_path, toc, _preprocess)
-    for dev_file in (src_path / DEV_DIR).glob(f"*{src_suffix}.ipynb"):
-        _preprocess(dev_file)
+    for dev_file in (src_path / DEV_DIR).glob(f"*.ipynb"):
+        if path_suffix(dev_file) == "":  # plain old notebook
+            _preprocess(dev_file)
     dur = time.time() - t0
     n = len(results)
     n_processed = sum(results.values())
@@ -98,7 +96,7 @@ exclude_tags = {
 
 # notebook filenames, e.g. in markdown links
 # NOTE: assume no spaces in filenames
-nb_file_pat = re.compile(f"([a-zA-Z0-9_\\-:.+]+){src_suffix}\\.ipynb")
+nb_file_pat = re.compile(r"([a-zA-Z0-9_\-:.+]+)\.ipynb")
 nb_file_subs = {e.value: f"\\1_{e.value}.ipynb" for e in Ext if e != Ext.DOC}
 # For MyST, replace .ipynb with .md in the 'doc' notebook's link
 nb_file_subs[Ext.DOC.value] = f"\\1_{Ext.DOC.value}.md"
@@ -107,20 +105,6 @@ nb_file_subs[Ext.DOC.value] = f"\\1_{Ext.DOC.value}.md"
 def _preprocess(nb_path: Path, **kwargs) -> bool:
     _log.info(f"File: {nb_path}")
 
-    def ext_path(p: Path, ext: Ext = None, name: str = None) -> Path:
-        """Return new path with extension changed."""
-        name, base = name or ext.value, p.stem[:-src_suffix_len]
-        p_new = p.parent / f"{base}_{name}.ipynb"
-        _log.debug(f"Path[{name}] = '{p_new}'")
-        return p_new
-
-    def update_changed(nb_path: Path, ext: Ext, mtime: float, d: dict):
-        p = ext_path(nb_path, ext=ext)
-        if not p.exists():
-            d["exists"].add(ext.value)
-        elif p.stat().st_mtime <= mtime:
-            d["mtime"].add(ext.value)
-
     t0 = time.time()
 
     # Check whether source was changed after the derived notebooks.
@@ -128,7 +112,7 @@ def _preprocess(nb_path: Path, **kwargs) -> bool:
     src_mtime, changed = nb_path.stat().st_mtime, False
     changed_because = {"exists": set(), "mtime": set()}
     for ext in (Ext.DOC, Ext.USER, Ext.TEST):
-        update_changed(nb_path, ext, src_mtime, changed_because)
+        _change_and_update(nb_path, ext, src_mtime, changed_because)
 
     # Stop if no changes
     if not (changed_because["exists"] or changed_because["mtime"]):
@@ -171,7 +155,7 @@ def _preprocess(nb_path: Path, **kwargs) -> bool:
         nb_names.extend([Ext.EX.value, Ext.SOL.value])
         # Also check these files for changes
         for ext in (Ext.EX, Ext.SOL):
-            update_changed(nb_path, ext, src_mtime, changed_because)
+            _change_and_update(nb_path, ext, src_mtime, changed_because)
 
     # allow notebook metadata to skip certain outputs (e.g. 'test')
     if NB_IDAES in nb[NB_META]:
@@ -223,7 +207,7 @@ def _preprocess(nb_path: Path, **kwargs) -> bool:
         for index in exclude_cells[name]:
             del nb_copy[NB_CELLS][index]  # indexes are in reverse order
         # Generate output file
-        nbcopy_path = ext_path(nb_path, name=name)
+        nbcopy_path = _change_suffix(nb_path, suffix=name)
         _log.debug(f"Generate '{name}' file: {nbcopy_path}")
         with nbcopy_path.open("w") as nbcopy_file:
             json.dump(nb_copy, nbcopy_file)
@@ -234,6 +218,28 @@ def _preprocess(nb_path: Path, **kwargs) -> bool:
     dur = time.time() - t0
     _log.info(f"Preprocessed notebook {nb_path} in {dur:.2f} seconds")
     return True
+
+
+def _change_and_update(nb_path: Path, ext: Ext, mtime: float, d: dict):
+    """For ``_preprocess()``, change suffix and update the changed-reason dict."""
+    p = _change_suffix(nb_path, suffix=ext.value)
+    if not p.exists():
+        d["exists"].add(ext.value)
+    elif p.stat().st_mtime <= mtime:
+        d["mtime"].add(ext.value)
+
+
+def _change_suffix(p: Path, suffix: str = None) -> Path:
+    """For ``_preprocess()``, return new path with suffix changed."""
+    current_suffix = path_suffix(p)
+    assert current_suffix is not None, f"Expected Jupyter notebook file, got: {p}"
+    if current_suffix == "":
+        base = p.stem
+    else:
+        base = p.stem[: -(len(current_suffix) + 1)]
+    p_new = p.parent / f"{base}_{suffix}.ipynb"
+    _log.debug(f"Path[{suffix}] = '{p_new}'")
+    return p_new
 
 
 # -------------
@@ -706,8 +712,11 @@ def main():
             "them to a file in ~/.idaes/logs"
         ),
     )
-    subp["new"].add_argument("-g", "--git", help="Set Git executable (default=git). "
-                                                 "Use 'none' to disable Git.")
+    subp["new"].add_argument(
+        "-g",
+        "--git",
+        help="Set Git executable (default=git). Use 'none' to disable Git.",
+    )
     args = p.parse_args()
     subvb = getattr(args, f"vb_{args.command}")
     use_vb = subvb if subvb > args.vb else args.vb
