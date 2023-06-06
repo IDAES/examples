@@ -259,15 +259,16 @@ def change_notebook_ext(p: Path, e: str) -> Path:
     return Path(*p.parts[:-1]) / f"{m.group(1)}{e}.ipynb"
 
 
-def path_suffix(p: Path) -> Union[str, None]:
+def path_suffix(p: Path, extra: List[str] = None) -> Union[str, None]:
     """Get suffix for a path to a notebook.
 
     Args:
         p: Input path, should be a file
+        extra: If given, extra suffixes to consider 'known'
 
     Returns:
         * None - if not a file or filename doesn't end in .ipynb
-        * {sfx} - if filename ends in `_{sfx}.ipynb` where `{sfx}` is in ExtAll
+        * {sfx} - if filename ends in `_{sfx}.ipynb` where `{sfx}` is known
         * "" - otherwise (i.e. a notebook that doesn't have a known suffix)
     """
     if not (p.is_file() and p.name.endswith(".ipynb")):
@@ -275,8 +276,11 @@ def path_suffix(p: Path) -> Union[str, None]:
     u = p.stem.rfind("_")
     if u == -1:
         return ""
-    suffix = p.stem[u + 1 :]
-    for known in ExtAll:
-        if known.value == suffix:
+    suffix = p.stem[u + 1:]
+    known_values = [e.value for e in ExtAll]
+    if extra:
+        known_values.extend(extra)
+    for known in known_values:
+        if known == suffix:
             return suffix
     return ""
