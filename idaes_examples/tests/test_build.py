@@ -33,7 +33,7 @@ def test__change_and_update(tmp_path):
         f.write("hello, world\n")
 
     ext = build.Ext.TEST
-    build._change_and_update(p, ext, t0, tracking)
+    build._change_reason(p, ext, t0, tracking)
     assert tracking["exists"] == {ext.value}
 
     # create file with target extension
@@ -42,7 +42,7 @@ def test__change_and_update(tmp_path):
         f.write("hello, world\n")
     compare_time = 1e12  # fake mod. time for base file
 
-    build._change_and_update(p, ext, compare_time, tracking)
+    build._change_reason(p, ext, compare_time, tracking)
     assert tracking["mtime"] == {ext.value}
 
 

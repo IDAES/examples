@@ -30,6 +30,7 @@ from idaes_examples.util import (
     Ext,
     Tags,
     path_suffix,
+    processing_report,
 )
 from idaes_examples.util import _log as util_log
 
@@ -56,7 +57,7 @@ _log.addHandler(_h)
 DEV_DIR = "_dev"  # special directory to include in preprocessing
 
 
-def preprocess(srcdir=None, dev=False) -> int:
+def preprocess(srcdir=None, dev=False, force=False) -> int:
     """Preprocess Jupyter notebooks.
 
     Returns:
@@ -69,20 +70,12 @@ def preprocess(srcdir=None, dev=False) -> int:
         src_path /= NB_ROOT
     toc = read_toc(src_path)
     t0 = time.time()
-    results = find_notebooks(src_path, toc, _preprocess)
+    results = find_notebooks(src_path, toc, _preprocess, force=force)
     for dev_file in (src_path / DEV_DIR).glob(f"*.ipynb"):
         if path_suffix(dev_file) == "":  # plain old notebook
             _preprocess(dev_file)
-    dur = time.time() - t0
-    n = len(results)
-    n_processed = sum(results.values())
-    n_skipped = n - n_processed
-    _log.info(
-        f"Preprocessed {n} notebooks (changed {n_processed} / "
-        f"skipped {n_skipped}) in {dur:.1f} seconds"
-    )
-    Commands.subheading(f"did {n_processed}, skipped {n_skipped}")
-    return n
+    Commands.subheading(processing_report("preprocessed", t0, results, _log))
+    return len(results)
 
 
 # Which tags to exclude for which generated file
@@ -102,17 +95,18 @@ nb_file_subs = {e.value: f"\\1_{e.value}.ipynb" for e in Ext if e != Ext.DOC}
 nb_file_subs[Ext.DOC.value] = f"\\1_{Ext.DOC.value}.md"
 
 
-def _preprocess(nb_path: Path, **kwargs) -> bool:
+def _preprocess(nb_path: Path, force: bool=None) -> bool:
     _log.info(f"File: {nb_path}")
 
     t0 = time.time()
 
+    src_mtime = nb_path.stat().st_mtime
     # Check whether source was changed after the derived notebooks.
     # Only consider types of derived notebooks that are always generated.
-    src_mtime, changed = nb_path.stat().st_mtime, False
+    changed = False
     changed_because = {"exists": set(), "mtime": set()}
     for ext in (Ext.DOC, Ext.USER, Ext.TEST):
-        _change_and_update(nb_path, ext, src_mtime, changed_because)
+        _change_reason(nb_path, ext, src_mtime, changed_because, force=force)
 
     # Stop if no changes
     if not (changed_because["exists"] or changed_because["mtime"]):
@@ -154,8 +148,9 @@ def _preprocess(nb_path: Path, **kwargs) -> bool:
     if is_tutorial:
         nb_names.extend([Ext.EX.value, Ext.SOL.value])
         # Also check these files for changes
-        for ext in (Ext.EX, Ext.SOL):
-            _change_and_update(nb_path, ext, src_mtime, changed_because)
+        if not force:
+            for ext in (Ext.EX, Ext.SOL):
+                _change_reason(nb_path, ext, src_mtime, changed_because, force=force)
 
     # allow notebook metadata to skip certain outputs (e.g. 'test')
     if NB_IDAES in nb[NB_META]:
@@ -220,13 +215,17 @@ def _preprocess(nb_path: Path, **kwargs) -> bool:
     return True
 
 
-def _change_and_update(nb_path: Path, ext: Ext, mtime: float, d: dict):
+def _change_reason(nb_path: Path, ext: Ext, mtime: float, d: dict, force=False):
     """For ``_preprocess()``, change suffix and update the changed-reason dict."""
-    p = _change_suffix(nb_path, suffix=ext.value)
-    if not p.exists():
-        d["exists"].add(ext.value)
-    elif p.stat().st_mtime <= mtime:
+    if force:
+        # just pretend it is stale
         d["mtime"].add(ext.value)
+    else:
+        p = _change_suffix(nb_path, suffix=ext.value)
+        if not p.exists():
+            d["exists"].add(ext.value)
+        elif p.stat().st_mtime <= mtime:
+            d["mtime"].add(ext.value)
 
 
 def _change_suffix(p: Path, suffix: str = None) -> Path:
@@ -251,28 +250,20 @@ def clean(srcdir=None):
     src_path = find_notebook_root(Path(srcdir)) / NB_ROOT
     toc = read_toc(src_path)
     t0 = time.time()
-    results = find_notebooks(src_path, toc, _ro)
-    dur = time.time() - t0
-    n = len(results)
-    n_removed = sum(results.values())
-    n_skipped = n - n_removed
-    _log.info(
-        f"Processed {n} notebooks (removed code cells from {n_removed} / "
-        f"did nothing for {n_skipped}) in {dur:.1f} seconds"
-    )
-    Commands.subheading(f"removed {n_removed}, no action {n_skipped}")
+    results = find_notebooks(src_path, toc, _remove_outputs)
+    Commands.subheading(processing_report("removed", t0, results, _log))
 
 
-def _ro(nb_path: Path, **kwargs):
+def _remove_outputs(nb_path: Path, **kwargs):
     """Remove output cells"""
     nb = json.load(nb_path.open("r", encoding="utf-8"))
     changed = False
     for cell in nb[NB_CELLS]:
         if "cell_type" not in cell:
-            raise KeyError(f"Notebook cell missing key 'cell_type' in {nbpath}")
+            raise KeyError(f"Notebook cell missing key 'cell_type' in {nb_path}")
         if cell["cell_type"] == "code":
             if "outputs" not in cell:
-                raise KeyError(f"Notebook cell missing key 'outputs' in {nbpath}")
+                raise KeyError(f"Notebook cell missing key 'outputs' in {nb_path}")
             if cell["outputs"]:
                 cell["outputs"] = []
                 changed = True
@@ -463,7 +454,8 @@ class Commands:
     @classmethod
     def pre(cls, args):
         cls.heading("Pre-process notebooks")
-        return cls._run("pre-process notebooks", preprocess, srcdir=args.dir)
+        return cls._run("pre-process notebooks", preprocess, srcdir=args.dir,
+                        force=args.force)
 
     @classmethod
     def skipped(cls, args):
@@ -519,29 +511,6 @@ class Commands:
 
     @classmethod
     def clean(cls, args):
-        if not args.yes:
-            stop = None
-            print(
-                "WARNING: This action will remove the results of execution for "
-                "ALL notebooks"
-            )
-            while stop is None:
-                response = input("Continue [y/N]? ")
-                if response == "":
-                    stop = True
-                elif len(response) > 1:
-                    print("Please answer with one letter: y or n")
-                else:
-                    r = response[0].lower()
-                    if r == "y":
-                        stop = False
-                    elif r == "n":
-                        stop = True
-                    else:
-                        print("Please answer with one letter: y or n")
-            if stop:
-                print("Action canceled")
-                return 0
         cls.heading("Remove output cells in generated notebooks")
         return cls._run("remove output cells", clean, srcdir=args.dir)
 
@@ -666,13 +635,6 @@ def main():
         help="Build development notebooks (only)",
         default=False,
     )
-    subp["clean"].add_argument(
-        "--yes",
-        "-y",
-        action="store_true",
-        help="Skip confirmation and perform action",
-        default=False,
-    )
     subp["conf"].add_argument(
         "--execute",
         dest="execute",
@@ -716,6 +678,12 @@ def main():
         "-g",
         "--git",
         help="Set Git executable (default=git). Use 'none' to disable Git.",
+    )
+    subp["pre"].add_argument(
+        "--force",
+        "-f",
+        action="store_true",
+        help="Force preprocessing of all notebooks"
     )
     args = p.parse_args()
     subvb = getattr(args, f"vb_{args.command}")

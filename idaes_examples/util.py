@@ -7,6 +7,7 @@ from enum import Enum
 import logging
 from pathlib import Path
 import re
+import time
 from typing import Dict, List, Any, Union, Tuple
 
 # third-party
@@ -284,3 +285,16 @@ def path_suffix(p: Path, extra: List[str] = None) -> Union[str, None]:
         if known == suffix:
             return suffix
     return ""
+
+
+def processing_report(action: str, t0: float, results: Dict, log: logging.Logger) -> str:
+    dur = time.time() - t0
+    n = len(results)
+    n_processed = sum(results.values())
+    n_skipped = n - n_processed
+    _log.info(
+        f"{action.title()} {n} notebooks (did {n_processed} / "
+        f"skipped {n_skipped}) in {dur:.1f} seconds"
+    )
+    return f"{action} {n_processed}, skipped {n_skipped}"
+
