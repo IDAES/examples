@@ -95,7 +95,7 @@ nb_file_subs = {e.value: f"\\1_{e.value}.ipynb" for e in Ext if e != Ext.DOC}
 nb_file_subs[Ext.DOC.value] = f"\\1_{Ext.DOC.value}.md"
 
 
-def _preprocess(nb_path: Path, force: bool=None) -> bool:
+def _preprocess(nb_path: Path, force: bool = None) -> bool:
     _log.info(f"File: {nb_path}")
 
     t0 = time.time()
@@ -205,7 +205,7 @@ def _preprocess(nb_path: Path, force: bool=None) -> bool:
         nbcopy_path = _change_suffix(nb_path, suffix=name)
         _log.debug(f"Generate '{name}' file: {nbcopy_path}")
         with nbcopy_path.open("w") as nbcopy_file:
-            json.dump(nb_copy, nbcopy_file)
+            json.dump(nb_copy, nbcopy_file, indent=2)
         # Restore modified sources
         for i, s in saved_source:
             nb[NB_CELLS][i]["source"] = s
@@ -454,8 +454,9 @@ class Commands:
     @classmethod
     def pre(cls, args):
         cls.heading("Pre-process notebooks")
-        return cls._run("pre-process notebooks", preprocess, srcdir=args.dir,
-                        force=args.force)
+        return cls._run(
+            "pre-process notebooks", preprocess, srcdir=args.dir, force=args.force
+        )
 
     @classmethod
     def skipped(cls, args):
@@ -683,7 +684,7 @@ def main():
         "--force",
         "-f",
         action="store_true",
-        help="Force preprocessing of all notebooks"
+        help="Force preprocessing of all notebooks",
     )
     args = p.parse_args()
     subvb = getattr(args, f"vb_{args.command}")

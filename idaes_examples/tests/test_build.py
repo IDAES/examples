@@ -1,3 +1,4 @@
+from pathlib import Path
 import time
 import pytest
 from idaes_examples import build, util
@@ -91,3 +92,15 @@ def test__preprocess(tmp_path):
     for ext in util.ExtAll:
         path = tmp_path / f"{name}_{ext.value}.ipynb"
         assert path.exists()
+
+
+@pytest.mark.unit
+def test_change_notebook_ext():
+    for name, expected in (
+        ("foo", "foo_ext"),
+        ("foo_bar", "foo_bar_ext"),
+        (f"foo_{util.Ext.DOC}", "foo_ext"),
+    ):
+        p = Path(name + util.JUPYTER_EXT)
+        p2 = util.change_notebook_ext(p, "ext")
+        assert p2.name == expected + util.JUPYTER_EXT
