@@ -535,7 +535,7 @@ class Commands:
                 print(f"{val.type}{' '*(10 - len(val.type))} {val.title} -> {pth}")
             status = 0
         else:
-            status = browse.gui(nb)
+            status = browse.gui(nb, use_lab=args.lab)
         return status
 
     @classmethod
@@ -674,6 +674,9 @@ def main():
             "(stderr) instead of redirecting "
             "them to a file in ~/.idaes/logs"
         ),
+    )
+    subp["gui"].add_argument(
+        "--lab", help="Use Jupyter Lab instead of Jupyter Notebook", action="store_true"
     )
     subp["new"].add_argument(
         "-g",

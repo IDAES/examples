@@ -3,6 +3,7 @@ Graphical examples browser
 """
 # stdlib
 from importlib import resources
+
 if not hasattr(resources, "files"):
     # importlib.resources.files() added in Python 3.9
     import importlib_resources as resources
@@ -12,8 +13,9 @@ from logging.handlers import RotatingFileHandler
 from operator import attrgetter
 from pathlib import Path
 import re
-from subprocess import Popen, PIPE, TimeoutExpired
-from typing import Tuple, List, Dict
+from subprocess import Popen, DEVNULL, PIPE, TimeoutExpired
+import time
+from typing import Tuple, List, Dict, Iterable
 
 # third-party
 import markdown
@@ -27,7 +29,6 @@ from idaes_examples.util import (
     read_toc,
     NB_CELLS,
     Ext,
-    src_suffix_len,
 )
 
 # -------------
@@ -125,7 +126,7 @@ class Notebooks:
         self._tree = self._as_tree()
 
     def _add_notebook(self, path: Path, **kwargs):
-        name = path.stem[:-src_suffix_len]
+        name = path.stem
         section = path.relative_to(self._root).parts[:-1]
         for ext in Ext.USER.value, Ext.EX.value, Ext.SOL.value:
             tpath = path.parent / f"{name}_{ext}.ipynb"
@@ -150,6 +151,9 @@ class Notebooks:
 
     def __getitem__(self, key):
         return self._nb[key]
+
+    def keys(self) -> Iterable:
+        return self._nb.keys()
 
     def as_tree(self) -> PySG.TreeData:
         """Get notebooks as a tree suitable for displaying in a PySimpleGUI
@@ -285,8 +289,8 @@ class Jupyter:
 
     COMMAND = "jupyter"
 
-    def __init__(self):
-        self._ports = set()
+    def __init__(self, lab=False):
+        self._app = "lab" if lab else "notebook"
 
     def open(self, nb_path: Path):
         """Open notebook in a browser.
@@ -298,20 +302,10 @@ class Jupyter:
             None
         """
         _log.info(f"(start) open notebook at path={nb_path}")
-        p = Popen([self.COMMAND, "notebook", str(nb_path)], stderr=PIPE)
-        buf, m, port = "", None, "unknown"
-        while True:
-            s = p.stderr.read(100).decode("utf-8")
-            if not s:
-                break
-            buf += s
-            m = re.search(r"http://.*:(\d{4})/\?token", buf, flags=re.M)
-            if m:
-                break
-        if m:
-            port = m.group(1)
-            self._ports.add(port)
-        _log.info(f"(end) open notebook at path={nb_path} port={port}")
+        proc = Popen(
+            [self.COMMAND, self._app, str(nb_path)], stderr=PIPE
+        )
+        _log.info(f"(end) opened notebook at path={nb_path}")
 
     def stop(self):
         """Stop all running notebooks.
@@ -319,13 +313,20 @@ class Jupyter:
         Returns:
             None
         """
-        for port in self._ports:
-            self._stop(port)
+        with Popen([self.COMMAND, self._app, "stop", "foo"], stderr=PIPE) as proc:
+            ports = []
+            for line in proc.stderr:
+                m = re.match(r".*- (\d+)", line.decode("utf-8").strip())
+                if m:
+                    ports.append(m.group(1))
 
-    @classmethod
-    def _stop(cls, port):
+        _log.info(f"Stop servers running on ports: {', '.join(ports)}")
+        for port in ports:
+            self._stop(int(port))
+
+    def _stop(self, port):
         _log.info(f"(start) stop running notebook, port={port}")
-        p = Popen([cls.COMMAND, "notebook", "stop", port])
+        p = Popen([self.COMMAND, self._app, "stop", str(port)], stderr=DEVNULL)
         try:
             p.wait(timeout=5)
             _log.info(f"(end) stop running notebook, port={port}: Success")
@@ -413,7 +414,7 @@ class NotebookDescription:
 FONT = ("Courier New", 11)
 
 
-def gui(notebooks):
+def gui(notebooks, use_lab=False):
     _log.info(f"begin:run-gui")
     PySG.theme("Material2")
 
@@ -468,14 +469,45 @@ def gui(notebooks):
         auto_size_button=False,
         use_ttk_buttons=True,
     )
+
+    intro_nb, flowsheet_nb = "intro", "flowsheet"
+    start_notebook_paths = {}
+    for key in notebooks.keys():
+        sect, name, ext = key
+        # print(key)
+        if sect[0] == "docs" and sect[1] == "tut":
+            if name == "introduction" and ext == Ext.USER.value:
+                start_notebook_paths[intro_nb] = notebooks[key].path
+            elif name == "hda_flowsheet" and ext == Ext.SOL.value:
+                start_notebook_paths[flowsheet_nb] = notebooks[key].path
+    # Be robust to not-found notebooks
+    start_here_panel = []
+    if len(start_notebook_paths) == 0:
+        _log.warning("Could not find 'Start here' notebooks")
+    else:
+        start_here_panel.append(PySG.Text("Start here!"))
+        sh_kwargs = dict(pad=(10, 10))
+        for sh_nb, text in ((intro_nb, "Introduction"), (flowsheet_nb, "Flowsheet")):
+            if sh_nb in start_notebook_paths:
+                button = PySG.Button(text, key=f"starthere_{sh_nb}", **sh_kwargs)
+                start_here_panel.append(button)
+
+    instructions = PySG.Text(
+        "Select a notebook and then select 'Open' to open it in Jupyter"
+    )
+
     layout = [
+        [instructions],
         [
             nb_widget,
-            # PySG.Frame("Notebooks", [[nb_widget]], expand_y=True, expand_x=True),
             description_frame,
         ],
         [open_widget],
     ]
+
+    if start_here_panel:
+        layout.insert(0, start_here_panel)
+
     # create main window
     window = PySG.Window(
         "IDAES Notebook Browser",
@@ -488,34 +520,47 @@ def gui(notebooks):
     nbdesc = NotebookDescription(notebooks, window["Description"].Widget)
 
     # Event Loop to process "events" and get the "values" of the inputs
-    jupyter = Jupyter()
-    while True:
-        event, values = window.read()
-        # if user closes window or clicks cancel
-        if event == PySG.WIN_CLOSED or event == "Cancel":
-            break
-        # print(event, values)
-        if isinstance(event, int):
-            _log.debug(f"Unhandled event: {event}")
-        elif event == "-TREE-":
-            what = values.get("-TREE-", [""])[0]
-            if notebooks.is_tree_section(what) or notebooks.is_tree_root(what):
-                # cannot open a section or the root entry, so disable the button
-                window["open"].update(disabled=True)
-            elif what:
-                _, section, name, type_ = what.split("+")
-                nbdesc.show(section, name, type_)
-                # make sure open is enabled
-                window["open"].update(disabled=False)
-        elif event == "open":
-            what = values.get("-TREE-", [None])[0]
-            if what:
-                _, section, name, type_ = what.split("+")
-                path = nbdesc.get_path(section, name, type_)
+    jupyter = Jupyter(lab=use_lab)
+    try:
+        while True:
+            _log.debug("Wait for event")
+            event, values = window.read()
+            _log.debug("Event detected")
+            # if user closes window or clicks cancel
+            if event == PySG.WIN_CLOSED or event == "Cancel":
+                break
+            # print(event, values)
+            if isinstance(event, int):
+                _log.debug(f"Unhandled event: {event}")
+            elif event == "-TREE-":
+                what = values.get("-TREE-", [""])[0]
+                if notebooks.is_tree_section(what) or notebooks.is_tree_root(what):
+                    # cannot open a section or the root entry, so disable the button
+                    window["open"].update(disabled=True)
+                elif what:
+                    _, section, name, type_ = what.split("+")
+                    nbdesc.show(section, name, type_)
+                    # make sure open is enabled
+                    window["open"].update(disabled=False)
+            elif event == "open":
+                what = values.get("-TREE-", [None])[0]
+                if what:
+                    _, section, name, type_ = what.split("+")
+                    path = nbdesc.get_path(section, name, type_)
+                    jupyter.open(path)
+            elif event.startswith("starthere"):
+                what = event.split("_")[-1]
+                path = start_notebook_paths[what]
+                print(path)
                 jupyter.open(path)
+    except KeyboardInterrupt:
+        print("Stopped by user")
 
-    _log.info("Stop running notebooks")
-    jupyter.stop()
+    print("** Stop running notebooks")
+    try:
+        jupyter.stop()
+    except KeyboardInterrupt:
+        pass
     _log.info("Close main window")
     window.close()
     _log.info(f"end:run-gui")
