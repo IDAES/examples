@@ -10,12 +10,18 @@ if not hasattr(resources, "files"):
 import json
 import logging
 from logging.handlers import RotatingFileHandler
+from multiprocessing import Process
 from operator import attrgetter
 from pathlib import Path
 import re
 from subprocess import Popen, DEVNULL, PIPE, TimeoutExpired
 import time
 from typing import Tuple, List, Dict, Iterable
+
+try:
+    from ctypes import windll
+except:
+    windll = None
 
 # third-party
 import markdown
@@ -411,12 +417,19 @@ class NotebookDescription:
 #     GUI
 # -------------
 
-FONT = ("Courier New", 11)
 
-
-def gui(notebooks, use_lab=False):
+def gui(notebooks, use_lab=False, font_scale_factor=None):
     _log.info(f"begin:run-gui")
     PySG.theme("Material2")
+
+    if windll and font_scale_factor != 0:
+        windll.shcore.SetProcessDpiAwareness(1)
+        scale_factor = font_scale_factor
+    else:
+        scale_factor = 1
+
+    def get_font(size, factor=scale_factor):
+        return "Arial", size
 
     nb_tree = notebooks.as_tree()
 
@@ -432,6 +445,7 @@ def gui(notebooks, use_lab=False):
         write_only=True,
         background_color="white",
         key="Description",
+        font=get_font(11),
         **sbar_kwargs,
     )
     description_frame = PySG.Frame(
@@ -450,7 +464,7 @@ def gui(notebooks, use_lab=False):
         expand_y=True,
         expand_x=True,
         enable_events=True,
-        font=FONT,
+        font=get_font(11),
         vertical_scroll_only=True,
         header_border_width=0,
         header_background_color="white",
@@ -485,12 +499,16 @@ def gui(notebooks, use_lab=False):
     if len(start_notebook_paths) == 0:
         _log.warning("Could not find 'Start here' notebooks")
     else:
-        start_here_panel.append(PySG.Text("Start here!"))
+        start_here_panel.append(PySG.Text("Not sure where to start? Try one of these:"))
         sh_kwargs = dict(pad=(10, 10))
         for sh_nb, text in ((intro_nb, "Introduction"), (flowsheet_nb, "Flowsheet")):
             if sh_nb in start_notebook_paths:
                 button = PySG.Button(text, key=f"starthere_{sh_nb}", **sh_kwargs)
                 start_here_panel.append(button)
+                if text == "Introduction":
+                    start_here_panel.append(PySG.Text("for an IDAES overview or"))
+                else:
+                    start_here_panel.append(PySG.Text("for a flowsheet tutorial"))
 
     instructions = PySG.Text(
         "Select a notebook and then select 'Open' to open it in Jupyter"
@@ -509,10 +527,19 @@ def gui(notebooks, use_lab=False):
         layout.insert(0, start_here_panel)
 
     # create main window
+    w, h = PySG.Window.get_screen_size()
+    print(f"@@ screen size: {w} x {h}")
+    if w >= 3840:
+        width, height = 2700, 1350
+    elif w > 2400:
+        width, height = 1800, 900
+    else:
+        width, height = 1200, 600
+
     window = PySG.Window(
         "IDAES Notebook Browser",
         layout,
-        size=(1200, 600),
+        size=(width, height),
         finalize=True,
         # background_color="#F0FFFF"
     )

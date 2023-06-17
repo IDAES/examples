@@ -535,7 +535,7 @@ class Commands:
                 print(f"{val.type}{' '*(10 - len(val.type))} {val.title} -> {pth}")
             status = 0
         else:
-            status = browse.gui(nb, use_lab=args.lab)
+            status = browse.gui(nb, use_lab=args.lab, font_scale_factor=args.dpi_scale)
         return status
 
     @classmethod
@@ -677,6 +677,11 @@ def main():
     )
     subp["gui"].add_argument(
         "--lab", help="Use Jupyter Lab instead of Jupyter Notebook", action="store_true"
+    )
+    subp["gui"].add_argument(
+        "--scale", dest="dpi_scale", help="Scaling for high DPI monitors, "
+                                          "use 0 to turn off (default=1)",
+        default=1, type=int
     )
     subp["new"].add_argument(
         "-g",
