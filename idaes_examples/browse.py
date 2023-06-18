@@ -129,7 +129,6 @@ class Notebooks:
         self._sorted_values = sorted(
             list(self._nb.values()), key=attrgetter(*sort_keys)
         )
-        self._tree = self._as_tree()
 
     def _add_notebook(self, path: Path, **kwargs):
         name = path.stem
@@ -161,58 +160,31 @@ class Notebooks:
     def keys(self) -> Iterable:
         return self._nb.keys()
 
-    def as_tree(self) -> PySG.TreeData:
-        """Get notebooks as a tree suitable for displaying in a PySimpleGUI
-        Tree widget.
-        """
-        return self._tree
 
-    def _as_tree(self) -> PySG.TreeData:
-        td = PySG.TreeData()
-
-        # organize notebooks hierarchically
-        data = {}
+    def as_table(self):
+        tutorials = set()
         for nb in self._sorted_values:
-            if nb.section not in data:
-                data[nb.section] = {}
-            if nb.name not in data[nb.section]:
-                data[nb.section][nb.name] = []
-            data[nb.section][nb.name].append(nb)
+            if nb.type == Ext.EX.value:
+                tutorials.add(nb.section_parts)
 
-        # copy hierarchy into an sg.TreeData object
-        td.insert("", text="Notebooks", key=self._root_key, values=[])
-        for section in data:
-            section_key = f"{self._section_key_prefix}_{section}"
-            td.insert(self._root_key, key=section_key, text=section, values=[])
-            for name, nblist in data[section].items():
-                base_key = None
-                # Make an entry for the base notebook
-                for nb in nblist:
-                    if nb.type == Ext.USER.value:
-                        base_key = f"notebooks+{section}+{nb.name}+{nb.type}"
-                        td.insert(
-                            section_key, key=base_key, text=nb.title, values=[nb.path]
-                        )
-                        self._title_keys.append(base_key)
-                        break
-                # Make sub-entries for examples, tutorials, etc. (if there are any)
-                if len(nblist) > 1:
-                    for nb in nblist:
-                        if nb.type != Ext.USER.value:
-                            sub_key = f"notebooks+{section}+{nb.name}+{nb.type}"
-                            # The name of the sub-entry is its type, since it will be
-                            # visually listed under the title of the base entry.
-                            subtitle = nb.type.title()
-                            td.insert(
-                                base_key, key=sub_key, text=subtitle, values=[nb.path]
-                            )
-
-        return td
+        data = []
+        metadata = []
+        for nb in self._sorted_values:
+            if nb.type != Ext.USER.value:
+                continue
+            parts = nb.section_parts
+            is_tut = parts in tutorials
+            nbtype = "Tutorial" if is_tut else "Example"
+            nbloc = Notebook.SECTION_SEP.join(parts)
+            row = (nbtype, nbloc, nb.title)
+            data.append(row)
+            metadata.append((nb.type, nb.name, is_tut))
+        return data, metadata
 
     def is_tree_section(self, key) -> bool:
         return key.startswith(self._section_key_prefix)
 
-    def is_tree_root(self, key) -> bool:
+    def is_root(self, key) -> bool:
         return key == self._root_key
 
 
@@ -220,6 +192,7 @@ class Notebook:
     """Interface for metadata of one Jupyter notebook."""
 
     MAX_TITLE_LEN = 50
+    SECTION_SEP = "/"
 
     def __init__(self, name: str, section: Tuple, path: Path, nbtype="plain"):
         self.name, self._section = name, section
@@ -244,7 +217,11 @@ class Notebook:
 
     @property
     def section(self) -> str:
-        return ":".join(self._section)
+        return self.SECTION_SEP.join(self._section)
+
+    @property
+    def section_parts(self):
+        return tuple((s for s in self._section))
 
     @property
     def title(self) -> str:
@@ -368,8 +345,8 @@ class NotebookDescription:
 
     @staticmethod
     def _make_key(section, name, type_):
-        if ":" in section:
-            section_tuple = tuple(section.split(":"))
+        if Notebook.SECTION_SEP in section:
+            section_tuple = tuple(section.split(Notebook.SECTION_SEP))
         else:
             section_tuple = (section,)
         return section_tuple, name, type_
@@ -428,7 +405,9 @@ def gui(notebooks, use_lab=False, stop_notebooks_on_quit=False):
     def get_font(size):
         return "Arial", size
 
-    nb_tree = notebooks.as_tree()
+    # nb_tree = notebooks.as_tree()
+    nb_table, nb_table_meta = notebooks.as_table()
+    # print(f"@@TABLE={nb_table}\n\nMETA={nb_table_meta}")
 
     sbar_kwargs = dict(
         sbar_trough_color=PySG.theme_background_color(),
@@ -449,40 +428,52 @@ def gui(notebooks, use_lab=False, stop_notebooks_on_quit=False):
         "Description", layout=[[description_widget]], expand_y=True, expand_x=True
     )
 
-    nb_widget = PySG.Tree(
-        nb_tree,
-        border_width=0,
-        col0_width=int(Notebook.MAX_TITLE_LEN * 0.4) + 4,  # empirically determined (!)
-        headings=[],
-        auto_size_columns=False,
-        select_mode=PySG.TABLE_SELECT_MODE_EXTENDED,
-        key="-TREE-",
-        show_expanded=True,
-        expand_y=True,
+    columns = [0, 0, 0]
+    for row in nb_table:
+        for col_index in range(2):
+            w = len(row[col_index]) // 2
+            if columns[col_index] < w:
+                columns[col_index] = w
+        w = len(row[2])
+        if columns[2] < w:
+            columns[2] = w
+
+    nb_widget = PySG.Table(
+        values=nb_table,
+        headings=["Type", "Location", "Description"],
         expand_x=True,
-        enable_events=True,
-        font=get_font(11),
-        vertical_scroll_only=True,
-        header_border_width=0,
-        header_background_color="white",
-        **sbar_kwargs,
+        expand_y=False,
+        justification="left",
+        enable_click_events=True,
+        alternating_row_color="#ddf",
+        col_widths=columns,
+        auto_size_columns=False,
     )
 
-    open_widget = PySG.Button(
-        "Open",
-        tooltip="Open the selected notebook",
-        button_color=("white", "#0079D3"),
-        disabled_button_color=("#696969", "#EEEEEE"),
-        border_width=0,
-        key="open",
-        disabled=True,
-        pad=(10, 10),
-        auto_size_button=False,
-        use_ttk_buttons=True,
-    )
+    open_buttons = {}
+    for ext in Ext.USER, Ext.SOL, Ext.EX:
+        if ext == Ext.USER:
+            label = "Open Example"
+        elif ext == Ext.SOL:
+            label = "Open Solution"
+        else:
+            label = "Open Exercise"
+        open_buttons[ext] = PySG.Button(
+            label,
+            tooltip=f"Open selected notebook",
+            button_color=("white", "#0079D3"),
+            disabled_button_color=("#696969", "#EEEEEE"),
+            border_width=0,
+            auto_size_button=True,
+            key=f"open+{ext.value}",
+            disabled=True,
+            pad=(10, 10),
+            use_ttk_buttons=True,
+        )
+
     quit_button = PySG.Button(
         "Quit",
-        tooltip="Open the selected notebook",
+        tooltip="Quit the application",
         button_color=("white", "#0079D3"),
         border_width=0,
         key="quit",
@@ -502,8 +493,10 @@ def gui(notebooks, use_lab=False, stop_notebooks_on_quit=False):
                 start_notebook_paths[intro_nb] = notebooks[key].path
             elif name == "hda_flowsheet" and ext == Ext.SOL.value:
                 start_notebook_paths[flowsheet_nb] = notebooks[key].path
-    # Be robust to not-found notebooks
+
+    # Find the start-here notebooks and add buttons for them
     start_here_panel = []
+    # Be robust to not-found notebooks
     if len(start_notebook_paths) == 0:
         _log.warning("Could not find 'Start here' notebooks")
     else:
@@ -524,11 +517,14 @@ def gui(notebooks, use_lab=False, stop_notebooks_on_quit=False):
 
     layout = [
         [instructions],
-        [
-            nb_widget,
-            description_frame,
-        ],
-        [open_widget, PySG.P(), quit_button],
+        [nb_widget],
+        [description_frame],
+        [PySG.Text("Actions:"),
+         open_buttons[Ext.USER],
+         open_buttons[Ext.EX],
+         open_buttons[Ext.SOL],
+         PySG.P(),
+         quit_button],
     ]
 
     if start_here_panel:
@@ -536,14 +532,9 @@ def gui(notebooks, use_lab=False, stop_notebooks_on_quit=False):
 
     # create main window
     w, h = PySG.Window.get_screen_size()
-    if w > h:
-        capped_w = min(w, 3840)
-        width = int(capped_w // 1.4)
-        height = int(min(h, width // 2))
-    else:
-        capped_h = min(h, 3840)
-        height = int(capped_h // 1.4)
-        width = int(min(w, height // 2))
+    capped_w = min(w, 3840)
+    width = int(capped_w // 1.4)
+    height = int(min(h - 10, width // 2))
 
     window = PySG.Window(
         "IDAES Notebook Browser",
@@ -554,9 +545,10 @@ def gui(notebooks, use_lab=False, stop_notebooks_on_quit=False):
     )
 
     nbdesc = NotebookDescription(notebooks, window["Description"].Widget)
-
+    # print(f"@@ NOTEbOOKS: {notebooks.notebooks}")
     # Event Loop to process "events" and get the "values" of the inputs
     jupyter = Jupyter(lab=use_lab)
+    shown = None
     try:
         while True:
             _log.debug("Wait for event")
@@ -568,21 +560,24 @@ def gui(notebooks, use_lab=False, stop_notebooks_on_quit=False):
             # print(event, values)
             if isinstance(event, int):
                 _log.debug(f"Unhandled event: {event}")
-            elif event == "-TREE-":
-                what = values.get("-TREE-", [""])[0]
-                if notebooks.is_tree_section(what) or notebooks.is_tree_root(what):
-                    # cannot open a section or the root entry, so disable the button
-                    window["open"].update(disabled=True)
-                elif what:
-                    _, section, name, type_ = what.split("+")
-                    nbdesc.show(section, name, type_)
-                    # make sure open is enabled
-                    window["open"].update(disabled=False)
-            elif event == "open":
-                what = values.get("-TREE-", [None])[0]
-                if what:
-                    _, section, name, type_ = what.split("+")
-                    path = nbdesc.get_path(section, name, type_)
+            elif isinstance(event, tuple):
+                if event[1] == "+CLICKED+":
+                    row_index = event[2][0]
+                    if row_index is not None:
+                        data_row = nb_table[row_index]
+                        meta_row = nb_table_meta[row_index]
+                        section = data_row[1]
+                        name = meta_row[1]
+                        type_ = Ext.USER.value
+                        nbdesc.show(section, name, type_)
+                        shown = (section, name, meta_row[0])
+                        is_tut = meta_row[2]
+                        open_buttons[Ext.USER].update(disabled=False)
+                        open_buttons[Ext.EX].update(disabled=not is_tut)
+                        open_buttons[Ext.SOL].update(disabled=not is_tut)
+            elif isinstance(event, str) and event.startswith("open+"):
+                if shown:
+                    path = nbdesc.get_path(*shown)
                     jupyter.open(path)
             elif event.startswith("starthere"):
                 what = event.split("_")[-1]
