@@ -418,17 +418,14 @@ class NotebookDescription:
 # -------------
 
 
-def gui(notebooks, use_lab=False, font_scale_factor=None):
+def gui(notebooks, use_lab=False, stop_notebooks_on_quit=False):
     _log.info(f"begin:run-gui")
     PySG.theme("Material2")
 
-    if windll and font_scale_factor != 0:
+    if windll:
         windll.shcore.SetProcessDpiAwareness(1)
-        scale_factor = font_scale_factor
-    else:
-        scale_factor = 1
 
-    def get_font(size, factor=scale_factor):
+    def get_font(size):
         return "Arial", size
 
     nb_tree = notebooks.as_tree()
@@ -483,6 +480,17 @@ def gui(notebooks, use_lab=False, font_scale_factor=None):
         auto_size_button=False,
         use_ttk_buttons=True,
     )
+    quit_button = PySG.Button(
+        "Quit",
+        tooltip="Open the selected notebook",
+        button_color=("white", "#0079D3"),
+        border_width=0,
+        key="quit",
+        disabled=False,
+        pad=(10, 10),
+        auto_size_button=False,
+        use_ttk_buttons=True,
+    )
 
     intro_nb, flowsheet_nb = "intro", "flowsheet"
     start_notebook_paths = {}
@@ -520,7 +528,7 @@ def gui(notebooks, use_lab=False, font_scale_factor=None):
             nb_widget,
             description_frame,
         ],
-        [open_widget],
+        [open_widget, PySG.P(), quit_button],
     ]
 
     if start_here_panel:
@@ -528,13 +536,14 @@ def gui(notebooks, use_lab=False, font_scale_factor=None):
 
     # create main window
     w, h = PySG.Window.get_screen_size()
-    print(f"@@ screen size: {w} x {h}")
-    if w >= 3840:
-        width, height = 2700, 1350
-    elif w > 2400:
-        width, height = 1800, 900
+    if w > h:
+        capped_w = min(w, 3840)
+        width = int(capped_w // 1.4)
+        height = int(min(h, width // 2))
     else:
-        width, height = 1200, 600
+        capped_h = min(h, 3840)
+        height = int(capped_h // 1.4)
+        width = int(min(w, height // 2))
 
     window = PySG.Window(
         "IDAES Notebook Browser",
@@ -554,7 +563,7 @@ def gui(notebooks, use_lab=False, font_scale_factor=None):
             event, values = window.read()
             _log.debug("Event detected")
             # if user closes window or clicks cancel
-            if event == PySG.WIN_CLOSED or event == "Cancel":
+            if event == PySG.WIN_CLOSED or event == "quit":
                 break
             # print(event, values)
             if isinstance(event, int):
@@ -583,11 +592,12 @@ def gui(notebooks, use_lab=False, font_scale_factor=None):
     except KeyboardInterrupt:
         print("Stopped by user")
 
-    print("** Stop running notebooks")
-    try:
-        jupyter.stop()
-    except KeyboardInterrupt:
-        pass
+    if stop_notebooks_on_quit:
+        print("** Stop running notebooks")
+        try:
+            jupyter.stop()
+        except KeyboardInterrupt:
+            pass
     _log.info("Close main window")
     window.close()
     _log.info(f"end:run-gui")
