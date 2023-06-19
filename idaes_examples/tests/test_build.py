@@ -99,7 +99,7 @@ def test_change_notebook_ext():
     for name, expected in (
         ("foo", "foo_ext"),
         ("foo_bar", "foo_bar_ext"),
-        (f"foo_{util.Ext.DOC}", "foo_ext"),
+        (f"foo_{util.Ext.DOC.value}", "foo_ext"),
     ):
         p = Path(name + util.JUPYTER_EXT)
         p2 = util.change_notebook_ext(p, "ext")
