@@ -51,6 +51,16 @@ _h.setFormatter(
 _log.addHandler(_h)
 
 # -------------
+# Common
+# -------------
+
+
+def json_dump(*args):
+    """Standard way to dump JSON"""
+    return json.dump(*args, indent=2)
+
+
+# -------------
 #  Preprocess
 # -------------
 
@@ -205,7 +215,7 @@ def _preprocess(nb_path: Path, force: bool = None) -> bool:
         nbcopy_path = _change_suffix(nb_path, suffix=name)
         _log.debug(f"Generate '{name}' file: {nbcopy_path}")
         with nbcopy_path.open("w") as nbcopy_file:
-            json.dump(nb_copy, nbcopy_file, indent=2)
+            json_dump(nb_copy, nbcopy_file)
         # Restore modified sources
         for i, s in saved_source:
             nb[NB_CELLS][i]["source"] = s
@@ -274,7 +284,7 @@ def _remove_outputs(nb_path: Path, **kwargs):
                 changed = True
     if changed:
         with nb_path.open("w", encoding="utf-8") as f:
-            json.dump(nb, f)
+            json_dump(nb, f)
         _log.debug(f"Removed code cell output(s) from {nb_path}")
     return changed
 
@@ -289,7 +299,7 @@ def _remove_ids(nb_path: Path, **kwargs):
             changed = True
     if changed:
         with nb_path.open("w", encoding="utf-8") as f:
-            json.dump(nb, f)
+            json_dump(nb, f)
         _log.debug(f"Removed code cell id(s) from {nb_path}")
     return changed
 
