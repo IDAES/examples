@@ -246,12 +246,17 @@ def _change_suffix(p: Path, suffix: str = None) -> Path:
 # -------------
 
 
-def clean(srcdir=None):
+def clean(srcdir=None, outputs=True, ids=False):
     src_path = find_notebook_root(Path(srcdir)) / NB_ROOT
     toc = read_toc(src_path)
     t0 = time.time()
-    results = find_notebooks(src_path, toc, _remove_outputs)
-    Commands.subheading(processing_report("removed", t0, results, _log))
+    if outputs:
+        results = find_notebooks(src_path, toc, _remove_outputs)
+        Commands.subheading(processing_report("removed", t0, results, _log))
+    t0 = time.time()
+    if ids:
+        results = find_notebooks(src_path, toc, _remove_ids)
+        Commands.subheading(processing_report("removed", t0, results, _log))
 
 
 def _remove_outputs(nb_path: Path, **kwargs):
@@ -273,6 +278,20 @@ def _remove_outputs(nb_path: Path, **kwargs):
         _log.debug(f"Removed code cell output(s) from {nb_path}")
     return changed
 
+
+def _remove_ids(nb_path: Path, **kwargs):
+    """Remove cell ids"""
+    nb = json.load(nb_path.open("r", encoding="utf-8"))
+    changed = False
+    for cell in nb[NB_CELLS]:
+        if "id" in cell:
+            del cell["id"]
+            changed = True
+    if changed:
+        with nb_path.open("w", encoding="utf-8") as f:
+            json.dump(nb, f)
+        _log.debug(f"Removed code cell id(s) from {nb_path}")
+    return changed
 
 # ---------------
 # List skipped
@@ -512,8 +531,15 @@ class Commands:
 
     @classmethod
     def clean(cls, args):
-        cls.heading("Remove output cells in generated notebooks")
-        return cls._run("remove output cells", clean, srcdir=args.dir)
+        if args.ids:
+            cls.heading("Remove ids in generated notebooks")
+            result = cls._run("remove output cells", clean, srcdir=args.dir, ids=True,
+                              outputs=False)
+        else:
+            cls.heading("Remove output cells in generated notebooks")
+            result = cls._run("remove output cells", clean, srcdir=args.dir,
+                              ids=False, outputs=True)
+        return result
 
     @classmethod
     def black(cls, args):
@@ -635,6 +661,11 @@ def main():
         action="store_true",
         help="Build development notebooks (only)",
         default=False,
+    )
+    subp["clean"].add_argument(
+        "--ids",
+        help="Remove cell ids (not outputs)",
+        action="store_true"
     )
     subp["conf"].add_argument(
         "--execute",
