@@ -14,7 +14,6 @@ import yaml
 from idaes_examples.util import (
     read_toc,
     find_notebook_root,
-    src_suffix_len,
     Ext,
     change_notebook_ext,
 )
@@ -32,7 +31,7 @@ class Colors:
             term.steelblue,
             term.red,
             term.black_on_steelblue,
-            term.green
+            term.green,
         )
         self.star = f"\u2728"
         self.question = f"\u2754"
@@ -150,8 +149,10 @@ class AddNotebook:
                 notebook_path = section_path / filename
                 notebook_type = self._get_notebook_type()
                 if self._create_notebook(notebook_path, notebook_type):
-                    notebook_doc = notebook_path.stem[:-src_suffix_len] + "_doc"
-                    new_toc = self._add_notebook_to_config(str(selected[0]), notebook_doc)
+                    notebook_doc = notebook_path.stem + "_doc"
+                    new_toc = self._add_notebook_to_config(
+                        str(selected[0]), notebook_doc
+                    )
                     # write modified TOC
                     if new_toc is not None:
                         self._write_new_toc(new_toc)
@@ -225,13 +226,13 @@ class AddNotebook:
 
         affirmed, nb_name = False, ""
         while not affirmed:
-            print(f"Type notebook name (without {c.light}_src.ipynb{c.reg} suffix)")
+            print(f"Type notebook name (without {c.light}.ipynb{c.reg} suffix)")
             print(f"(press {c.em}<Enter>{c.reg} to return to previous menu)")
             name = input(f"{c.prompt}> {c.reg}")
             if not name:
                 affirmed, nb_name = True, None
                 continue
-            nb_name = f"{name}_src.ipynb"
+            nb_name = f"{name}.ipynb"
             if (full_path / nb_name).exists():
                 print(f"{c.err}File exists!{c.reg} Operation canceled.")
                 press_any_key(t)
@@ -321,8 +322,12 @@ class AddNotebook:
         else:
             nb_name = created[0].stem[:-4]
             nb_loc = self.rpath(created[0].parent)
-            command = [self.git_program, "commit", "-m",
-                       f"New notebook {nb_name} in directory {nb_loc}"]
+            command = [
+                self.git_program,
+                "commit",
+                "-m",
+                f"New notebook {nb_name} in directory {nb_loc}",
+            ]
             print(f"  Run command: {c.light}{' '.join(command)}{c.reg}")
             try:
                 proc = subprocess.run(command, capture_output=True, check=True)
@@ -341,8 +346,9 @@ class AddNotebook:
 
         entry = {"file": (Path(dirname) / path).as_posix()}
         dirname = Path(dirname).as_posix()
-        print(f"Add {c.light}{path}{c.reg} notebook "
-              f"to section {c.light}{dirname}{c.reg}")
+        print(
+            f"Add {c.light}{path}{c.reg} notebook to section {c.light}{dirname}{c.reg}"
+        )
         toc = read_toc(self.root / "notebooks")
         found = False
         for part in toc["parts"]:
@@ -353,12 +359,14 @@ class AddNotebook:
                         for section in chapter["sections"]:
                             if section.get("file", "").startswith(dirname):
                                 if entry in chapter["sections"]:
-                                    part_name = part.get('caption', '?')
-                                    chap_name = chapter.get('file', '?')
-                                    print(f"{c.err}Found existing entry in "
-                                          f"{c.light}_toc.yml{c.err} at{c.light}"
-                                          f"({part_name}).chapters.({chap_name})"
-                                          f"{c.err}!{c.reg}")
+                                    part_name = part.get("caption", "?")
+                                    chap_name = chapter.get("file", "?")
+                                    print(
+                                        f"{c.err}Found existing entry in "
+                                        f"{c.light}_toc.yml{c.err} at{c.light}"
+                                        f"({part_name}).chapters.({chap_name})"
+                                        f"{c.err}!{c.reg}"
+                                    )
                                     break
                                 chapter["sections"].append(entry)
                                 found = True
@@ -369,8 +377,10 @@ class AddNotebook:
                     ):
                         if entry in part["chapters"]:
                             part_name = part.get("caption", "?")
-                            print(f"{c.err}Found existing entry in {c.reg}"
-                                  f"({part_name}).chapters{c.err}!{c.reg}")
+                            print(
+                                f"{c.err}Found existing entry in {c.reg}"
+                                f"({part_name}).chapters{c.err}!{c.reg}"
+                            )
                             break
                         part["chapters"].append(entry)
                         found = True
