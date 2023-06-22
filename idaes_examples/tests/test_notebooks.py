@@ -17,13 +17,17 @@ Tests for notebooks (without running them)
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 
 # third-party
 import pytest
 
 # package
-from idaes_examples.util import ExtAll, Ext, NotebookCollection
+from idaes_examples.util import (
+    NotebookCollection,
+    NB_CELLS
+)
 
 #  Fixtures
 # ----------
@@ -94,14 +98,77 @@ def test_missing_stale(notebook_coll):
 def test_header(notebook_coll):
     notebooks = notebook_coll.get_notebooks()
     assert len(notebooks) > 0
+
+    errors = []
+    base_path = None
     for path in notebooks:
+        if base_path is None:
+            base_path = get_base_path(path)
+        rel_path = path.relative_to(base_path)
+        # print(f"Notebook: {rel_path}")  # debug
         with path.open("r", encoding="utf-8") as f:
             nb = json.load(f)
-            cells = nb["cells"]
+            cells = nb[NB_CELLS]
             assert len(cells) > 0
             header = get_header_cell(cells)
-            assert header is not None, f"Missing header cell in {path}"
+            if header is None:
+                errors.append(f"{rel_path}: Missing header cell")
+                continue
+            header_meta = get_header_meta(header)
+            if header_meta is None:
+                errors.append(f"{rel_path}: Missing or bad header metadata")
+                continue
+            # check required keys
+            required_keys = {"author": False, "maintainer": False}
+            for field in header_meta:
+                key = field.lower()
+                if key in required_keys:
+                    required_keys[key] = True
+            missing_keys = [k for k in required_keys if not required_keys[k]]
+            if missing_keys:
+                mk_str = ",".join(missing_keys)
+                errors.append(f"{rel_path}: Missing required metadata keys: {mk_str}")
+
+    if errors:
+        print(f"\n[[ {len(errors)} errors ]] base: {base_path}\n")
+        for i, e in enumerate(errors):
+            print(f"{i + 1:2d}) {e}")
+        print()
+    assert len(errors) == 0
+
+
+def get_base_path(p):
+    while p.stem != "notebooks":
+        p = p.parent
+    return p
 
 
 def get_header_cell(cells):
+    # check in first .. up to 5 .. cells
+    result = None
+    for i in range(min(len(cells), 5)):
+        cell = cells[i]
+        if cell["cell_type"] == "markdown":
+            title = get_cell_title(cell)
+            if title is not None:
+                result = cell
+                break
+    return result
+
+
+def get_cell_title(cell):
+    for line in cell["source"]:
+        if line.startswith("#"):
+            return line
     return None
+
+
+def get_header_meta(cell):
+    meta = {}
+    for line in cell["source"]:
+        line = line.strip()
+        m = re.match(r"(\w+)\s*:\s*(.*)", line)
+        if m:
+            name, value = m.group(1), m.group(2)
+            meta[name] = value
+    return meta
