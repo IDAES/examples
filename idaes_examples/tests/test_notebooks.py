@@ -14,12 +14,10 @@
 Tests for notebooks (without running them)
 """
 # stdlib
-import datetime
+import json
 import os
 from pathlib import Path
-import re
 import subprocess
-from typing import List
 
 # third-party
 import pytest
@@ -91,3 +89,19 @@ def test_missing_stale(notebook_coll):
                     f"{', '.join([f'{v[0].name} ({v[1]})' for v in val])}"
                 )
         pytest.fail("\n".join(msg))
+
+
+def test_header(notebook_coll):
+    notebooks = notebook_coll.get_notebooks()
+    assert len(notebooks) > 0
+    for path in notebooks:
+        with path.open("r", encoding="utf-8") as f:
+            nb = json.load(f)
+            cells = nb["cells"]
+            assert len(cells) > 0
+            header = get_header_cell(cells)
+            assert header is not None, f"Missing header cell in {path}"
+
+
+def get_header_cell(cells):
+    return None
