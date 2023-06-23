@@ -515,6 +515,7 @@ def edit_header(srcdir: Path, path: Path, new_title: str = None,
             with path.open("w", encoding="utf-8") as f:
                 json_dump(nb, f)
 
+## -- utility functions for header manipulation --
 
 def _print_header(path):
     with path.open("r", encoding="utf-8") as f:
