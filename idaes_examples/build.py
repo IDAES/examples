@@ -498,20 +498,22 @@ def edit_header(srcdir: Path, path: Path, new_title: str = None,
                 _log.error(f"No header found for {path}")
             else:
                 header = cells[header_index]
-                title = _get_cell_title(header).strip()
-                if new_title is not None:
-                    _set_cell_title(header, new_title)
-                if new_author is not None or new_maintainer is not None:
-                    meta = _get_header_meta(header)
-                    if new_author is not None:
-                        meta["Author"] = new_author
-                        if new_maintainer is None:
-                            meta["Maintainer"] = new_author
-                    if new_maintainer is not None:
-                        meta["Maintainer"] = new_maintainer
-                    _set_header_meta(header, meta)
-        with path.open("w", encoding="utf-8") as f:
-            json_dump(nb, f)
+                # find title (useful later regardless if we're changing it)
+                title_index = _get_cell_title(header)
+                # replace title if new one is given
+                if title_index >= 0 and new_title is not None:
+                    header[header_index] = f"# {new_title}\n"
+                # find/replace metadata
+                meta_dict = {}
+                if new_author:
+                    meta_dict["Author"] = new_author
+                if new_maintainer:
+                    meta_dict["Maintainer"] = new_maintainer
+                if meta_dict:
+                    _change_header_meta(header, title_index, meta_dict)
+
+            with path.open("w", encoding="utf-8") as f:
+                json_dump(nb, f)
 
 
 def _print_header(path):
@@ -522,7 +524,7 @@ def _print_header(path):
         if header is None:
             title = "-none-"
         else:
-            title = _get_cell_title(header).strip()
+            title = header["source"][_get_cell_title(header)].strip()
             meta = _get_header_meta(header)
         if not meta:
             meta_str = "  <no metadata>"
@@ -532,7 +534,7 @@ def _print_header(path):
         print()
 
 
-def _get_header_cell(cells):
+def _get_header_cell(cells) -> int:
     # check in first .. up to 5 .. cells
     result = -1
     for i in range(min(len(cells), 5)):
@@ -545,91 +547,45 @@ def _get_header_cell(cells):
     return result
 
 
-def _get_cell_title(cell):
-    title = None
-    for line in cell["source"]:
+def _get_cell_title(cell) -> int:
+    src, result = cell["source"], -1
+    for i, line in enumerate(src):
         if line.startswith("#"):
-            title = line
+            result = i
             break
-    if title is not None:
-        p = 0
-        for i in range(len(title)):
-            if title[i] != "#":
-                p = i
-                break
-        title = title[p:].strip()
-    return title
+    return result
 
 
-def _set_cell_title(cell, title):
-    new_source, not_set = [], True
-    for line in cell["source"]:
-        if not_set and line.startswith("#"):
-            line = f"# {title}\n"
-            not_set = False
-        new_source.append(line)
-    cell["source"] = new_source
+def _get_header_meta(cell) -> dict:
+    src, result = cell["source"], {}
+    for line in src:
+        m = re.match(r"(\w+)\s*:\s*(.*)", line.strip())
+        if m:
+            result[m.group(1)] = m.group(2).strip()
+    return result
 
 
-def _get_header_meta(cell):
-    meta = {}
-    for line in cell["source"]:
+def _change_header_meta(cell, title_index, meta):
+    src = cell["source"]
+    # replace values
+    replaced = set()  # remember which ones we found/replaced
+    repl_index = -1
+    for i, line in enumerate(src):
         line = line.strip()
-        m = re.match(r"(\w+)\s*:\s*(.*)", line)
+        m = re.match(r"([A-Z]\w+)\s*:\s*(.*)", line)
         if m:
             name, value = m.group(1), m.group(2).strip()
-            meta[name] = value
-    return meta
-
-
-def _set_header_meta(cell, meta):
-    added = False
-    new_source = []
-    n_lines = len(cell["source"])
-    title_index = -1
-    for i, line in enumerate(cell["source"]):
-        if title_index < 0 and line.startswith("#"):
-            title_index = i
-        last_line = i == n_lines - 1
-        orig_line, line = line, line.strip()
-        m = re.match(r"(\w+)\s*:\s*(.*)", line)
-        if m:
-            if not added:
-                j, n_meta = 0, len(meta)
-                for k in sorted(meta.keys()):
-                    v = meta[k]
-                    last_meta = j == n_meta - 1
-                    new_line = f"{k}: {v}"
-                    if last_meta:
-                        if not last_line:
-                            new_line += "\n"
-                    else:
-                        new_line += "  \n"  # 2 spaces forces markdown break
-                    new_source.append(new_line)
-                    j += 1
-                added = True
-        else:
-            if n_lines == 1:
-                # make title line a continuation, we're going to add
-                new_source.append(line.strip() + "\n")
-            else:
-                new_source.append(orig_line)
-    if not added:  # nothing to replace, add right after title
-        idx = title_index + 1
-        # add the metadata
-        j, n_meta = 0, len(meta)
-        for k in sorted(meta.keys()):
-            v = meta[k]
-            last_meta = j == n_meta - 1
-            new_line = f"{k}: {v}"
-            if not last_meta or (n_lines > 1):
-                new_line += "  \n"
-            new_source.insert(idx + j, new_line)
-            j += 1
-    # cleanup if trailing \n
-    if new_source[-1].endswith("\n"):
-        new_source[-1] = new_source[-1][:-1]
-    cell["source"] = new_source
+            replaced.add(name)
+            repl_index = i
+            if name in meta:
+                src[i] = f"{name}: {meta[name]}  \n"  # 2 spaces for markdown <br/>
+    # add any metadata, not found and replaced, after last replaced item or title
+    not_present = set(meta.keys()) - replaced
+    for name in not_present:
+        insert_index = repl_index + 1 if repl_index >= 0 else title_index + 1
+        src.insert(insert_index, f"{name}: {meta[name]}  \n")
+    # clean up any trailing newlines or other whitespace on last line
+    src[-1] = src[-1].rstrip()
 
 # -------------
 #  Commandline
@@ -901,8 +857,7 @@ def main():
         "--title", help="New title, for `--edit` mode"
     )
     subp["hdr"].add_argument(
-        "--author", help="New author for `--edit` mode (will also be used for "
-                         "maintainer, if `--maintainer` is not given)"
+        "--author", help="New author, for `--edit` mode"
     )
     subp["hdr"].add_argument(
         "--maintainer", help="New maintainer, for `--edit` mode"
