@@ -28,6 +28,9 @@ from idaes_examples.util import (
     NotebookCollection,
     NB_CELLS
 )
+from idaes_examples.build import (
+ _get_cell_title, _get_header_cell, _get_header_meta
+)
 
 #  Fixtures
 # ----------
@@ -110,11 +113,12 @@ def test_header(notebook_coll):
             nb = json.load(f)
             cells = nb[NB_CELLS]
             assert len(cells) > 0
-            header = get_header_cell(cells)
-            if header is None:
+            header_idx = _get_header_cell(cells)
+            if header_idx < 0:
                 errors.append(f"{rel_path}: Missing header cell")
                 continue
-            header_meta = get_header_meta(header)
+            header = cells[header_idx]
+            header_meta = _get_header_meta(header)
             if header_meta is None:
                 errors.append(f"{rel_path}: Missing or bad header metadata")
                 continue
@@ -141,34 +145,3 @@ def get_base_path(p):
     while p.stem != "notebooks":
         p = p.parent
     return p
-
-
-def get_header_cell(cells):
-    # check in first .. up to 5 .. cells
-    result = None
-    for i in range(min(len(cells), 5)):
-        cell = cells[i]
-        if cell["cell_type"] == "markdown":
-            title = get_cell_title(cell)
-            if title is not None:
-                result = cell
-                break
-    return result
-
-
-def get_cell_title(cell):
-    for line in cell["source"]:
-        if line.startswith("#"):
-            return line
-    return None
-
-
-def get_header_meta(cell):
-    meta = {}
-    for line in cell["source"]:
-        line = line.strip()
-        m = re.match(r"(\w+)\s*:\s*(.*)", line)
-        if m:
-            name, value = m.group(1), m.group(2)
-            meta[name] = value
-    return meta
