@@ -485,7 +485,8 @@ def print_header(srcdir):
 
 
 def edit_header(srcdir: Path, path: Path, new_title: str = None,
-                new_author: str = None, new_maintainer: str = None):
+                new_author: str = None, new_maintainer: str = None,
+                new_updated: str = None):
     if not path.is_absolute():
         src_path = find_notebook_root(Path(srcdir)) / NB_ROOT
         path = src_path / path
@@ -509,13 +510,17 @@ def edit_header(srcdir: Path, path: Path, new_title: str = None,
                     meta_dict["Author"] = new_author
                 if new_maintainer:
                     meta_dict["Maintainer"] = new_maintainer
+                if new_updated:
+                    meta_dict["Updated"] = new_updated
                 if meta_dict:
                     _change_header_meta(header, title_index, meta_dict)
 
             with path.open("w", encoding="utf-8") as f:
                 json_dump(nb, f)
 
+
 ## -- utility functions for header manipulation --
+
 
 def _print_header(path):
     with path.open("r", encoding="utf-8") as f:
@@ -661,7 +666,7 @@ class Commands:
             nbpath = Path(args.path)
             return cls._run(f"{action} notebooks", edit_header, srcdir=args.dir,
                             path=nbpath, new_title=args.title, new_author=args.author,
-                            new_maintainer=args.maintainer)
+                            new_maintainer=args.maintainer, new_updated=args.updated)
         else:
             return cls._run("{action} notebooks", print_header, srcdir=args.dir)
 
@@ -862,6 +867,9 @@ def main():
     )
     subp["hdr"].add_argument(
         "--maintainer", help="New maintainer, for `--edit` mode"
+    )
+    subp["hdr"].add_argument(
+        "--updated", help="Last updated date (use YYYY-MM-DD), for `--edit` mode"
     )
     subp["new"].add_argument(
         "-g",
