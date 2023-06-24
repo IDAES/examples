@@ -303,6 +303,7 @@ def _remove_ids(nb_path: Path, **kwargs):
         _log.debug(f"Removed code cell id(s) from {nb_path}")
     return changed
 
+
 # ---------------
 # List skipped
 # ---------------
@@ -478,15 +479,21 @@ def modify_conf(
 # Header
 # ------------
 
+
 def print_header(srcdir):
     src_path = find_notebook_root(Path(srcdir)) / NB_ROOT
     toc = read_toc(src_path)
     find_notebooks(src_path, toc, _print_header)
 
 
-def edit_header(srcdir: Path, path: Path, new_title: str = None,
-                new_author: str = None, new_maintainer: str = None,
-                new_updated: str = None):
+def edit_header(
+    srcdir: Path,
+    path: Path,
+    new_title: str = None,
+    new_author: str = None,
+    new_maintainer: str = None,
+    new_updated: str = None,
+):
     if not path.is_absolute():
         src_path = find_notebook_root(Path(srcdir)) / NB_ROOT
         path = src_path / path
@@ -588,10 +595,14 @@ def _change_header_meta(cell, title_index, meta):
     # add any metadata, not found and replaced, after last replaced item or title
     not_present = set(meta.keys()) - replaced
     for name in not_present:
-        insert_index = repl_index + 1 if repl_index >= 0 else title_index + 1
-        src.insert(insert_index, f"{name}: {meta[name]}  \n")
+        insert_after = repl_index if repl_index >= 0 else title_index
+        src.insert(insert_after + 1, f"{name}: {meta[name]}  \n")
+        # make sure line before ends in newline
+        if not src[insert_after].endswith("\n"):
+            src[insert_after] += "  \n"
     # clean up any trailing newlines or other whitespace on last line
     src[-1] = src[-1].rstrip()
+
 
 # -------------
 #  Commandline
@@ -664,9 +675,16 @@ class Commands:
         cls.heading(f"{action} notebook headers")
         if args.edit:
             nbpath = Path(args.path)
-            return cls._run(f"{action} notebooks", edit_header, srcdir=args.dir,
-                            path=nbpath, new_title=args.title, new_author=args.author,
-                            new_maintainer=args.maintainer, new_updated=args.updated)
+            return cls._run(
+                f"{action} notebooks",
+                edit_header,
+                srcdir=args.dir,
+                path=nbpath,
+                new_title=args.title,
+                new_author=args.author,
+                new_maintainer=args.maintainer,
+                new_updated=args.updated,
+            )
         else:
             return cls._run("{action} notebooks", print_header, srcdir=args.dir)
 
@@ -674,12 +692,14 @@ class Commands:
     def clean(cls, args):
         if args.ids:
             cls.heading("Remove ids in generated notebooks")
-            result = cls._run("remove output cells", clean, srcdir=args.dir, ids=True,
-                              outputs=False)
+            result = cls._run(
+                "remove output cells", clean, srcdir=args.dir, ids=True, outputs=False
+            )
         else:
             cls.heading("Remove output cells in generated notebooks")
-            result = cls._run("remove output cells", clean, srcdir=args.dir,
-                              ids=False, outputs=True)
+            result = cls._run(
+                "remove output cells", clean, srcdir=args.dir, ids=False, outputs=True
+            )
         return result
 
     @classmethod
@@ -805,9 +825,7 @@ def main():
         default=False,
     )
     subp["clean"].add_argument(
-        "--ids",
-        help="Remove cell ids (not outputs)",
-        action="store_true"
+        "--ids", help="Remove cell ids (not outputs)", action="store_true"
     )
     subp["conf"].add_argument(
         "--execute",
@@ -852,22 +870,15 @@ def main():
         "--lab", help="Use Jupyter Lab instead of Jupyter Notebook", action="store_true"
     )
     subp["gui"].add_argument(
-        "--stop", help="Stop notebooks on GUI quit", action="store_true")
-    subp["hdr"].add_argument(
-        "--path", help="Path to notebook for `--edit`"
+        "--stop", help="Stop notebooks on GUI quit", action="store_true"
     )
+    subp["hdr"].add_argument("--path", help="Path to notebook for `--edit`")
     subp["hdr"].add_argument(
         "--edit", help="Edit mode (default is print)", action="store_true"
     )
-    subp["hdr"].add_argument(
-        "--title", help="New title, for `--edit` mode"
-    )
-    subp["hdr"].add_argument(
-        "--author", help="New author, for `--edit` mode"
-    )
-    subp["hdr"].add_argument(
-        "--maintainer", help="New maintainer, for `--edit` mode"
-    )
+    subp["hdr"].add_argument("--title", help="New title, for `--edit` mode")
+    subp["hdr"].add_argument("--author", help="New author, for `--edit` mode")
+    subp["hdr"].add_argument("--maintainer", help="New maintainer, for `--edit` mode")
     subp["hdr"].add_argument(
         "--updated", help="Last updated date (use YYYY-MM-DD), for `--edit` mode"
     )
