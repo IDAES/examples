@@ -31,6 +31,7 @@ from idaes_examples.util import (
     Tags,
     path_suffix,
     processing_report,
+    change_notebook_ext,
 )
 from idaes_examples.util import _log as util_log
 
@@ -274,12 +275,15 @@ def clean(srcdir=None, outputs=True, ids=False, all_files=False):
 
 
 def _remove_files(nb_path: Path, **kwargs):
-    suffix = path_suffix(nb_path, must_exist=True)
-    if suffix is None or suffix == "":
-        pass
-    else:
-        _log.debug(f"Removing generated file '{nb_path}'")
-        nb_path.unlink()
+    changed = False
+    if nb_path.exists():
+        for ext in Ext.USER, Ext.TEST, Ext.DOC, Ext.SOL, Ext.EX:
+            gen_path = change_notebook_ext(nb_path, ext.value)
+            if gen_path.exists() and gen_path.is_file():
+                _log.debug(f"Removing generated file '{nb_path}'")
+                gen_path.unlink()
+                changed = True
+    return changed
 
 
 def _remove_outputs(nb_path: Path, **kwargs):
