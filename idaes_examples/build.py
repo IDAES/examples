@@ -585,7 +585,7 @@ def _change_header_meta(cell, title_index, meta):
     repl_index = -1
     for i, line in enumerate(src):
         line = line.strip()
-        m = re.match(r"([A-Z]\w+)\s*:\s*(.*)", line)
+        m = re.match(r"([A-Z]\w+)\s*:\s*([A-Z].*)", line)
         if m:
             name, value = m.group(1), m.group(2).strip()
             replaced.add(name)
