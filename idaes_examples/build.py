@@ -256,17 +256,30 @@ def _change_suffix(p: Path, suffix: str = None) -> Path:
 # -------------
 
 
-def clean(srcdir=None, outputs=True, ids=False):
+def clean(srcdir=None, outputs=True, ids=False, all_files=False):
     src_path = find_notebook_root(Path(srcdir)) / NB_ROOT
     toc = read_toc(src_path)
     t0 = time.time()
+    if all_files:
+        results = find_notebooks(src_path, toc, _remove_files)
+        Commands.subheading(processing_report("removed files", t0, results, _log))
+        return  # don't bother with anything else, the files are gone
     if outputs:
         results = find_notebooks(src_path, toc, _remove_outputs)
-        Commands.subheading(processing_report("removed", t0, results, _log))
+        Commands.subheading(processing_report("removed outputs", t0, results, _log))
     t0 = time.time()
     if ids:
         results = find_notebooks(src_path, toc, _remove_ids)
-        Commands.subheading(processing_report("removed", t0, results, _log))
+        Commands.subheading(processing_report("removed ids", t0, results, _log))
+
+
+def _remove_files(nb_path: Path, **kwargs):
+    suffix = path_suffix(nb_path, must_exist=True)
+    if suffix is None or suffix == "":
+        pass
+    else:
+        _log.debug(f"Removing generated file '{nb_path}'")
+        nb_path.unlink()
 
 
 def _remove_outputs(nb_path: Path, **kwargs):
@@ -690,7 +703,12 @@ class Commands:
 
     @classmethod
     def clean(cls, args):
-        if args.ids:
+        if args.all_files:
+            cls.heading("Remove all generated notebooks")
+            result = cls._run(
+                "remove generated notebooks", clean, srcdir=args.dir, all_files=True
+            )
+        elif args.ids:
             cls.heading("Remove ids in generated notebooks")
             result = cls._run(
                 "remove output cells", clean, srcdir=args.dir, ids=True, outputs=False
@@ -826,6 +844,9 @@ def main():
     )
     subp["clean"].add_argument(
         "--ids", help="Remove cell ids (not outputs)", action="store_true"
+    )
+    subp["clean"].add_argument(
+        "--all-files", help="Remove all generated files", action="store_true"
     )
     subp["conf"].add_argument(
         "--execute",
