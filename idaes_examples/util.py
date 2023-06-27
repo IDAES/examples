@@ -7,6 +7,7 @@ from enum import Enum
 import logging
 from pathlib import Path
 import re
+import time
 from typing import Dict, List, Any, Union, Tuple
 
 # third-party
@@ -20,15 +21,14 @@ _h.setFormatter(
 
 _log.addHandler(_h)
 
-src_suffix = "_src"
-src_suffix_len = 4
-
 
 NB_ROOT = "notebooks"  # root folder name
 NB_CACHE = ".jupyter_cache"  # cache subdirectory
 NB_CELLS = "cells"  # key for list of cells in a Jupyter Notebook
 NB_META = "metadata"  # notebook-level metadata key
 NB_IDAES, NB_SKIP = "idaes", "skip"  # key and sub-key for notebook skipping
+# File extension that marks a Jupyter notebook
+JUPYTER_EXT = ".ipynb"
 
 
 class Tags(Enum):
@@ -49,7 +49,7 @@ class Ext(Enum):
 
 ExtAll = {Ext.DOC, Ext.EX, Ext.SOL, Ext.TEST, Ext.USER}
 
-EXT_RE = re.compile(r"(.*_)\w+\.ipynb$")
+EXT_RE = re.compile(r"(.*_)(\w+)\.ipynb$")
 
 
 def add_vb(p, dest="vb"):
@@ -87,7 +87,6 @@ def find_notebook_root(src_path: Union[str, Path, None] = None) -> Path:
     """This allows commands to (also) work if src_path is the repo root (as opposed
     to the directory with the notebooks in it).
     """
-    level = logging.getLogger("")
 
     def is_notebook_dir(p):
         return (
@@ -174,11 +173,11 @@ def find_notebooks(
     results = {}
     for part in toc["parts"]:
         for chapter in part["chapters"]:
-            # list of {'file': name} dicts for each section, or just one for each chapter
+            # list of {'file': name} dicts for each section,
+            # or just one for each chapter
             filemap_list = chapter.get("sections", [chapter])
             for filemap in filemap_list:
                 filename = filemap["file"][:-4]  # strip "_doc" suffix
-                filename += src_suffix
                 path = nbpath / f"{filename}.ipynb"
                 if path.exists():
                     _log.debug(f"Found notebook at: {path}")
@@ -214,7 +213,7 @@ class NotebookCollection:
     def missing(self) -> List[Path]:
         """Derived notebooks that should be there, but are not.
         Currently, this is notebooks of form `{name}_doc.ipynb` when there
-        is a notebook like `{name}_src.ipynb`.
+        is a notebook like `{name}.ipynb`.
 
         Returns:
             List of paths for the missing notebooks
@@ -251,7 +250,7 @@ class NotebookCollection:
                     delta = q_info.st_mtime - p_info.st_mtime
                     if delta < 0:
                         td = datetime.timedelta(seconds=-delta)
-                        if not p in stale:
+                        if p not in stale:
                             stale[p] = []
                         stale[p].append((q, td))
         self._missing, self._stale = missing, stale
@@ -259,5 +258,57 @@ class NotebookCollection:
 
 def change_notebook_ext(p: Path, e: str) -> Path:
     """New path with extension 'src', etc. changed to input extension."""
-    m = EXT_RE.match(p.name)
-    return Path(*p.parts[:-1]) / f"{m.group(1)}{e}.ipynb"
+    suffix = path_suffix(p, must_exist=False)
+    if suffix is None:
+        raise ValueError(f"path '{p}' is not recognized as a Jupyter notebook")
+    if suffix == "":
+        name = p.stem
+    else:
+        name = p.stem[: -(len(suffix) + 1)]
+    return p.parent / f"{name}_{e}{JUPYTER_EXT}"
+
+
+def path_suffix(
+    p: Path, extra: List[str] = None, must_exist: bool = True
+) -> Union[str, None]:
+    """Get suffix for a path to a notebook.
+
+    Args:
+        p: Input path, should be a file
+        extra: If given, extra suffixes to consider 'known'
+        must_exist: If True the file must exist; otherwise don't check this
+
+    Returns:
+        * None - if not a file or filename doesn't end in .ipynb
+        * {sfx} - if filename ends in `_{sfx}.ipynb` where `{sfx}` is known
+        * "" - otherwise (i.e. a notebook that doesn't have a known suffix)
+    """
+    if not p.name.endswith(JUPYTER_EXT):
+        return None
+    if must_exist and not p.is_file():
+        return None
+    u = p.stem.rfind("_")
+    if u == -1:
+        return ""
+    suffix = p.stem[u + 1 :]
+    known_values = [e.value for e in ExtAll]
+    if extra:
+        known_values.extend(extra)
+    for known in known_values:
+        if known == suffix:
+            return suffix
+    return ""
+
+
+def processing_report(
+    action: str, t0: float, results: Dict, log: logging.Logger
+) -> str:
+    dur = time.time() - t0
+    n = len(results)
+    n_processed = sum(results.values())
+    n_skipped = n - n_processed
+    _log.info(
+        f"{action.title()} {n} notebooks (did {n_processed} / "
+        f"skipped {n_skipped}) in {dur:.1f} seconds"
+    )
+    return f"{action} {n_processed}, skipped {n_skipped}"
