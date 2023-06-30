@@ -11,7 +11,7 @@ import json
 import logging
 from logging.handlers import RotatingFileHandler
 from multiprocessing import Process
-from operator import attrgetter
+from operator import attrgetter, itemgetter
 from pathlib import Path
 import re
 from subprocess import Popen, DEVNULL, PIPE, TimeoutExpired
@@ -440,11 +440,14 @@ def gui(notebooks, use_lab=False, stop_notebooks_on_quit=False):
         if columns[2] < w:
             columns[2] = w
 
-    nb_widget = PySG.Table(
+    header_row = ["Type" + " " * 40, "Location" + " " * 80, "Title" + " " * 160]
+    sort_order = list(Notebooks.DEFAULT_SORT_KEYS)
+    sort_dir = [1] * len(sort_order)
+    nb_table_widget = PySG.Table(
         key="Table",
         values=nb_table,
         # without added spaces, the headings will be centered instead of left-aligned
-        headings=["Type" + " " * 40, "Location" + " " * 80, "Title" + " " * 160],
+        headings=header_row,
         expand_x=True,
         expand_y=False,
         justification="left",
@@ -536,7 +539,7 @@ def gui(notebooks, use_lab=False, stop_notebooks_on_quit=False):
 
     layout = [
         [instructions],
-        [nb_widget],
+        [nb_table_widget],
         [full_path],
         [description_frame],
         [
@@ -581,17 +584,20 @@ def gui(notebooks, use_lab=False, stop_notebooks_on_quit=False):
             # if user closes window or clicks cancel
             if event == PySG.WIN_CLOSED or event == "quit":
                 break
-            # print(event, values)
+            #print(f"@@event: {event} ; values: {values}")
             if isinstance(event, int):
                 _log.debug(f"Unhandled event: {event}")
             elif isinstance(event, str):
                 if event == "Table":
-                    row_index = values[event][0]
-                    shown = preview_notebook(
-                        nb_table, nb_table_meta, nbdesc, open_buttons, row_index
-                    )
-                    path = nbdesc.get_path(*shown)
-                    full_path.update(f"Path: {path}")
+                    try:
+                        row_index = values[event][0]
+                        shown = preview_notebook(
+                            nb_table, nb_table_meta, nbdesc, open_buttons, row_index
+                        )
+                        path = nbdesc.get_path(*shown)
+                        full_path.update(f"Path: {path}")
+                    except IndexError:
+                        pass
                 elif event.startswith("open+"):
                     if shown:
                         path = nbdesc.get_path(*shown)
@@ -601,6 +607,15 @@ def gui(notebooks, use_lab=False, stop_notebooks_on_quit=False):
                     path = start_notebook_paths[what]
                     print(path)
                     jupyter.open(path)
+            # event=('Table', '+CLICKED+', (-1, 0)) ; values: {'Table': [5]}
+            elif isinstance(event, tuple) and event[0] == "Table":
+                try:
+                    row, col = event[2]
+                    if row == -1:
+                        # TODO: sort
+                        pass
+                except (ValueError, IndexError):
+                    pass
     except KeyboardInterrupt:
         print("Stopped by user")
 
