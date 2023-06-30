@@ -532,10 +532,12 @@ def gui(notebooks, use_lab=False, stop_notebooks_on_quit=False):
     instructions = PySG.Text(
         "Select a notebook and then select 'Open' to open it in Jupyter"
     )
+    full_path = PySG.Text("Path:")
 
     layout = [
         [instructions],
         [nb_widget],
+        [full_path],
         [description_frame],
         [
             PySG.Text("Actions:"),
@@ -564,10 +566,10 @@ def gui(notebooks, use_lab=False, stop_notebooks_on_quit=False):
         icon=IDAES_ICON_B64,
         font=get_font(11),
         text_justification="left",
+        resizable=True,
     )
 
     nbdesc = NotebookDescription(notebooks, window["Description"].Widget)
-    # print(f"@@ NOTEbOOKS: {notebooks.notebooks}")
     # Event Loop to process "events" and get the "values" of the inputs
     jupyter = Jupyter(lab=use_lab)
     shown = None
@@ -576,7 +578,6 @@ def gui(notebooks, use_lab=False, stop_notebooks_on_quit=False):
             _log.debug("Wait for event")
             event, values = window.read()
             _log.debug("Event detected")
-            # print(f"@@ EVENT={event} values={values}")
             # if user closes window or clicks cancel
             if event == PySG.WIN_CLOSED or event == "quit":
                 break
@@ -589,6 +590,8 @@ def gui(notebooks, use_lab=False, stop_notebooks_on_quit=False):
                     shown = preview_notebook(
                         nb_table, nb_table_meta, nbdesc, open_buttons, row_index
                     )
+                    path = nbdesc.get_path(*shown)
+                    full_path.update(f"Path: {path}")
                 elif event.startswith("open+"):
                     if shown:
                         path = nbdesc.get_path(*shown)
