@@ -1,4 +1,5 @@
 <!-- Badges -->
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/lbianchi-lbl/examples/binder?labpath=idaes_examples%2Fnotebooks%2Fdocs)
 [![tests](https://github.com/IDAES/examples/actions/workflows/core.yml/badge.svg)](https://github.com/IDAES/examples/actions/workflows/core.yml)
 &nbsp;
 [![Documentation](https://readthedocs.org/projects/idaes-examples/badge/?version=latest)](https://idaes-examples.readthedocs.io/en/latest/?badge=latest)
