@@ -1,0 +1,2 @@
+--editable ..[omlt]
+idaes-pse @ https://github.com/IDAES/idaes-pse@main
