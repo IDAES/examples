@@ -1,2 +1,2 @@
 set -e
-idaes get-extensions --verbose --distro auto
+idaes get-extensions --verbose --distro ubuntu1804
