@@ -20,7 +20,7 @@ maxterms 10 10 10 10 10 10 10 10 10 10 10 10 10
 numlimitbasis 1
 
 TRACE 1
-TRACEFNAME C:\Users\dkgun\src\dangunter\idaes-examples\idaes_examples\notebooks\docs\surrogates\alamo_run.trc
+TRACEFNAME /Users/olawaleabimbola/Desktop/examples/idaes_examples/notebooks/docs/surrogates/alamo_run.trc
 
 BEGIN_DATA
 0.363768116 0.926315789  0.71421268 25224.10237 0.003949959 0.002570162 0.000562223  0.00032127 0.078710154 0.106108936 0.046755636 0.313311184 0.119692812 0.328017663  2.3e-20
