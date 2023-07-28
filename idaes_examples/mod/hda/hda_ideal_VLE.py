@@ -397,13 +397,16 @@ class HDAParameterData(PhysicalParameterBlock):
              'temperature_dew': {'method': '_temperature_dew'},
              'pressure_bubble': {'method': '_pressure_bubble'},
              'pressure_dew': {'method': '_pressure_dew'},
-             'fug_vap_comp': {'method': '_fug_vap_comp'},
-             'fug_liq_comp': {'method': '_fug_liq_comp'},
              })
 
         obj.define_custom_properties(
-            {'dh_vap': {'method': '_dh_vap', "units": obj.derived_units.ENERGY_MOLE},
-             'ds_vap': {'method': '_ds_vap', "units": obj.derived_units.ENERGY_MASS}})
+            {
+                'dh_vap': {'method': '_dh_vap', "units": obj.derived_units.ENERGY_MOLE},
+                'ds_vap': {'method': '_ds_vap', "units": obj.derived_units.ENERGY_MASS},
+                'fug_vap_comp': {'method': '_fug_vap_comp', "units": obj.derived_units.PRESSURE},
+                'fug_liq_comp': {'method': '_fug_liq_comp', "units": obj.derived_units.PRESSURE},
+            }
+        )
         
         obj.add_default_units({'time': pyunits.s,
                                'length': pyunits.m,
