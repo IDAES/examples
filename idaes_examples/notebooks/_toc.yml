@@ -32,6 +32,7 @@ parts:
   - file: docs/flowsheets/hda_flowsheet_with_distillation_doc
   - file: docs/flowsheets/methanol_synthesis_doc
   - file: docs/flowsheets/CO2_adsorption_desorption/CO2_Adsorption_Desorption_1DFixedBed_doc
+  - file: docs/flowsheets/temperature_swing_adsorption/temperature_swing_adsorption_doc
 - caption: Unit Models
   chapters:
   - file: docs/unit_models/operations/index
