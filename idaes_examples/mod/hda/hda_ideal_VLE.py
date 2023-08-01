@@ -1064,7 +1064,7 @@ class IdealStateBlockData(StateBlockData):
                     return b.mole_frac_phase_comp['Vap', i] * b.pressure
         
         self.fug_phase_comp = Expression(
-            self._params.phase_list
+            self._params.phase_list,
             self._params.component_list,
             rule=fug_phase_comp_rule
         )
