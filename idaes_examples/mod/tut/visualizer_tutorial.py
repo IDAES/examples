@@ -49,6 +49,16 @@ from idaes_examples.mod.hda import hda_reaction as reaction_props
 from idaes.models.unit_models.pressure_changer import ThermodynamicAssumption
 from idaes.core.util.model_statistics import degrees_of_freedom
 
+try:
+    import idaes_ui
+except ImportError:
+    print("*** ERROR ***\n"
+          "Cannot import 'idaes_ui'.\n"
+          "To install IDAES with the UI enabled, run:\n"
+          "     pip install idaes-pse[ui]\n"
+          "Until this module is installed, the visualizer will NOT work!")
+    idaes_ui = None
+
 # Import idaes logger to set output levels
 import idaes.logger as idaeslog
 
@@ -61,6 +71,10 @@ def quiet():
     """Make sure we don't get any spurious output.
     This should not really be this hard(?).
     """
+    # Don't silence any warnings if the import failed
+    if idaes_ui is None:
+        return
+
     def remove_handlers(g):
         for h in g.handlers:
             g.removeHandler(h)
