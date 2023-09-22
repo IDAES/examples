@@ -138,10 +138,11 @@ def function_markdown(f):
     body = "\n".join(rlines)
     return body
 
-def create_model(second_flash=False) -> pyo.ConcreteModel:
-    """## Create an IDAES flowsheet for hydrodealkylation (HDA)
 
-### About HDA
+def create_model(second_flash=False) -> pyo.ConcreteModel:
+    """# Create an IDAES flowsheet for hydrodealkylation (HDA)
+
+## About HDA
 
 Hydrodealkylation (HDA) is a chemical reaction that often involves reacting
 an aromatic hydrocarbon in the presence of hydrogen gas to form a
@@ -154,7 +155,7 @@ example, toluene will be reacted with hydrogen gas at high temperatures
 This reaction is often accompanied by an equilibrium side reaction
 which forms diphenyl, which we will not cover in this example.
 
-### References
+## References
 
 This example is based on the 1967 AIChE Student Contest problem as
 present by Douglas, J.M., Chemical  Design of Chemical Processes, 1988,
