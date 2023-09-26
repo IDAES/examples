@@ -12,3 +12,12 @@ sphinx:
   config:
     bibtex_reference_style: author_year
 title: IDAES Examples
+repository:
+  # `path_to_book` should point to the directory containing this file (`_config.yml`)
+  path_to_book: idaes_examples/notebooks
+  # FIXME change `url` and `branch` before merging PR
+  url: https://github.com/lbianchi-lbl/examples
+  branch: binder
+launch_buttons:
+  notebook_interface: jupyterlab
+  binderhub_url: https://mybinder.org
