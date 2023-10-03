@@ -151,11 +151,11 @@ idaesx pre
 A diagram of how preprocessing relates to notebook usage is shown below:
 
 ```
- ┌───────────────────┐
- │                   │
+ ┌───────────────┐
+ │               │
  │ example.ipynb │
- │                   │
- └──────┬────────────┘
+ │               │
+ └──────┬────────┘
         │
         ▼            ┌──────────────────┐     ┌──────┐
  ┌────────────┐  ┌─► │example_test.ipynb├────►│pytest│
