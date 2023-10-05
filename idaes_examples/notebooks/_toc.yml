@@ -17,6 +17,7 @@ parts:
   chapters:
   - file: docs/diagnostics/index
     sections:
+    - file: docs/diagnostics/diagnostics_toolbox_doc
     - file: docs/diagnostics/degeneracy_hunter_doc
   - file: docs/param_est/index
     sections:
