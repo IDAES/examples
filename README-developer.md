@@ -55,7 +55,7 @@ If you need to create a **new section** in `notebooks/docs` or `notebooks/held`:
 - add the appropriate subdirectory, e.g. `notebooks/docs/fantastic`
 - add a section into `notebooks/_toc.yml`, imitating an existing entry
 - create and populate a `notebooks/docs/fantastic/index.md` file
-- now you can add your notebook(s) manually, e.g. `notebooks/docs/fantastic/my_notebook_src.ipynb`, or use the `idaesx new` command
+- now you can add your notebook(s) manually, e.g. `notebooks/docs/fantastic/my_notebook.ipynb`, or use the `idaesx new` command
 
 ## File layout
 
@@ -97,7 +97,7 @@ pytest idaes_examples
 #### Testing a subset of the notebooks
 
 To test just one notebook, you need to use the name of the *test* notebook not the source.
-For example, to test the `compressor_src.ipynb` notebook (in the `unit_models/operations` subdirectory)
+For example, to test the `compressor.ipynb` notebook (in the `unit_models/operations` subdirectory)
 you need to add `-c` and the path to the top-level *pyproject.toml*, which has the pytest configuration,
 then use the name of the test notebook:
 
@@ -143,7 +143,7 @@ Preprocessing creates separate copies of the Jupyter notebooks that are used for
 These (derived) notebooks are also committed and saved in Git.
 
 To re-run the preprocessing, which will update any derived files that are
-out of date (older than the corresponding `*_src.ipynb` file):
+out of date (older than the corresponding `*.ipynb` file):
 ```shell
 idaesx pre
 ```
@@ -151,11 +151,11 @@ idaesx pre
 A diagram of how preprocessing relates to notebook usage is shown below:
 
 ```
- ┌───────────────────┐
- │                   │
- │ example_src.ipynb │
- │                   │
- └──────┬────────────┘
+ ┌───────────────┐
+ │               │
+ │ example.ipynb │
+ │               │
+ └──────┬────────┘
         │
         ▼            ┌──────────────────┐     ┌──────┐
  ┌────────────┐  ┌─► │example_test.ipynb├────►│pytest│
@@ -180,7 +180,7 @@ A diagram of how preprocessing relates to notebook usage is shown below:
 ## Notebook names
 
 Notebooks all have a file name that fits the pattern notebook-name`_<ext>`.ipynb*.
-When creating or modifying notebooks, you should always use `<ext>` = *src*.
+When creating or modifying notebooks, you should always use the version with no extension, i.e. *.ipynb.
 Other extensions are automatically generated when running tests, building the documentation, and manually running the preprocessing step.
 See the <a href="#table-nbtypes">table of notebook types</a> for details.
 
@@ -193,14 +193,14 @@ There are two main steps to creating a new notebook example.
    2. Put the notebook in the appropriate subdirectory.
       If you create a new directory for the notebook, the directory name *should* be in lowercase 
       with underscores between words. For example: '*docs/machine_learning*'.
-   3. Notebook filename *should* be in lowercase with underscores and ***must*** end with '_src.ipynb'. For example: 
-      'my_example_src.ipynb'.
+   3. Notebook filename *should* be in lowercase with underscores and ***must*** end with '.ipynb'. For example: 
+      'my_example.ipynb'.
    4. Add -- in the same directory as the notebook -- any data files or images it needs.
    5. Additional Python modules should be put in an appropriate place under *idaes_examples/mod*.
       Then your notebook can write: `from idaes_examples.mod.<subpackage> import <bla>`
 2. Add Jupyter notebook to the Jupyterbook table of contents in *idaes_examples/notebooks/_toc.yml*.
    1. The notebook will be a *section*. If you added a new directory, you will create a new *chapter*, otherwise it will go under an existing one. See [Jupyterbook][jb] documentation for more details.
-   2. Refer to the notebook as '*path/to/notebook-name*_doc' (replace '_src' with '_doc' and drop the '.ipynb' extension). For example: 'machine_learning/my_example_doc'.
+   2. Refer to the notebook as '*path/to/notebook-name*_doc' (add the '_doc' and drop the '.ipynb' extension). For example: 'machine_learning/my_example_doc'.
    3. If you created a new directory for this notebook, make sure you add an *index.md* file to it. See other *index.md* files for the expected format.
 
 You *should*  test the new notebook and build it locally before pushing the new file, i.e., run `pytest` and `idaesx build`.
@@ -208,13 +208,13 @@ Note that the cache for the documentation will be updated to contain the new out
 
 ### Jupyter Notebook file extensions
 
-Each source Jupyter notebook (ending in '_src.ipynb') is preprocessed to create additional notebooks which are a copy of the original with some cells (steps in the notebook execution) removed.
+Each source Jupyter notebook (ending in '.ipynb') is preprocessed to create additional notebooks which are a copy of the original with some cells (steps in the notebook execution) removed.
 
 <a name="table-nbtypes"></a>
 
 | Notebook type | Description                | Ends with       |
 | ------------- | -------------------------- | --------------- |
-| source        | Notebook source            | _src.ipynb      |
+| source        | Notebook source            | .ipynb          |
 | testing       | Run for testing            | _test.ipynb     |
 | exercise      | Tutorial exercises only    | _exercise.ipynb |
 | solution      | Tutorial ex. and solutions | _solution.ipynb |
@@ -244,7 +244,7 @@ All other tags, including the standard [Jupyterbook tags][hidecell] for hiding o
 
 #### Cell tags tutorial
 
-An example of these tags, with a tutorial on how to set them, is in the `_dev/notebooks/ex/notebook_tags_example_src.
+An example of these tags, with a tutorial on how to set them, is in the `_dev/notebooks/ex/notebook_tags_example.
 ipynb` 
 notebook. In this directory the pre-processed output notebooks have been added to Git so you can see what they look 
 like (without having to run `idaesx pre` yourself).
