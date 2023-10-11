@@ -74,6 +74,12 @@ jobs:
         uses: ./.github/actions/install
         with:
           install-target: -r requirements-dev.txt
+      - name: Skip notebooks that require Alamo
+      run: |
+        rm idaes_examples/notebooks/docs/surrogates/alamo/alamo_flowsheet_optimization_test.ipynb
+        rm idaes_examples/notebooks/docs/surrogate/SCO2_example/ALAMO/SCO2_alamo_surrogate_test.ipynb
+        rm idaes_examples/notebooks/docs/surrogate/SCO2_example/ALAMO/SCO2_properties_alamo_surrogate_embedding_test.ipynb
+        rm idaes_examples/notebooks/docs/surrogate/SCO2_example/ALAMO/SCO2_flowsheet_alamo_surrogate_test.ipynb
       - name: Run pytest
         run: |
           pwd
