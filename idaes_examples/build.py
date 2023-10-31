@@ -513,8 +513,17 @@ def edit_header(
 ):
     if not path.is_absolute():
         src_path = find_notebook_root(Path(srcdir)) / NB_ROOT
-        path = src_path / path
+        if path.parts[0] == "notebooks":
+            path = Path("/".join(path.parts[1:]))
+            _log.warning(f"Relative notebook paths should start below 'notebooks' dir; "
+                         f"modified path: {path}")
+        full_path = src_path / path
+        if not full_path.exists():
+            _log.error(f"Path '{full_path}' ({src_path} + {path}) does not exist")
+            return
+        path = full_path
     if path.is_file() and path.name.endswith(".ipynb"):
+        _log.info(f"Modifying notebook header at: {path}")
         with path.open("r", encoding="utf-8") as f:
             nb = json.load(f)
             cells = nb[NB_CELLS]
@@ -539,9 +548,17 @@ def edit_header(
                 if meta_dict:
                     _change_header_meta(header, title_index, meta_dict)
 
+            _log.info(f"Writing modified header to: {path}")
             with path.open("w", encoding="utf-8") as f:
                 json_dump(nb, f)
-
+    else:
+        if not path.is_file():
+            reason = "Not a file"
+        elif not path.name.endswith(".ipynb"):
+            reason = "Does not end with .ipynb"
+        else:
+            reason = "???"
+        _log.warning(f"Skip non-notebook at '{path}': {reason}")
 
 ## -- utility functions for header manipulation --
 
