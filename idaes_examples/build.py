@@ -548,7 +548,11 @@ def edit_header(
 
 def _print_header(path):
     with path.open("r", encoding="utf-8") as f:
-        nb = json.load(f)
+        try:
+            nb = json.load(f)
+        except json.JSONDecodeError as e:
+            _log.error(f"Invalid JSON in '{path}': {e}")
+            raise
         cells = nb[NB_CELLS]
         header = cells[_get_header_cell(cells)]
         if header is None:
@@ -703,7 +707,7 @@ class Commands:
                 new_updated=args.updated,
             )
         else:
-            return cls._run("{action} notebooks", print_header, srcdir=args.dir)
+            return cls._run(f"{action} notebooks", print_header, srcdir=args.dir)
 
     @classmethod
     def clean(cls, args):
@@ -780,8 +784,8 @@ class Commands:
             )
             return -2
         except Exception as err:
-            _log.error(f"During '{name}': {err}")
-            _log.error(traceback.format_exc())
+            _log.critical(f"During '{name}': {err}")
+            _log.info(traceback.format_exc())
             return -1
 
     @staticmethod
