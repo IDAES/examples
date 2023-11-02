@@ -7,6 +7,7 @@ import logging
 import os
 from pathlib import Path
 import re
+import shutil
 from subprocess import check_call
 import sys
 import time
@@ -273,7 +274,6 @@ def clean(srcdir=None, outputs=True, ids=False, all_files=False):
         results = find_notebooks(src_path, toc, _remove_ids)
         Commands.subheading(processing_report("removed ids", t0, results, _log))
 
-
 def _remove_files(nb_path: Path, **kwargs):
     changed = False
     if nb_path.exists():
@@ -320,6 +320,12 @@ def _remove_ids(nb_path: Path, **kwargs):
         _log.debug(f"Removed code cell id(s) from {nb_path}")
     return changed
 
+def remove_build(srcdir=None):
+    nb_path = find_notebook_root(Path(srcdir)) / NB_ROOT
+    build = nb_path / "_build"
+    if build.exists():
+        _log.info(f"remove build directory: {build}")
+        shutil.rmtree(build)
 
 # ---------------
 # List skipped
@@ -403,6 +409,16 @@ def jupyterbook(srcdir=None, quiet=0, dev=False):
         check_call(commandline)
     finally:
         os.chdir(cwd)
+    _copy_built_files(path)
+
+def _copy_built_files(dst: Path):
+    src = dst / "_build" / "jupyter_execute"
+    src_len = len(src.parts)
+    _log.info(f"copy built notebooks from {src} -> {dst}")
+    for p in src.glob("**/*.ipynb"):
+        q = dst.joinpath(*p.parts[src_len:])
+        _log.info(f"copy {p} -> {q}")
+        shutil.copy(p, q)
 
 
 # -------------
@@ -743,6 +759,9 @@ class Commands:
             result = cls._run(
                 "remove output cells", clean, srcdir=args.dir, ids=False, outputs=True
             )
+        if result == 0 and not args.keep_build:
+            result = cls._run("remove notebook build dir", remove_build, srcdir=args.dir)
+
         return result
 
     @classmethod
@@ -804,6 +823,7 @@ class Commands:
             _log.critical(f"During '{name}': {err}")
             _log.info(traceback.format_exc())
             return -1
+        return 0
 
     @staticmethod
     def heading(message):
@@ -872,6 +892,9 @@ def main():
     )
     subp["clean"].add_argument(
         "--all-files", help="Remove all generated files", action="store_true"
+    )
+    subp["clean"].add_argument(
+        "--keep-build", help="Do not remove build dir", action="store_true"
     )
     subp["conf"].add_argument(
         "--execute",
