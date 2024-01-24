@@ -83,7 +83,7 @@ parts:
     - file: docs/surrogates/omlt/keras_flowsheet_optimization_doc
   - file: docs/surrogates/SCO2_example/ALAMO/index
     sections:
-    - file: docs/surrogates/SCO2_example/ALAMO/SCO2_alamo_surrogate
+    # - file: docs/surrogates/SCO2_example/ALAMO/SCO2_alamo_surrogate
     - file: docs/surrogates/SCO2_example/ALAMO/SCO2_properties_alamo_surrogate_embedding
     - file: docs/surrogates/SCO2_example/ALAMO/SCO2_flowsheet_alamo_surrogate
     - file: docs/surrogates/SCO2_example/ALAMO/SCO2_alamo_surrogate_doc
