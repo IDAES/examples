@@ -81,7 +81,7 @@ jobs:
         run: |
           pwd
           ls idaes_examples
-          pytest -v idaes_examples --ignore=idaes_examples/notebooks/docs/surrogates/SCO2_example/ALAMO/
+          pytest -v idaes_examples --ignore=idaes_examples/notebooks/docs/surrogates/SCO2_example/ALAMO/ 
       - name: Upload pytest-xdist worker logs
         if: success() || failure()
         uses: actions/upload-artifact@v3

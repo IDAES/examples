@@ -10,7 +10,12 @@
 # license information, respectively. Both files are also available online
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
+
 """
+Maintainer: Javal Vyas
+Author: Javal Vyas
+Updated: 2024-01-24
+
 Surrogate property package for SCO2 cycle.
 
 Valid Pressure Range = 7.49 MPa to 35 MPa
