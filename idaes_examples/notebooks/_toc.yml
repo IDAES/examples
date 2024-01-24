@@ -84,24 +84,24 @@ parts:
   - file: docs/surrogates/SCO2_example/ALAMO/index
     sections:
     # - file: docs/surrogates/SCO2_example/ALAMO/SCO2_alamo_surrogate
-    - file: docs/surrogates/SCO2_example/ALAMO/SCO2_properties_alamo_surrogate_embedding
-    - file: docs/surrogates/SCO2_example/ALAMO/SCO2_flowsheet_alamo_surrogate
+    # - file: docs/surrogates/SCO2_example/ALAMO/SCO2_properties_alamo_surrogate_embedding
+    # - file: docs/surrogates/SCO2_example/ALAMO/SCO2_flowsheet_alamo_surrogate
     - file: docs/surrogates/SCO2_example/ALAMO/SCO2_alamo_surrogate_doc
     - file: docs/surrogates/SCO2_example/ALAMO/SCO2_properties_alamo_surrogate_embedding_doc
     - file: docs/surrogates/SCO2_example/ALAMO/SCO2_flowsheet_alamo_surrogate_doc
   - file: docs/surrogates/SCO2_example/OMLT/index
     sections:
-    - file: docs/surrogates/SCO2_example/OMLT/SCO2_keras_surrogate
-    - file: docs/surrogates/SCO2_example/OMLT/SCO2_properties_keras_surrogate_embedding
-    - file: docs/surrogates/SCO2_example/OMLT/SCO2_flowsheet_keras_surrogate
+    # - file: docs/surrogates/SCO2_example/OMLT/SCO2_keras_surrogate
+    # - file: docs/surrogates/SCO2_example/OMLT/SCO2_properties_keras_surrogate_embedding
+    # - file: docs/surrogates/SCO2_example/OMLT/SCO2_flowsheet_keras_surrogate
     - file: docs/surrogates/SCO2_example/OMLT/SCO2_keras_surrogate_doc
     - file: docs/surrogates/SCO2_example/OMLT/SCO2_properties_keras_surrogate_embedding_doc
     - file: docs/surrogates/SCO2_example/OMLT/SCO2_flowsheet_keras_surrogate_doc
   - file: docs/surrogates/SCO2_example/PySMO/index
     sections:
-    - file: docs/surrogates/SCO2_example/PySMO/SCO2_pysmo_surrogate
-    - file: docs/surrogates/SCO2_example/PySMO/SCO2_properties_pysmo_surrogate_embedding
-    - file: docs/surrogates/SCO2_example/PySMO/SCO2_flowsheet_pysmo_surrogate
+    # - file: docs/surrogates/SCO2_example/PySMO/SCO2_pysmo_surrogate
+    # - file: docs/surrogates/SCO2_example/PySMO/SCO2_properties_pysmo_surrogate_embedding
+    # - file: docs/surrogates/SCO2_example/PySMO/SCO2_flowsheet_pysmo_surrogate
     - file: docs/surrogates/SCO2_example/PySMO/SCO2_pysmo_surrogate_doc
     - file: docs/surrogates/SCO2_example/PySMO/SCO2_properties_pysmo_surrogate_embedding_doc
     - file: docs/surrogates/SCO2_example/PySMO/SCO2_flowsheet_pysmo_surrogate_doc
