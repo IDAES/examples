@@ -17,6 +17,7 @@ parts:
   chapters:
   - file: docs/diagnostics/index
     sections:
+    - file: docs/diagnostics/diagnostics_toolbox_doc
     - file: docs/diagnostics/degeneracy_hunter_doc
   - file: docs/param_est/index
     sections:
@@ -31,7 +32,7 @@ parts:
   - file: docs/flowsheets/hda_flowsheet_with_costing_doc
   - file: docs/flowsheets/hda_flowsheet_with_distillation_doc
   - file: docs/flowsheets/methanol_synthesis_doc
-  - file: docs/flowsheets/CO2_adsorption_desorption/CO2_Adsorption_Desorption_1DFixedBed_doc
+#  - file: docs/flowsheets/CO2_adsorption_desorption/CO2_Adsorption_Desorption_1DFixedBed_doc
 - caption: Unit Models
   chapters:
   - file: docs/unit_models/operations/index
@@ -79,6 +80,21 @@ parts:
   - file: docs/surrogates/omlt/index
     sections:
     - file: docs/surrogates/omlt/keras_flowsheet_optimization_doc
+  - file: docs/surrogates/SCO2_example/ALAMO/index
+    sections:
+    - file: docs/surrogates/SCO2_example/ALAMO/SCO2_alamo_surrogate_doc
+    - file: docs/surrogates/SCO2_example/ALAMO/SCO2_properties_alamo_surrogate_embedding_doc
+    - file: docs/surrogates/SCO2_example/ALAMO/SCO2_flowsheet_alamo_surrogate_doc
+  - file: docs/surrogates/SCO2_example/OMLT/index
+    sections:
+    - file: docs/surrogates/SCO2_example/OMLT/SCO2_keras_surrogate_doc
+    - file: docs/surrogates/SCO2_example/OMLT/SCO2_properties_keras_surrogate_embedding_doc
+    - file: docs/surrogates/SCO2_example/OMLT/SCO2_flowsheet_keras_surrogate_doc
+  - file: docs/surrogates/SCO2_example/PySMO/index
+    sections:
+    - file: docs/surrogates/SCO2_example/PySMO/SCO2_pysmo_surrogate_doc
+    - file: docs/surrogates/SCO2_example/PySMO/SCO2_properties_pysmo_surrogate_embedding_doc
+    - file: docs/surrogates/SCO2_example/PySMO/SCO2_flowsheet_pysmo_surrogate_doc
   # -----------------------------
   #  active (not documented)
   # -----------------------------
