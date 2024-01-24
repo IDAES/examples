@@ -7,7 +7,7 @@
 # IDAES Examples
 
 This repository contains example Jupyter Notebooks that demonstrate and  explain 
-the  capabilities of the IDAES platform.
+the capabilities of the IDAES platform.
 
 Below are basic instructions to install, view, and run the examples.
 
