@@ -80,21 +80,21 @@ parts:
   - file: docs/surrogates/omlt/index
     sections:
     - file: docs/surrogates/omlt/keras_flowsheet_optimization_doc
-  - file: docs/surrogates/SCO2_example/alamo/index
+  - file: docs/surrogates/sco2_example/alamo/index
     sections:
-    - file: docs/surrogates/SCO2_example/alamo/SCO2_alamo_surrogate_doc
-    - file: docs/surrogates/SCO2_example/alamo/SCO2_properties_alamo_surrogate_embedding_doc
-    - file: docs/surrogates/SCO2_example/alamo/SCO2_flowsheet_alamo_surrogate_doc
-  - file: docs/surrogates/SCO2_example/omlt/index
+    - file: docs/surrogates/sco2_example/alamo/SCO2_alamo_surrogate_doc
+    - file: docs/surrogates/sco2_example/alamo/SCO2_properties_alamo_surrogate_embedding_doc
+    - file: docs/surrogates/sco2_example/alamo/SCO2_flowsheet_alamo_surrogate_doc
+  - file: docs/surrogates/sco2_example/omlt/index
     sections:
-    - file: docs/surrogates/SCO2_example/omlt/SCO2_keras_surrogate_doc
-    - file: docs/surrogates/SCO2_example/omlt/SCO2_properties_keras_surrogate_embedding_doc
-    - file: docs/surrogates/SCO2_example/omlt/SCO2_flowsheet_keras_surrogate_doc
-  - file: docs/surrogates/SCO2_example/pysmo/index
+    - file: docs/surrogates/sco2_example/omlt/SCO2_keras_surrogate_doc
+    - file: docs/surrogates/sco2_example/omlt/SCO2_properties_keras_surrogate_embedding_doc
+    - file: docs/surrogates/sco2_example/omlt/SCO2_flowsheet_keras_surrogate_doc
+  - file: docs/surrogates/sco2_example/pysmo/index
     sections:
-    - file: docs/surrogates/SCO2_example/pysmo/SCO2_pysmo_surrogate_doc
-    - file: docs/surrogates/SCO2_example/pysmo/SCO2_properties_pysmo_surrogate_embedding_doc
-    - file: docs/surrogates/SCO2_example/pysmo/SCO2_flowsheet_pysmo_surrogate_doc
+    - file: docs/surrogates/sco2_example/pysmo/SCO2_pysmo_surrogate_doc
+    - file: docs/surrogates/sco2_example/pysmo/SCO2_properties_pysmo_surrogate_embedding_doc
+    - file: docs/surrogates/sco2_example/pysmo/SCO2_flowsheet_pysmo_surrogate_doc
 - caption: Power generation
   chapters:
   - file: docs/power_gen/supercritical/index
