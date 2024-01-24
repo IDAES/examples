@@ -3,6 +3,7 @@ bibtex_bibfiles:
 - references.bib
 exclude_patterns:
 - active/*
+- '**/.jupyter_cache'
 execute:
   execute_notebooks: cache
   timeout: 600
@@ -11,6 +12,7 @@ only_build_toc_files: true
 sphinx:
   config:
     bibtex_reference_style: author_year
+    exclude_patterns: ['**/.jupyter_cache']
 title: IDAES Examples
 repository:
   # `path_to_book` should point to the directory containing this file (`_config.yml`)
