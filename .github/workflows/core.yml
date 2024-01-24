@@ -2,11 +2,11 @@ name: Tests
 
 on:
   push:
-    branches:
-      - main
     paths-ignore:
       - 'idaes_examples/notebooks/docs/surrogates/alamo/**'
       - 'idaes_examples/notebooks/docs/surrogates/SCO2_example/ALAMO/**'
+    branches:
+      - main
   repository_dispatch:
     # to run this, send a POST API call at repos/IDAES/idaes-pse/dispatches with the specified event_type
     # e.g. `gh repos/IDAES/idaes-pse/dispatches -F event_type=ci_run_tests`
