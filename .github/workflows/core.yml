@@ -2,9 +2,6 @@ name: Tests
 
 on:
   push:
-    # paths-ignore:
-      # - 'idaes_examples/notebooks/docs/surrogates/SCO2_example/ALAMO/SCO2_alamo_surrogate_test.ipynb'
-      # - 'idaes_examples/notebooks/docs/surrogates/SCO2_example/ALAMO/**'
     branches:
       - main
   repository_dispatch:
