@@ -81,21 +81,21 @@ parts:
   - file: docs/surrogates/omlt/index
     sections:
     - file: docs/surrogates/omlt/keras_flowsheet_optimization_doc
-  - file: docs/surrogates/SCO2_example/ALAMO/index
+  - file: docs/surrogates/sco2/alamo/index
     sections:
-    - file: docs/surrogates/SCO2_example/ALAMO/SCO2_alamo_surrogate_doc
-    - file: docs/surrogates/SCO2_example/ALAMO/SCO2_properties_alamo_surrogate_embedding_doc
-    - file: docs/surrogates/SCO2_example/ALAMO/SCO2_flowsheet_alamo_surrogate_doc
-  - file: docs/surrogates/SCO2_example/OMLT/index
+    - file: docs/surrogates/sco2/alamo/alamo_training_doc
+    - file: docs/surrogates/sco2/alamo/surrogate_embedding_doc
+    - file: docs/surrogates/sco2/alamo/flowsheet_optimization_doc
+  - file: docs/surrogates/sco2/omlt/index
     sections:
-    - file: docs/surrogates/SCO2_example/OMLT/SCO2_keras_surrogate_doc
-    - file: docs/surrogates/SCO2_example/OMLT/SCO2_properties_keras_surrogate_embedding_doc
-    - file: docs/surrogates/SCO2_example/OMLT/SCO2_flowsheet_keras_surrogate_doc
-  - file: docs/surrogates/SCO2_example/PySMO/index
+    - file: docs/surrogates/sco2/omlt/omlt_training_doc
+    - file: docs/surrogates/sco2/omlt/surrogate_embedding_doc
+    - file: docs/surrogates/sco2/omlt/flowsheet_optimization_doc
+  - file: docs/surrogates/sco2/pysmo/index
     sections:
-    - file: docs/surrogates/SCO2_example/PySMO/SCO2_pysmo_surrogate_doc
-    - file: docs/surrogates/SCO2_example/PySMO/SCO2_properties_pysmo_surrogate_embedding_doc
-    - file: docs/surrogates/SCO2_example/PySMO/SCO2_flowsheet_pysmo_surrogate_doc
+    - file: docs/surrogates/sco2/pysmo/pysmo_training_doc
+    - file: docs/surrogates/sco2/pysmo/surrogate_embedding_doc
+    - file: docs/surrogates/sco2/pysmo/flowsheet_optimization_doc
 - caption: Power generation
   chapters:
   - file: docs/power_gen/supercritical/index
