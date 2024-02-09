@@ -88,7 +88,7 @@ parts:
     - file: docs/surrogates/sco2/alamo/flowsheet_optimization_doc
   - file: docs/surrogates/sco2/omlt/index
     sections:
-    - file: docs/surrogates/sco2/omlt/omlt_training_doc
+    - file: docs/surrogates/sco2/omlt/keras_training_doc
     - file: docs/surrogates/sco2/omlt/surrogate_embedding_doc
     - file: docs/surrogates/sco2/omlt/flowsheet_optimization_doc
   - file: docs/surrogates/sco2/pysmo/index
