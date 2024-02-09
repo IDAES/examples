@@ -81,8 +81,9 @@ docs = [
     "nbclient",
     "nbformat",
     # markdown in Sphinx
-    "myst-nb ~= 0.17.1",
-    "myst-parser ~= 0.15.2",
+    # we don't specify these as we assume jupyter-book will install compatible versions
+    # "myst-nb ~= 0.17.1",
+    # "myst-parser ~= 0.18.0",
 ]
 # For developers
 dev = [
