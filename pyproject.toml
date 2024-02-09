@@ -81,7 +81,7 @@ docs = [
     "nbclient",
     "nbformat",
     # markdown in Sphinx
-    "myst-nb ~= 0.13.2",
+    "myst-nb ~= 0.17.1",
     "myst-parser ~= 0.15.2",
 ]
 # For developers
