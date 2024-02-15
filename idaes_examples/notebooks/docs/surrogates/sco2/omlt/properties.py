@@ -48,6 +48,8 @@ from pyomo.util.check_units import assert_units_consistent
 from idaes.core.surrogate.surrogate_block import SurrogateBlock
 from idaes.core.surrogate.keras_surrogate import KerasSurrogate
 
+import os 
+
 from pyomo.util.model_size import build_model_size_report
 
 # Some more information about this module

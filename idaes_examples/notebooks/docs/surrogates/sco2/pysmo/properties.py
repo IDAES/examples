@@ -273,9 +273,8 @@ class SCO2StateBlockData(StateBlockData):
  
         inputs = [self.pressure,self.temperature]
         outputs = [self.enth_mol,self.entr_mol]
-        curr_dir = os.path.dirname(__file__)
-        rel_path = os.path.join(curr_dir,"pysmo_poly_surrogate.json")
-        self.pysmo_surrogate = PysmoSurrogate.load_from_file(rel_path)
+        print(os.path.dirname(__file__))
+        self.pysmo_surrogate = PysmoSurrogate.load_from_file("pysmo_poly_surrogate.json")
         self.surrogate_enth = SurrogateBlock()
         self.surrogate_enth.build_model(
             self.pysmo_surrogate,
