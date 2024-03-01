@@ -10,7 +10,7 @@ build-backend = "setuptools.build_meta"
 name = "idaes-examples"
 description = "IDAES Process Systems Engineering Examples"
 readme = "README.md"
-version = "2.4.dev0"
+version = "2.4.0rc0"
 license = {text="BSD"}
 requires-python = ">=3.8"
 authors = [
@@ -60,7 +60,7 @@ omlt = [
     "tensorflow",
 ]
 idaes = [
-    "idaes-pse",  # installing IDAES (from release) is opt-in
+    "idaes-pse>=2.4,<2.5",  # installing IDAES (from release) is opt-in
 ]
 testing = [
     # parallel pytest
