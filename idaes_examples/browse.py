@@ -399,6 +399,9 @@ def blessed_gui(notebooks, **kwargs):
     return 0
 
 
+def prn(*args):
+    print(*args, end="")
+
 class TerminalUI:
     # more convenient tuple for working with a notebook
     class Nb:
@@ -442,17 +445,23 @@ class TerminalUI:
             col_max[k] = min(self.max_display_widths[k], col_max[k])
         return list(nb_map.values()), col_max
 
+    def _table_height(self):
+        return (self._term.height - 20) - 3  # header, divider, footer
+
     def _event_loop(self):
         t = self._term
         start_row = 0
-        end_row = t.height - 2
         cur_row = 0
 
         with t.cbreak():
             done = False
             while not done:
                 print(t.clear())
+                end_row = self._table_height() + start_row
                 self._show_table(start_row, end_row, cur_row)
+                self._show_divider(start_row, end_row)
+                self._show_details(cur_row)
+                self._show_footer()
                 done = self._process_input()
 
     def _show_table(self, start, end, cur):
@@ -467,7 +476,7 @@ class TerminalUI:
         # table body
         end_ = min(end, len(self._nb_items))
         for row in range(start, end_):
-            row_num = f"{{:{self.left_gutter - 1}d}}".format(row)
+            row_num = f"{{:{self.left_gutter - 1}d}}".format(row + 1)
             print(f"{t.move_xy(0, row - start + 1)}{t.bright_black}{row_num}{t.normal}", end="")
             print(t.move_xy(self.left_gutter, row - start + 1), end="")
             item = self._nb_items[row]
@@ -480,6 +489,23 @@ class TerminalUI:
                     padding = width - len(s) + 1
                 print(f"{s}{t.move_right(padding)}", end="")
         sys.stdout.flush()
+
+    def _show_divider(self, start, end):
+        y = self._table_height() + 1
+        t = self._term
+        w = t.width
+        num = len(self._nb_items)
+        msg = f"Rows {start + 1} - {end} out of {num}"
+        msg += " | Scroll with arrow up/down"
+        rpad = " " * (t.width - len(msg))
+        prn(f"{t.move_xy(0, y)}{t.black_on_white}{msg}{rpad}{t.normal}")
+        sys.stdout.flush()
+
+    def _show_details(self, cur):
+        pass
+
+    def _show_footer(self):
+        pass
 
     def _process_input(self) -> bool:
         time.sleep(10)
