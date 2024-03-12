@@ -10,7 +10,7 @@ build-backend = "setuptools.build_meta"
 name = "idaes-examples"
 description = "IDAES Process Systems Engineering Examples"
 readme = "README.md"
-version = "2.4.dev0"
+version = "2.5.dev0"
 license = {text="BSD"}
 requires-python = ">=3.8"
 authors = [
@@ -44,6 +44,9 @@ dependencies = [
     "pyomo>=6.5.0",
     "jupyter",
     "importlib_resources ; python_version < '3.9'",  # importlib.resources.files()
+    # Deps for built-in terminal UI
+    "blessed==1.20.0",
+    "Markdown~=3.4.1",
 ]
 keywords = ["IDAES", "energy systems", "chemical engineering", "process modeling"]
 

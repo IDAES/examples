@@ -10,23 +10,19 @@ if not hasattr(resources, "files"):
 import json
 import logging
 from logging.handlers import RotatingFileHandler
-from multiprocessing import Process
-from operator import attrgetter, itemgetter
+from operator import attrgetter
 from pathlib import Path
 import re
 from subprocess import Popen, DEVNULL, PIPE, TimeoutExpired
-import time
 from typing import Tuple, List, Dict, Iterable
+import sys
+import time
+from collections import namedtuple
 
-try:
-    from ctypes import windll
-except:
-    windll = None
 
 # third-party
 import markdown
-import PySimpleGUI as PySG
-from tkhtmlview import html_parser
+from blessed import Terminal
 
 # package
 import idaes_examples
@@ -388,262 +384,343 @@ class NotebookDescription:
 
 
 # -------------
-#     GUI
+#  Text GUI
 # -------------
 
 
-def gui(notebooks, use_lab=False, stop_notebooks_on_quit=False):
-    _log.info(f"begin:run-gui")
-    PySG.theme("Material2")
-
-    if windll:
-        windll.shcore.SetProcessDpiAwareness(1)
-
-    def get_font(size, style=None):
-        f = ["Arial", size]
-        if style:
-            f.append(style)
-        return tuple(f)
-
-    # nb_tree = notebooks.as_tree()
-    nb_table, nb_table_meta = notebooks.as_table()
-    # print(f"@@TABLE={nb_table}\n\nMETA={nb_table_meta}")
-
-    primary_bg = "#2092ed"
-
-    sbar_kwargs = dict(
-        sbar_trough_color=PySG.theme_background_color(),
-        sbar_background_color="lightgrey",
-        sbar_frame_color="grey",
-        sbar_arrow_color="grey",
-    )
-    description_widget = PySG.Multiline(
-        expand_y=True,
-        expand_x=True,
-        write_only=True,
-        background_color="white",
-        key="Description",
-        font=get_font(11),
-        **sbar_kwargs,
-    )
-    description_frame = PySG.Frame(
-        "Description", layout=[[description_widget]], expand_y=True, expand_x=True
-    )
-
-    columns = [0, 0, 0]
-    for row in nb_table:
-        for col_index in range(2):
-            w = len(row[col_index]) // 2
-            if columns[col_index] < w:
-                columns[col_index] = w
-        w = len(row[2])
-        if columns[2] < w:
-            columns[2] = w
-
-    header_row = ["Type" + " " * 40, "Location" + " " * 80, "Title" + " " * 160]
-    sort_order = list(Notebooks.DEFAULT_SORT_KEYS)
-    sort_dir = [1] * len(sort_order)
-    nb_table_widget = PySG.Table(
-        key="Table",
-        values=nb_table,
-        # without added spaces, the headings will be centered instead of left-aligned
-        headings=header_row,
-        expand_x=True,
-        expand_y=False,
-        justification="left",
-        enable_click_events=True,
-        enable_events=True,
-        alternating_row_color="#def",
-        col_widths=columns,
-        auto_size_columns=False,
-        selected_row_colors=("white", primary_bg),
-        header_text_color="black",
-        header_font=get_font(11, style="bold"),
-        font=get_font(11),
-        header_relief=PySG.RELIEF_FLAT,
-        header_background_color="#eee",
-    )
-
-    open_buttons = {}
-    for ext in Ext.USER, Ext.SOL, Ext.EX:
-        if ext == Ext.USER:
-            label = "Open Example"
-        elif ext == Ext.SOL:
-            label = "Open Solution"
-        else:
-            label = "Open Exercise"
-        open_buttons[ext] = PySG.Button(
-            label,
-            tooltip=f"Open selected notebook",
-            button_color=("white", primary_bg),
-            disabled_button_color=("#696969", "#EEEEEE"),
-            border_width=0,
-            # auto_size_button=True,
-            size=len(label),
-            key=f"open+{ext.value}",
-            disabled=True,
-            pad=(20, 20),
-            use_ttk_buttons=True,
-            font=get_font(11),
-        )
-
-    quit_button = PySG.Button(
-        "Quit",
-        tooltip="Quit the application",
-        button_color=("white", primary_bg),
-        border_width=0,
-        key="quit",
-        disabled=False,
-        pad=(10, 10),
-        auto_size_button=False,
-        use_ttk_buttons=True,
-        font=get_font(11),
-    )
-
-    intro_nb, flowsheet_nb = "intro", "flowsheet"
-    start_notebook_paths = {}
-    for key in notebooks.keys():
-        sect, name, ext = key
-        # print(key)
-        if sect[0] == "docs" and sect[1] == "tut":
-            if name == "introduction" and ext == Ext.USER.value:
-                start_notebook_paths[intro_nb] = notebooks[key].path
-            elif name == "hda_flowsheet" and ext == Ext.SOL.value:
-                start_notebook_paths[flowsheet_nb] = notebooks[key].path
-
-    # Find the start-here notebooks and add buttons for them
-    start_here_panel = []
-    # Be robust to not-found notebooks
-    if len(start_notebook_paths) == 0:
-        _log.warning("Could not find 'Start here' notebooks")
-    else:
-        start_here_panel.append(PySG.Text("Not sure where to start? Try one of these:"))
-        sh_kwargs = dict(
-            text_color=primary_bg,
-            font=get_font(11, style="underline"),
-            enable_events=True,
-        )
-        for sh_nb, text in ((intro_nb, "Introduction"), (flowsheet_nb, "Flowsheet")):
-            if sh_nb in start_notebook_paths:
-                button = PySG.Text(text, key=f"starthere_{sh_nb}", **sh_kwargs)
-                start_here_panel.append(button)
-                if text == "Introduction":
-                    start_here_panel.append(PySG.Text("for an IDAES overview or"))
-                else:
-                    start_here_panel.append(PySG.Text("for a flowsheet tutorial"))
-
-    instructions = PySG.Text(
-        "Select a notebook and then select 'Open' to open it in Jupyter"
-    )
-    full_path = PySG.Text("Path:")
-
-    layout = [
-        [instructions],
-        [nb_table_widget],
-        [full_path],
-        [description_frame],
-        [
-            PySG.Text("Actions:"),
-            open_buttons[Ext.USER],
-            open_buttons[Ext.EX],
-            open_buttons[Ext.SOL],
-            PySG.P(),
-            quit_button,
-        ],
-    ]
-
-    if start_here_panel:
-        layout.insert(0, [PySG.VerticalSeparator(pad=(0, 20)), start_here_panel])
-
-    # create main window
-    w, h = PySG.Window.get_screen_size()
-    capped_w = min(w, 3840)
-    width = int(capped_w // 1.4)
-    height = int(min(h - 10, width // 2))
-
-    window = PySG.Window(
-        "IDAES Notebook Browser",
-        layout,
-        size=(width, height),
-        finalize=True,
-        icon=IDAES_ICON_B64,
-        font=get_font(11),
-        text_justification="left",
-        resizable=True,
-    )
-
-    nbdesc = NotebookDescription(notebooks, window["Description"].Widget)
-    # Event Loop to process "events" and get the "values" of the inputs
-    jupyter = Jupyter(lab=use_lab)
-    shown = None
+def blessed_gui(notebooks, **kwargs):
+    _log.info(f"begin:run-ui")
+    ui = TerminalUI(list(notebooks.notebooks.values()))
     try:
-        while True:
-            _log.debug("Wait for event")
-            event, values = window.read()
-            _log.debug("Event detected")
-            # if user closes window or clicks cancel
-            if event == PySG.WIN_CLOSED or event == "quit":
-                break
-            #print(f"@@event: {event} ; values: {values}")
-            if isinstance(event, int):
-                _log.debug(f"Unhandled event: {event}")
-            elif isinstance(event, str):
-                if event == "Table":
-                    try:
-                        row_index = values[event][0]
-                        shown = preview_notebook(
-                            nb_table, nb_table_meta, nbdesc, open_buttons, row_index
-                        )
-                        path = nbdesc.get_path(*shown)
-                        full_path.update(f"Path: {path}")
-                    except IndexError:
-                        pass
-                elif event.startswith("open+"):
-                    if shown:
-                        path = nbdesc.get_path(*shown)
-                        jupyter.open(path)
-                elif event.startswith("starthere"):
-                    what = event.split("_")[-1]
-                    path = start_notebook_paths[what]
-                    print(path)
-                    jupyter.open(path)
-            # event=('Table', '+CLICKED+', (-1, 0)) ; values: {'Table': [5]}
-            elif isinstance(event, tuple) and event[0] == "Table":
-                try:
-                    row, col = event[2]
-                    if row == -1:
-                        # TODO: sort
-                        pass
-                except (ValueError, IndexError):
-                    pass
+        ui.run()
     except KeyboardInterrupt:
-        print("Stopped by user")
-
-    if stop_notebooks_on_quit:
-        print("** Stop running notebooks")
-        try:
-            jupyter.stop()
-        except KeyboardInterrupt:
-            pass
-    _log.info("Close main window")
-    window.close()
-    _log.info(f"end:run-gui")
+        pass
+    _log.info(f"end:run-ui")
     return 0
 
 
-def preview_notebook(nb_table, nb_table_meta, nbdesc, open_buttons, row_index) -> bool:
-    data_row = nb_table[row_index]
-    meta_row = nb_table_meta[row_index]
-    section = data_row[1]
-    name = meta_row[1]
-    type_ = Ext.USER.value
-    nbdesc.show(section, name, type_)
-    shown = (section, name, meta_row[0])
-    is_tut = meta_row[2]
-    open_buttons[Ext.USER].update(disabled=is_tut)
-    open_buttons[Ext.EX].update(disabled=not is_tut)
-    open_buttons[Ext.SOL].update(disabled=not is_tut)
-    return shown
+class TerminalUI:
+    # more convenient tuple for working with a notebook
+    class Nb:
+        def __init__(self, name, title, path, types, desc):
+            self.name = name
+            self.title = title
+            self.path = path
+            self.types = types
+            self.desc = desc
 
+        @property
+        def tutorial(self):
+            return "Yes" if Ext.SOL.value in self.types else "No"
 
-IDAES_ICON_B64 = b"iVBORw0KGgoAAAANSUhEUgAAACgAAAAoCAYAAACM/rhtAAAAwnpUWHRSYXcgcHJvZmlsZSB0eXBlIGV4aWYAAHjabVBRDsMgCP3nFDuC8KjF49jVJbvBjj8stqnZXiI8eeSJUPu8X/ToEFbSZbVcck4OLVqkOrEUqEfkpEc8IKfGc50uQbwEz4ir5dF/1vkyiFSdLTcjew5hm4Wi1wSzkURCn6jzfRiVYQQJgYdBjW+lXGy9f2FraYbFoR7U5rF/7qtvb1/8HYg0MJJHQGMA9ANCdZI9MswbGeq8ozqzYeYL+benE/QF8Z1ZJeKi9MoAAAGEaUNDUElDQyBwcm9maWxlAAB4nH2RPUjDQBzFX1O1IhVBK4g4ZKhO7aIijqWKRbBQ2gqtOphc+iE0aUhSXBwF14KDH4tVBxdnXR1cBUHwA8TVxUnRRUr8X1JoEePBcT/e3XvcvQOERoWpZlcMUDXLSCfiYi6/IgZe0YNBDENERGKmnswsZOE5vu7h4+tdlGd5n/tz9CsFkwE+kTjGdMMiXiee2bR0zvvEIVaWFOJz4ohBFyR+5Lrs8hvnksMCzwwZ2fQccYhYLHWw3MGsbKjE08RhRdUoX8i5rHDe4qxWaqx1T/7CYEFbznCd5hgSWEQSKepIRg0bqMBClFaNFBNp2o97+Ecdf4pcMrk2wMgxjypUSI4f/A9+d2sWpybdpGAc6H6x7Y9xILALNOu2/X1s280TwP8MXGltf7UBzH6SXm9r4SNgYBu4uG5r8h5wuQOMPOmSITmSn6ZQLALvZ/RNeWDoFuhbdXtr7eP0AchSV0s3wMEhMFGi7DWPd/d29vbvmVZ/P+l6ctZZqXqtAAANdmlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4KPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUgNC40LjAtRXhpdjIiPgogPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iCiAgICB4bWxuczpzdEV2dD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL3NUeXBlL1Jlc291cmNlRXZlbnQjIgogICAgeG1sbnM6ZGM9Imh0dHA6Ly9wdXJsLm9yZy9kYy9lbGVtZW50cy8xLjEvIgogICAgeG1sbnM6R0lNUD0iaHR0cDovL3d3dy5naW1wLm9yZy94bXAvIgogICAgeG1sbnM6dGlmZj0iaHR0cDovL25zLmFkb2JlLmNvbS90aWZmLzEuMC8iCiAgICB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iCiAgIHhtcE1NOkRvY3VtZW50SUQ9ImdpbXA6ZG9jaWQ6Z2ltcDpmOTVjOGExOC1hYzVmLTRiMTktYjE5ZS0xM2VlYzAwYWRjY2MiCiAgIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6MzJlZDk2NjMtZTg2Yi00ZDZkLWFkMmQtODk1NTAzNTIwODVjIgogICB4bXBNTTpPcmlnaW5hbERvY3VtZW50SUQ9InhtcC5kaWQ6NWMyMjViYzgtOTNiYi00M2NlLTliMDctZDU0ZDVhMjNkOTQ0IgogICBkYzpGb3JtYXQ9ImltYWdlL3BuZyIKICAgR0lNUDpBUEk9IjIuMCIKICAgR0lNUDpQbGF0Zm9ybT0iV2luZG93cyIKICAgR0lNUDpUaW1lU3RhbXA9IjE2ODcxMjQwMzEzNzA0ODkiCiAgIEdJTVA6VmVyc2lvbj0iMi4xMC4zNCIKICAgdGlmZjpPcmllbnRhdGlvbj0iMSIKICAgeG1wOkNyZWF0b3JUb29sPSJHSU1QIDIuMTAiCiAgIHhtcDpNZXRhZGF0YURhdGU9IjIwMjM6MDY6MThUMTQ6MzM6NDgtMDc6MDAiCiAgIHhtcDpNb2RpZnlEYXRlPSIyMDIzOjA2OjE4VDE0OjMzOjQ4LTA3OjAwIj4KICAgPHhtcE1NOkhpc3Rvcnk+CiAgICA8cmRmOlNlcT4KICAgICA8cmRmOmxpCiAgICAgIHN0RXZ0OmFjdGlvbj0ic2F2ZWQiCiAgICAgIHN0RXZ0OmNoYW5nZWQ9Ii8iCiAgICAgIHN0RXZ0Omluc3RhbmNlSUQ9InhtcC5paWQ6YjVlMTk3NGYtYTNjMS00ZTVhLTgxOGEtNWQ5YWE3ZTBlZmNmIgogICAgICBzdEV2dDpzb2Z0d2FyZUFnZW50PSJHaW1wIDIuMTAgKFdpbmRvd3MpIgogICAgICBzdEV2dDp3aGVuPSIyMDIzLTA2LTE4VDE0OjMzOjUxIi8+CiAgICA8L3JkZjpTZXE+CiAgIDwveG1wTU06SGlzdG9yeT4KICA8L3JkZjpEZXNjcmlwdGlvbj4KIDwvcmRmOlJERj4KPC94OnhtcG1ldGE+CiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAKPD94cGFja2V0IGVuZD0idyI/Pl/FyzMAAAAGYktHRAD/AP8A/6C9p5MAAAAJcEhZcwAACxMAAAsTAQCanBgAAAAHdElNRQfnBhIVITObZ/5AAAAPz0lEQVRYw81YeXRV1bn/9hnvPXcecm+SC5khkIQhiUJABFQgUQzS+iACLqDyRAWcusTniGVVLNahVqHPsbb0SVUEwxRCBkLCKAEFJIQMJGQiubnJne+5Z97vD8VaG1/fc9n2nf/OXt/w29+09/4h+JG+Zz6qQVfNmdcRCj/0bmlu549lF/0YRtZUtaT2Y+er2VbMiZKq+gW1xSYMPPdaaUH0Xwrw8domyxXF+aQPzGtExJpymNDh1IGGOXTWlDsHYsTDQUn5AzfY/PvfLZuj/lAfxA9RWvdBFbWiundlCNl25NnIWyREmxAASCpyG4Sw9sR1SR+Po7zFiXoqUUvO27+qsnP2+t2H0T8lgsv3d8xgOcNjVpDO3aK019EON5yUEt8MKqTjRv1wQ+/JirI1a9cp1+Rfqm9N7CesL0UkVaEVftPvijPb/yEA/31fcwo2OJ6b5NAt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"
+    display_columns = ("name", "title", "tutorial")
+    max_display_widths = {"title": 50, "name": 20, "tutorial": 8}
+    left_gutter = 4
+
+    def __init__(self, notebooks: List[Notebook]):
+        self._nb_items, self._col_widths = self._create_items(notebooks)
+        self._term = Terminal()
+
+    def run(self):
+        self._event_loop()
+
+    def _create_items(self, nb_list: List[Notebook]):
+        "Create Nb items and also compute max column widths."
+        col_max = {c: 0 for c in self.display_columns}
+        nb_map = {}
+        for nb in nb_list:
+            nb_id = nb.name
+            if nb_id in nb_map:
+                nb_map[nb_id].types.append(nb.type)
+            else:
+                nb_item = self.Nb(nb.name, nb.title, str(nb.path), [nb.type],
+                                  nb.description)
+                for k in col_max:
+                    col_max[k] = max(col_max[k], len(getattr(nb_item, k)) + 1)
+                nb_map[nb_id] = nb_item
+        for k in self.display_columns:
+            col_max[k] = min(self.max_display_widths[k], col_max[k])
+        return list(nb_map.values()), col_max
+
+    def _event_loop(self):
+        t = self._term
+        start_row = 0
+        end_row = t.height - 2
+        cur_row = 0
+
+        with t.cbreak():
+            done = False
+            while not done:
+                print(t.clear())
+                self._show_table(start_row, end_row, cur_row)
+                done = self._process_input()
+
+    def _show_table(self, start, end, cur):
+        t = self._term
+        print(t.move_xy(self.left_gutter, 0), end="")
+
+        # table header
+        for hdr in self.display_columns:
+            width = self._col_widths[hdr]
+            s = hdr.title()
+            print(f"{t.black_on_white}{s}{t.normal}{t.move_right(width - len(s) + 1)}", end="")
+        # table body
+        end_ = min(end, len(self._nb_items))
+        for row in range(start, end_):
+            row_num = f"{{:{self.left_gutter - 1}d}}".format(row)
+            print(f"{t.move_xy(0, row - start + 1)}{t.bright_black}{row_num}{t.normal}", end="")
+            print(t.move_xy(self.left_gutter, row - start + 1), end="")
+            item = self._nb_items[row]
+            for hdr in self.display_columns:
+                width = self._col_widths[hdr]
+                s = getattr(item, hdr)
+                if len(s) >= width:
+                    s, padding = s[:width], 1
+                else:
+                    padding = width - len(s) + 1
+                print(f"{s}{t.move_right(padding)}", end="")
+        sys.stdout.flush()
+
+    def _process_input(self) -> bool:
+        time.sleep(10)
+        return False
+
+#
+#     primary_bg = "#2092ed"
+#
+#     sbar_kwargs = dict(
+#         sbar_trough_color=PySG.theme_background_color(),
+#         sbar_background_color="lightgrey",
+#         sbar_frame_color="grey",
+#         sbar_arrow_color="grey",
+#     )
+#     description_widget = PySG.Multiline(
+#         expand_y=True,
+#         expand_x=True,
+#         write_only=True,
+#         background_color="white",
+#         key="Description",
+#         font=get_font(11),
+#         **sbar_kwargs,
+#     )
+#     description_frame = PySG.Frame(
+#         "Description", layout=[[description_widget]], expand_y=True, expand_x=True
+#     )
+#
+#     columns = [0, 0, 0]
+#     for row in nb_table:
+#         for col_index in range(2):
+#             w = len(row[col_index]) // 2
+#             if columns[col_index] < w:
+#                 columns[col_index] = w
+#         w = len(row[2])
+#         if columns[2] < w:
+#             columns[2] = w
+#
+#     header_row = ["Type" + " " * 40, "Location" + " " * 80, "Title" + " " * 160]
+#     sort_order = list(Notebooks.DEFAULT_SORT_KEYS)
+#     sort_dir = [1] * len(sort_order)
+#     nb_table_widget = PySG.Table(
+#         key="Table",
+#         values=nb_table,
+#         # without added spaces, the headings will be centered instead of left-aligned
+#         headings=header_row,
+#         expand_x=True,
+#         expand_y=False,
+#         justification="left",
+#         enable_click_events=True,
+#         enable_events=True,
+#         alternating_row_color="#def",
+#         col_widths=columns,
+#         auto_size_columns=False,
+#         selected_row_colors=("white", primary_bg),
+#         header_text_color="black",
+#         header_font=get_font(11, style="bold"),
+#         font=get_font(11),
+#         header_relief=PySG.RELIEF_FLAT,
+#         header_background_color="#eee",
+#     )
+#
+#     open_buttons = {}
+#     for ext in Ext.USER, Ext.SOL, Ext.EX:
+#         if ext == Ext.USER:
+#             label = "Open Example"
+#         elif ext == Ext.SOL:
+#             label = "Open Solution"
+#         else:
+#             label = "Open Exercise"
+#         open_buttons[ext] = PySG.Button(
+#             label,
+#             tooltip=f"Open selected notebook",
+#             button_color=("white", primary_bg),
+#             disabled_button_color=("#696969", "#EEEEEE"),
+#             border_width=0,
+#             # auto_size_button=True,
+#             size=len(label),
+#             key=f"open+{ext.value}",
+#             disabled=True,
+#             pad=(20, 20),
+#             use_ttk_buttons=True,
+#             font=get_font(11),
+#         )
+#
+#     quit_button = PySG.Button(
+#         "Quit",
+#         tooltip="Quit the application",
+#         button_color=("white", primary_bg),
+#         border_width=0,
+#         key="quit",
+#         disabled=False,
+#         pad=(10, 10),
+#         auto_size_button=False,
+#         use_ttk_buttons=True,
+#         font=get_font(11),
+#     )
+#
+#     intro_nb, flowsheet_nb = "intro", "flowsheet"
+#     start_notebook_paths = {}
+#     for key in notebooks.keys():
+#         sect, name, ext = key
+#         # print(key)
+#         if sect[0] == "docs" and sect[1] == "tut":
+#             if name == "introduction" and ext == Ext.USER.value:
+#                 start_notebook_paths[intro_nb] = notebooks[key].path
+#             elif name == "hda_flowsheet" and ext == Ext.SOL.value:
+#                 start_notebook_paths[flowsheet_nb] = notebooks[key].path
+#
+#     # Find the start-here notebooks and add buttons for them
+#     start_here_panel = []
+#     # Be robust to not-found notebooks
+#     if len(start_notebook_paths) == 0:
+#         _log.warning("Could not find 'Start here' notebooks")
+#     else:
+#         start_here_panel.append(PySG.Text("Not sure where to start? Try one of these:"))
+#         sh_kwargs = dict(
+#             text_color=primary_bg,
+#             font=get_font(11, style="underline"),
+#             enable_events=True,
+#         )
+#         for sh_nb, text in ((intro_nb, "Introduction"), (flowsheet_nb, "Flowsheet")):
+#             if sh_nb in start_notebook_paths:
+#                 button = PySG.Text(text, key=f"starthere_{sh_nb}", **sh_kwargs)
+#                 start_here_panel.append(button)
+#                 if text == "Introduction":
+#                     start_here_panel.append(PySG.Text("for an IDAES overview or"))
+#                 else:
+#                     start_here_panel.append(PySG.Text("for a flowsheet tutorial"))
+#
+#     instructions = PySG.Text(
+#         "Select a notebook and then select 'Open' to open it in Jupyter"
+#     )
+#     full_path = PySG.Text("Path:")
+#
+#     layout = [
+#         [instructions],
+#         [nb_table_widget],
+#         [full_path],
+#         [description_frame],
+#         [
+#             PySG.Text("Actions:"),
+#             open_buttons[Ext.USER],
+#             open_buttons[Ext.EX],
+#             open_buttons[Ext.SOL],
+#             PySG.P(),
+#             quit_button,
+#         ],
+#     ]
+#
+#     if start_here_panel:
+#         layout.insert(0, [PySG.VerticalSeparator(pad=(0, 20)), start_here_panel])
+#
+#     # create main window
+#     w, h = PySG.Window.get_screen_size()
+#     capped_w = min(w, 3840)
+#     width = int(capped_w // 1.4)
+#     height = int(min(h - 10, width // 2))
+#
+#     window = PySG.Window(
+#         "IDAES Notebook Browser",
+#         layout,
+#         size=(width, height),
+#         finalize=True,
+#         icon=IDAES_ICON_B64,
+#         font=get_font(11),
+#         text_justification="left",
+#         resizable=True,
+#     )
+#
+#     nbdesc = NotebookDescription(notebooks, window["Description"].Widget)
+#     # Event Loop to process "events" and get the "values" of the inputs
+#     jupyter = Jupyter(lab=use_lab)
+#     shown = None
+#     try:
+#         while True:
+#             _log.debug("Wait for event")
+#             event, values = window.read()
+#             _log.debug("Event detected")
+#             # if user closes window or clicks cancel
+#             if event == PySG.WIN_CLOSED or event == "quit":
+#                 break
+#             #print(f"@@event: {event} ; values: {values}")
+#             if isinstance(event, int):
+#                 _log.debug(f"Unhandled event: {event}")
+#             elif isinstance(event, str):
+#                 if event == "Table":
+#                     try:
+#                         row_index = values[event][0]
+#                         shown = preview_notebook(
+#                             nb_table, nb_table_meta, nbdesc, open_buttons, row_index
+#                         )
+#                         path = nbdesc.get_path(*shown)
+#                         full_path.update(f"Path: {path}")
+#                     except IndexError:
+#                         pass
+#                 elif event.startswith("open+"):
+#                     if shown:
+#                         path = nbdesc.get_path(*shown)
+#                         jupyter.open(path)
+#                 elif event.startswith("starthere"):
+#                     what = event.split("_")[-1]
+#                     path = start_notebook_paths[what]
+#                     print(path)
+#                     jupyter.open(path)
+#             # event=('Table', '+CLICKED+', (-1, 0)) ; values: {'Table': [5]}
+#             elif isinstance(event, tuple) and event[0] == "Table":
+#                 try:
+#                     row, col = event[2]
+#                     if row == -1:
+#                         # TODO: sort
+#                         pass
+#                 except (ValueError, IndexError):
+#                     pass
+#     except KeyboardInterrupt:
+#         print("Stopped by user")
+#
+#     if stop_notebooks_on_quit:
+#         print("** Stop running notebooks")
+#         try:
+#             jupyter.stop()
+#         except KeyboardInterrupt:
+#             pass
+#     _log.info("Close main window")
+#     window.close()
+#     _log.info(f"end:run-gui")
+#     return 0
+#
+#
+# def preview_notebook(nb_table, nb_table_meta, nbdesc, open_buttons, row_index) -> bool:
+#     data_row = nb_table[row_index]
+#     meta_row = nb_table_meta[row_index]
+#     section = data_row[1]
+#     name = meta_row[1]
+#     type_ = Ext.USER.value
+#     nbdesc.show(section, name, type_)
+#     shown = (section, name, meta_row[0])
+#     is_tut = meta_row[2]
+#     open_buttons[Ext.USER].update(disabled=is_tut)
+#     open_buttons[Ext.EX].update(disabled=not is_tut)
+#     open_buttons[Ext.SOL].update(disabled=not is_tut)
+#     return shown
+#
+#
+# IDAES_ICON_B64 = b"iVBORw0KGgoAAAANSUhEUgAAACgAAAAoCAYAAACM/rhtAAAAwnpUWHRSYXcgcHJvZmlsZSB0eXBlIGV4aWYAAHjabVBRDsMgCP3nFDuC8KjF49jVJbvBjj8stqnZXiI8eeSJUPu8X/ToEFbSZbVcck4OLVqkOrEUqEfkpEc8IKfGc50uQbwEz4ir5dF/1vkyiFSdLTcjew5hm4Wi1wSzkURCn6jzfRiVYQQJgYdBjW+lXGy9f2FraYbFoR7U5rF/7qtvb1/8HYg0MJJHQGMA9ANCdZI9MswbGeq8ozqzYeYL+benE/QF8Z1ZJeKi9MoAAAGEaUNDUElDQyBwcm9maWxlAAB4nH2RPUjDQBzFX1O1IhVBK4g4ZKhO7aIijqWKRbBQ2gqtOphc+iE0aUhSXBwF14KDH4tVBxdnXR1cBUHwA8TVxUnRRUr8X1JoEePBcT/e3XvcvQOERoWpZlcMUDXLSCfiYi6/IgZe0YNBDENERGKmnswsZOE5vu7h4+tdlGd5n/tz9CsFkwE+kTjGdMMiXiee2bR0zvvEIVaWFOJz4ohBFyR+5Lrs8hvnksMCzwwZ2fQccYhYLHWw3MGsbKjE08RhRdUoX8i5rHDe4qxWaqx1T/7CYEFbznCd5hgSWEQSKepIRg0bqMBClFaNFBNp2o97+Ecdf4pcMrk2wMgxjypUSI4f/A9+d2sWpybdpGAc6H6x7Y9xILALNOu2/X1s280TwP8MXGltf7UBzH6SXm9r4SNgYBu4uG5r8h5wuQOMPOmSITmSn6ZQLALvZ/RNeWDoFuhbdXtr7eP0AchSV0s3wMEhMFGi7DWPd/d29vbvmVZ/P+l6ctZZqXqtAAANdmlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4KPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUgNC40LjAtRXhpdjIiPgogPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iCiAgICB4bWxuczpzdEV2dD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL3NUeXBlL1Jlc291cmNlRXZlbnQjIgogICAgeG1sbnM6ZGM9Imh0dHA6Ly9wdXJsLm9yZy9kYy9lbGVtZW50cy8xLjEvIgogICAgeG1sbnM6R0lNUD0iaHR0cDovL3d3dy5naW1wLm9yZy94bXAvIgogICAgeG1sbnM6dGlmZj0iaHR0cDovL25zLmFkb2JlLmNvbS90aWZmLzEuMC8iCiAgICB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iCiAgIHhtcE1NOkRvY3VtZW50SUQ9ImdpbXA6ZG9jaWQ6Z2ltcDpmOTVjOGExOC1hYzVmLTRiMTktYjE5ZS0xM2VlYzAwYWRjY2MiCiAgIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6MzJlZDk2NjMtZTg2Yi00ZDZkLWFkMmQtODk1NTAzNTIwODVjIgogICB4bXBNTTpPcmlnaW5hbERvY3VtZW50SUQ9InhtcC5kaWQ6NWMyMjViYzgtOTNiYi00M2NlLTliMDctZDU0ZDVhMjNkOTQ0IgogICBkYzpGb3JtYXQ9ImltYWdlL3BuZyIKICAgR0lNUDpBUEk9IjIuMCIKICAgR0lNUDpQbGF0Zm9ybT0iV2luZG93cyIKICAgR0lNUDpUaW1lU3RhbXA9IjE2ODcxMjQwMzEzNzA0ODkiCiAgIEdJTVA6VmVyc2lvbj0iMi4xMC4zNCIKICAgdGlmZjpPcmllbnRhdGlvbj0iMSIKICAgeG1wOkNyZWF0b3JUb29sPSJHSU1QIDIuMTAiCiAgIHhtcDpNZXRhZGF0YURhdGU9IjIwMjM6MDY6MThUMTQ6MzM6NDgtMDc6MDAiCiAgIHhtcDpNb2RpZnlEYXRlPSIyMDIzOjA2OjE4VDE0OjMzOjQ4LTA3OjAwIj4KICAgPHhtcE1NOkhpc3Rvcnk+CiAgICA8cmRmOlNlcT4KICAgICA8cmRmOmxpCiAgICAgIHN0RXZ0OmFjdGlvbj0ic2F2ZWQiCiAgICAgIHN0RXZ0OmNoYW5nZWQ9Ii8iCiAgICAgIHN0RXZ0Omluc3RhbmNlSUQ9InhtcC5paWQ6YjVlMTk3NGYtYTNjMS00ZTVhLTgxOGEtNWQ5YWE3ZTBlZmNmIgogICAgICBzdEV2dDpzb2Z0d2FyZUFnZW50PSJHaW1wIDIuMTAgKFdpbmRvd3MpIgogICAgICBzdEV2dDp3aGVuPSIyMDIzLTA2LTE4VDE0OjMzOjUxIi8+CiAgICA8L3JkZjpTZXE+CiAgIDwveG1wTU06SGlzdG9yeT4KICA8L3JkZjpEZXNjcmlwdGlvbj4KIDwvcmRmOlJERj4KPC94OnhtcG1ldGE+CiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAKPD94cGFja2V0IGVuZD0idyI/Pl/FyzMAAAAGYktHRAD/AP8A/6C9p5MAAAAJcEhZcwAACxMAAAsTAQCanBgAAAAHdElNRQfnBhIVITObZ/5AAAAPz0lEQVRYw81YeXRV1bn/9hnvPXcecm+SC5khkIQhiUJABFQgUQzS+iACLqDyRAWcusTniGVVLNahVqHPsbb0SVUEwxRCBkLCKAEFJIQMJGQiubnJne+5Z97vD8VaG1/fc9n2nf/OXt/w29+09/4h+JG+Zz6qQVfNmdcRCj/0bmlu549lF/0YRtZUtaT2Y+er2VbMiZKq+gW1xSYMPPdaaUH0Xwrw8domyxXF+aQPzGtExJpymNDh1IGGOXTWlDsHYsTDQUn5AzfY/PvfLZuj/lAfxA9RWvdBFbWiundlCNl25NnIWyREmxAASCpyG4Sw9sR1SR+Po7zFiXoqUUvO27+qsnP2+t2H0T8lgsv3d8xgOcNjVpDO3aK019EON5yUEt8MKqTjRv1wQ+/JirI1a9cp1+Rfqm9N7CesL0UkVaEVftPvijPb/yEA/31fcwo2OJ6b5NAt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"

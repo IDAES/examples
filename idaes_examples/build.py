@@ -784,7 +784,7 @@ class Commands:
                 print(f"{val.type}{' '*(10 - len(val.type))} {val.title} -> {pth}")
             status = 0
         else:
-            status = browse.gui(nb, use_lab=args.lab, stop_notebooks_on_quit=args.stop)
+            status = browse.blessed_gui(nb, use_lab=args.lab, stop_notebooks_on_quit=args.stop)
         return status
 
     @classmethod
