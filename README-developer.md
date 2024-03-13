@@ -102,7 +102,7 @@ you need to add `-c` and the path to the top-level *pyproject.toml*, which has t
 then use the name of the test notebook:
 
 ```shell
-pytest -v idaes_examples/notebooks/docs/unit_models/operations/compressor_test.ipynb
+pytest -c idaes_examples/notebooks/docs/unit_models/operations/compressor_test.ipynb
 ```
 
 If you want to test several related notebooks, or perhaps just not type the whole notebook filename,
