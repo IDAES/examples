@@ -17,7 +17,6 @@ from subprocess import Popen, DEVNULL, PIPE, TimeoutExpired
 from typing import Tuple, List, Dict, Iterable
 import sys
 import time
-from collections import namedtuple
 
 
 # third-party
@@ -37,49 +36,12 @@ from idaes_examples.util import (
 #   Logging
 # -------------
 
-use_file = False
-log_dir = Path.home() / ".idaes" / "logs"
-_log = logging.getLogger("idaes_examples")
-_log_stream = logging.StreamHandler()
-_log.addHandler(_log_stream)
+_log = logging.getLogger(__name__)
 
 
-def setup_logging(lvl, console=False):
-    """Log to a file, unless none can be opened."""
-    global use_file, log_dir
-
-    _log.setLevel(lvl)
-
-    handler = _log_stream  # use stderr by default and as a fallback
-    if not console:
-        if log_dir.exists():
-            use_file = True
-        else:
-            try:
-                log_dir.mkdir(exist_ok=True, parents=True)
-                use_file = True
-            except OSError:
-                pass
-        if use_file:
-            _log.debug(f"Redirecting logs to: {log_dir}/nb_browser.log")
-            _log.removeHandler(handler)
-            handler = RotatingFileHandler(
-                log_dir / "nb_browser.log", maxBytes=64 * 1024, backupCount=5
-            )
-
-    handler.setFormatter(
-        logging.Formatter(
-            "[%(levelname)s] %(asctime)s %(name)s::%(module)s - %(message)s"
-        )
-    )
-    _log.addHandler(handler)
-
-
-def set_log_level(level):
-    _log.setLevel(level)
-
-
-# -------------
+def set_log(g):
+    global _log
+    _log = g
 
 
 def find_notebook_dir() -> Path:
@@ -93,7 +55,7 @@ def find_notebook_dir() -> Path:
         else:
             p = Path(d)
             if p.stem == "notebooks":
-                _log.debug(f"find_noteboo_dir: root_path={p}")
+                _log.debug(f"find_notebook_dir: root_path={p}")
                 root_path = p
                 break
             for item in d.iterdir():
@@ -426,6 +388,9 @@ class TerminalUI:
     left_gutter = 4
 
     def __init__(self, notebooks: List[Notebook]):
+        # XXX
+        _log.setLevel(logging.DEBUG)
+
         self._nb_items, self._col_widths = self._create_items(notebooks)
         self._term = Terminal()
 
@@ -441,6 +406,7 @@ class TerminalUI:
         self.c_box_ok = self._term.green
         self.c_box_cancel = self._term.red
         self.c_box_optc = self._term.green
+        self.c_dlg_title = self._term.yellow
 
         # displayed rows range and current selected row
         self._start, self._cur, self._end = 0, 0, 0
@@ -464,8 +430,9 @@ class TerminalUI:
             if nb_id in nb_map:
                 nb_map[nb_id].types.append(nb.type)
             else:
-                nb_item = self.Nb(nb.name, nb.title, str(nb.path), [nb.type],
-                                  nb.description_lines)
+                nb_item = self.Nb(
+                    nb.name, nb.title, str(nb.path), [nb.type], nb.description_lines
+                )
                 for k in col_max:
                     col_max[k] = max(col_max[k], len(getattr(nb_item, k)) + 1)
                 nb_map[nb_id] = nb_item
@@ -544,14 +511,14 @@ class TerminalUI:
         height = t.height - y - 1
 
         # Print Path at top
-        path = Path(nb.path).name[:t.width]
+        path = Path(nb.path).name[: t.width]
         prn(f"{t.move_xy(0, y)}Path: {self.c_dim}{path}{self.c_norm}")
         y += 1
 
         # Print description lines
         lines = nb.desc_lines[:height]
         for i, line in enumerate(lines):
-            s = line[:t.width]
+            s = line[: t.width - 1].rstrip()
             prn(f"{t.move_xy(0, y + i)}{s}")
 
     def _show_footer(self):
@@ -572,9 +539,8 @@ class TerminalUI:
                     elif val.code == self._term.KEY_PGDOWN:
                         self._select(10)
                     elif val.code == self._term.KEY_ENTER:
-                        self._dialog("hello", (("t", "Tutorial"), ("s", "Solution"),
-                                               ("u", "User"), ("b", "Base")))
-                        time.sleep(5)
+                        self._dialog(self._nb_items[self._cur])
+                        self._changed = True
                 elif val == "q":
                     self._done = True
 
@@ -601,14 +567,25 @@ class TerminalUI:
         self._cur = cur
         self._changed = True
 
-    def _dialog(self, title, options):
+    def _dialog(self, nb: Nb):
         t = self._term
+
+        # Title of dialog box is notebook name
+        title = nb.name
+
+        # Build menu of notebook run options and corresponding paths
+        if Ext.SOL.value in nb.types:
+            options = (("s", "Solution"), ("", "Exercise"))
+        else:
+            options = (("", "User"),)
 
         # Choose box size
         ul_x, ul_y = 4, 4
         inner_width = self.max_display_widths["dialog"] - 2  # subtract 2 for border
         title = title[:inner_width]
-        lr_x, lr_y = min(t.width - 1, ul_x + inner_width + 2), min(t.height - 2, ul_y + 5 + len(options))
+        lr_x, lr_y = min(t.width - 1, ul_x + inner_width + 2), min(
+            t.height - 2, ul_y + 5 + len(options)
+        )
 
         # Draw box border & fill
         bw = inner_width + 2
@@ -617,27 +594,69 @@ class TerminalUI:
         prn(f"{t.move_xy(ul_x, lr_y)}{' ' * bw}")  # bottom
         fill_spc = " " * inner_width
         for y in range(ul_y + 1, lr_y):
-            prn(f"{t.move_xy(ul_x, y)}{self.c_box_border} {self.c_norm}{fill_spc}{self.c_box_border} ")
+            prn(
+                f"{t.move_xy(ul_x, y)}{self.c_box_border} {self.c_norm}{fill_spc}{self.c_box_border} "
+            )
         prn(self.c_norm)
 
         # Add action buttons
         y = lr_y - 1
-        # prn(f"{t.move_xy(ul_x + 2, y)}{self.c_box_ok}[Enter=OK]{self.c_norm}")
+        prn(
+            f"{t.move_xy(ul_x + 2, y)}{self.c_dim}Press key for desired Notebook{self.c_norm}"
+        )
         prn(f"{t.move_xy(lr_x - 14, y)}{self.c_box_cancel}[Esc=CANCEL]{self.c_norm}")
 
-        # Add message
+        # Add title
         n = len(title)
         x_offs = (inner_width - n) // 2 + 1
-        prn(f"{t.move_xy(ul_x + x_offs, ul_y + 1)}{title}")
+        prn(
+            f"{t.move_xy(ul_x + x_offs, ul_y + 1)}{self.c_dlg_title}{title}{self.c_norm}"
+        )
         self._changed = True
 
         # Add options
         y = ul_y + 3  # line after, line after title
         x = ul_x + 4
         for i, (c, name) in enumerate(options):
-            prn(f"{t.move_xy(x, y + i)}{self.c_box_optc}{c}{self.c_norm} {name}")
+            if c == "":
+                keypress = "Enter"
+            else:
+                keypress = f"{c.upper()}    "
+            prn(
+                f"{t.move_xy(x, y + i)}{self.c_box_optc}{keypress}{self.c_norm} Run {self.c_box_optc}{name}{self.c_norm} Notebook"
+            )
 
         _flush()
+
+        # Read input
+        with t.cbreak():
+            nb_choice = None
+            while nb_choice is None:
+                val = t.inkey(timeout=60)
+                if val:
+                    if val.code == t.KEY_ESCAPE:
+                        nb_choice = ""
+                        break
+                    for c, name in options:
+                        if (c == "" and val.code == t.KEY_ENTER) or (
+                            not val.is_sequence and val.lower() == c
+                        ):
+                            nb_choice = name
+                            break
+        if not nb_choice:
+            return  # whatevs!
+
+        jp = Jupyter()
+        path_ext = {
+            "User": Ext.USER.value,
+            "Solution": Ext.SOL.value,
+            "Exercise": Ext.EX.value,
+        }[nb_choice]
+        p = Path(nb.path)
+        print(f"PARTS={p.parts}")
+        #jp.open(nb.path)
+        time.sleep(5)
+
 #
 #     primary_bg = "#2092ed"
 #
@@ -876,4 +895,3 @@ class TerminalUI:
 #     return shown
 #
 #
-# IDAES_ICON_B64 = b"iVBORw0KGgoAAAANSUhEUgAAACgAAAAoCAYAAACM/rhtAAAAwnpUWHRSYXcgcHJvZmlsZSB0eXBlIGV4aWYAAHjabVBRDsMgCP3nFDuC8KjF49jVJbvBjj8stqnZXiI8eeSJUPu8X/ToEFbSZbVcck4OLVqkOrEUqEfkpEc8IKfGc50uQbwEz4ir5dF/1vkyiFSdLTcjew5hm4Wi1wSzkURCn6jzfRiVYQQJgYdBjW+lXGy9f2FraYbFoR7U5rF/7qtvb1/8HYg0MJJHQGMA9ANCdZI9MswbGeq8ozqzYeYL+benE/QF8Z1ZJeKi9MoAAAGEaUNDUElDQyBwcm9maWxlAAB4nH2RPUjDQBzFX1O1IhVBK4g4ZKhO7aIijqWKRbBQ2gqtOphc+iE0aUhSXBwF14KDH4tVBxdnXR1cBUHwA8TVxUnRRUr8X1JoEePBcT/e3XvcvQOERoWpZlcMUDXLSCfiYi6/IgZe0YNBDENERGKmnswsZOE5vu7h4+tdlGd5n/tz9CsFkwE+kTjGdMMiXiee2bR0zvvEIVaWFOJz4ohBFyR+5Lrs8hvnksMCzwwZ2fQccYhYLHWw3MGsbKjE08RhRdUoX8i5rHDe4qxWaqx1T/7CYEFbznCd5hgSWEQSKepIRg0bqMBClFaNFBNp2o97+Ecdf4pcMrk2wMgxjypUSI4f/A9+d2sWpybdpGAc6H6x7Y9xILALNOu2/X1s280TwP8MXGltf7UBzH6SXm9r4SNgYBu4uG5r8h5wuQOMPOmSITmSn6ZQLALvZ/RNeWDoFuhbdXtr7eP0AchSV0s3wMEhMFGi7DWPd/d29vbvmVZ/P+l6ctZZqXqtAAANdmlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4KPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUgNC40LjAtRXhpdjIiPgogPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iCiAgICB4bWxuczpzdEV2dD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL3NUeXBlL1Jlc291cmNlRXZlbnQjIgogICAgeG1sbnM6ZGM9Imh0dHA6Ly9wdXJsLm9yZy9kYy9lbGVtZW50cy8xLjEvIgogICAgeG1sbnM6R0lNUD0iaHR0cDovL3d3dy5naW1wLm9yZy94bXAvIgogICAgeG1sbnM6dGlmZj0iaHR0cDovL25zLmFkb2JlLmNvbS90aWZmLzEuMC8iCiAgICB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iCiAgIHhtcE1NOkRvY3VtZW50SUQ9ImdpbXA6ZG9jaWQ6Z2ltcDpmOTVjOGExOC1hYzVmLTRiMTktYjE5ZS0xM2VlYzAwYWRjY2MiCiAgIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6MzJlZDk2NjMtZTg2Yi00ZDZkLWFkMmQtODk1NTAzNTIwODVjIgogICB4bXBNTTpPcmlnaW5hbERvY3VtZW50SUQ9InhtcC5kaWQ6NWMyMjViYzgtOTNiYi00M2NlLTliMDctZDU0ZDVhMjNkOTQ0IgogICBkYzpGb3JtYXQ9ImltYWdlL3BuZyIKICAgR0lNUDpBUEk9IjIuMCIKICAgR0lNUDpQbGF0Zm9ybT0iV2luZG93cyIKICAgR0lNUDpUaW1lU3RhbXA9IjE2ODcxMjQwMzEzNzA0ODkiCiAgIEdJTVA6VmVyc2lvbj0iMi4xMC4zNCIKICAgdGlmZjpPcmllbnRhdGlvbj0iMSIKICAgeG1wOkNyZWF0b3JUb29sPSJHSU1QIDIuMTAiCiAgIHhtcDpNZXRhZGF0YURhdGU9IjIwMjM6MDY6MThUMTQ6MzM6NDgtMDc6MDAiCiAgIHhtcDpNb2RpZnlEYXRlPSIyMDIzOjA2OjE4VDE0OjMzOjQ4LTA3OjAwIj4KICAgPHhtcE1NOkhpc3Rvcnk+CiAgICA8cmRmOlNlcT4KICAgICA8cmRmOmxpCiAgICAgIHN0RXZ0OmFjdGlvbj0ic2F2ZWQiCiAgICAgIHN0RXZ0OmNoYW5nZWQ9Ii8iCiAgICAgIHN0RXZ0Omluc3RhbmNlSUQ9InhtcC5paWQ6YjVlMTk3NGYtYTNjMS00ZTVhLTgxOGEtNWQ5YWE3ZTBlZmNmIgogICAgICBzdEV2dDpzb2Z0d2FyZUFnZW50PSJHaW1wIDIuMTAgKFdpbmRvd3MpIgogICAgICBzdEV2dDp3aGVuPSIyMDIzLTA2LTE4VDE0OjMzOjUxIi8+CiAgICA8L3JkZjpTZXE+CiAgIDwveG1wTU06SGlzdG9yeT4KICA8L3JkZjpEZXNjcmlwdGlvbj4KIDwvcmRmOlJERj4KPC94OnhtcG1ldGE+CiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAKPD94cGFja2V0IGVuZD0idyI/Pl/FyzMAAAAGYktHRAD/AP8A/6C9p5MAAAAJcEhZcwAACxMAAAsTAQCanBgAAAAHdElNRQfnBhIVITObZ/5AAAAPz0lEQVRYw81YeXRV1bn/9hnvPXcecm+SC5khkIQhiUJABFQgUQzS+iACLqDyRAWcusTniGVVLNahVqHPsbb0SVUEwxRCBkLCKAEFJIQMJGQiubnJne+5Z97vD8VaG1/fc9n2nf/OXt/w29+09/4h+JG+Zz6qQVfNmdcRCj/0bmlu549lF/0YRtZUtaT2Y+er2VbMiZKq+gW1xSYMPPdaaUH0Xwrw8domyxXF+aQPzGtExJpymNDh1IGGOXTWlDsHYsTDQUn5AzfY/PvfLZuj/lAfxA9RWvdBFbWiundlCNl25NnIWyREmxAASCpyG4Sw9sR1SR+Po7zFiXoqUUvO27+qsnP2+t2H0T8lgsv3d8xgOcNjVpDO3aK019EON5yUEt8MKqTjRv1wQ+/JirI1a9cp1+Rfqm9N7CesL0UkVaEVftPvijPb/yEA/31fcwo2OJ6b5NAt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"
