@@ -156,25 +156,25 @@ class Notebooks:
     def keys(self) -> Iterable:
         return self._nb.keys()
 
-    def as_table(self):
-        tutorials = set()
-        for nb in self._sorted_values:
-            if nb.type == Ext.EX.value:
-                tutorials.add(nb.section_parts)
-
-        data = []
-        metadata = []
-        for nb in self._sorted_values:
-            if nb.type != Ext.USER.value:
-                continue
-            parts = nb.section_parts
-            is_tut = parts in tutorials
-            nbtype = "Tutorial" if is_tut else "Example"
-            nbloc = Notebook.SECTION_SEP.join(parts)
-            row = (nbtype, nbloc, nb.title)
-            data.append(row)
-            metadata.append((nb.type, nb.name, is_tut))
-        return data, metadata
+    # def as_table(self):
+    #     tutorials = set()
+    #     for nb in self._sorted_values:
+    #         if nb.type == Ext.EX.value:
+    #             tutorials.add(nb.section_parts)
+    #
+    #     data = []
+    #     metadata = []
+    #     for nb in self._sorted_values:
+    #         if nb.type != Ext.USER.value:
+    #             continue
+    #         parts = nb.section_parts
+    #         is_tut = parts in tutorials
+    #         nbtype = "Tutorial" if is_tut else "Example"
+    #         nbloc = Notebook.SECTION_SEP.join(parts)
+    #         row = (nbtype, nbloc, nb.title)
+    #         data.append(row)
+    #         metadata.append((nb.type, nb.name, is_tut))
+    #     return data, metadata
 
     def is_tree_section(self, key) -> bool:
         return key.startswith(self._section_key_prefix)
@@ -310,78 +310,78 @@ class Jupyter:
             _log.info(f"(end) stop running notebook, port={port}: Timeout")
 
 
-class NotebookDescription:
-    """Show notebook descriptions in a UI widget."""
-
-    def __init__(self, nb: dict, widget):
-        self._text = "_Select a notebook to view its description_"
-        self._nb = nb
-        self._w = widget
-        self._html_parser = html_parser.HTMLTextParser()
-        self._html()
-
-    def show(self, section: str, name: str, type_: Ext):
-        """Show the description in the widget.
-
-        Args:
-            section: Section for notebook being described
-            name: Name (filename) of notebook
-            type_: Type (doc, example, etc.) of notebook
-
-        Returns:
-            None
-        """
-        key = self._make_key(section, name, type_)
-        self._text = self._nb[key].description
-        # self._print()
-        self._html()
-
-    @staticmethod
-    def _make_key(section, name, type_):
-        if Notebook.SECTION_SEP in section:
-            section_tuple = tuple(section.split(Notebook.SECTION_SEP))
-        else:
-            section_tuple = (section,)
-        return section_tuple, name, type_
-
-    def _html(self):
-        """Convert markdown source to HTML using the 'markdown' package."""
-        m_html = markdown.markdown(
-            self._text, extensions=["extra", "codehilite"], output_format="html"
-        )
-        self._set_html(self._pre_html(m_html))
-
-    @staticmethod
-    def _pre_html(text):
-        """Pre-process the HTML so it displays more nicely in the relatively crude
-        Tk HTML viewer.
-        """
-        text = re.sub(r"<code>(.*?)</code>", r"<em>\1</em>", text)
-        text = re.sub(
-            r"<sub>(.*?)</sub>", r"<span style='font-size: 50%'>\1</span>", text
-        )
-        text = re.sub(r"<h1>(.*?)</h1>", r"<h1 style='font-size: 120%'>\1</h1>", text)
-        text = re.sub(r"<h2>(.*?)</h2>", r"<h2 style='font-size: 110%'>\1</h2>", text)
-        text = re.sub(r"<h3>(.*?)</h3>", r"<h3 style='font-size: 100%'>\1</h3>", text)
-        return (
-            "<div style='font-size: 80%; "
-            'font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;\'>'
-            f"{text}</div>"
-        )
-
-    def _set_html(self, html, strip=True):
-        w = self._w
-        prev_state = w.cget("state")
-        w.config(state=PySG.tk.NORMAL)
-        w.delete("1.0", PySG.tk.END)
-        w.tag_delete(w.tag_names)
-        self._html_parser.w_set_html(w, html, strip=strip)
-        w.config(state=prev_state)
-
-    def get_path(self, section, name, type_) -> Path:
-        key = self._make_key(section, name, type_)
-        return self._nb[key].path
-
+# class NotebookDescription:
+#     """Show notebook descriptions in a UI widget."""
+#
+#     def __init__(self, nb: dict, widget):
+#         self._text = "_Select a notebook to view its description_"
+#         self._nb = nb
+#         self._w = widget
+#         self._html_parser = html_parser.HTMLTextParser()
+#         self._html()
+#
+#     def show(self, section: str, name: str, type_: Ext):
+#         """Show the description in the widget.
+#
+#         Args:
+#             section: Section for notebook being described
+#             name: Name (filename) of notebook
+#             type_: Type (doc, example, etc.) of notebook
+#
+#         Returns:
+#             None
+#         """
+#         key = self._make_key(section, name, type_)
+#         self._text = self._nb[key].description
+#         # self._print()
+#         self._html()
+#
+#     @staticmethod
+#     def _make_key(section, name, type_):
+#         if Notebook.SECTION_SEP in section:
+#             section_tuple = tuple(section.split(Notebook.SECTION_SEP))
+#         else:
+#             section_tuple = (section,)
+#         return section_tuple, name, type_
+#
+#     def _html(self):
+#         """Convert markdown source to HTML using the 'markdown' package."""
+#         m_html = markdown.markdown(
+#             self._text, extensions=["extra", "codehilite"], output_format="html"
+#         )
+#         self._set_html(self._pre_html(m_html))
+#
+#     @staticmethod
+#     def _pre_html(text):
+#         """Pre-process the HTML so it displays more nicely in the relatively crude
+#         Tk HTML viewer.
+#         """
+#         text = re.sub(r"<code>(.*?)</code>", r"<em>\1</em>", text)
+#         text = re.sub(
+#             r"<sub>(.*?)</sub>", r"<span style='font-size: 50%'>\1</span>", text
+#         )
+#         text = re.sub(r"<h1>(.*?)</h1>", r"<h1 style='font-size: 120%'>\1</h1>", text)
+#         text = re.sub(r"<h2>(.*?)</h2>", r"<h2 style='font-size: 110%'>\1</h2>", text)
+#         text = re.sub(r"<h3>(.*?)</h3>", r"<h3 style='font-size: 100%'>\1</h3>", text)
+#         return (
+#             "<div style='font-size: 80%; "
+#             'font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;\'>'
+#             f"{text}</div>"
+#         )
+#
+#     def _set_html(self, html, strip=True):
+#         w = self._w
+#         prev_state = w.cget("state")
+#         w.config(state=PySG.tk.NORMAL)
+#         w.delete("1.0", PySG.tk.END)
+#         w.tag_delete(w.tag_names)
+#         self._html_parser.w_set_html(w, html, strip=strip)
+#         w.config(state=prev_state)
+#
+#     def get_path(self, section, name, type_) -> Path:
+#         key = self._make_key(section, name, type_)
+#         return self._nb[key].path
+#
 
 # -------------
 #  Text GUI
@@ -402,27 +402,55 @@ def blessed_gui(notebooks, **kwargs):
 def prn(*args):
     print(*args, end="")
 
+
+def _flush():
+    sys.stdout.flush()
+
+
 class TerminalUI:
     # more convenient tuple for working with a notebook
     class Nb:
-        def __init__(self, name, title, path, types, desc):
+        def __init__(self, name, title, path, types, desc_lines):
             self.name = name
             self.title = title
             self.path = path
             self.types = types
-            self.desc = desc
+            self.desc_lines = desc_lines
 
         @property
         def tutorial(self):
             return "Yes" if Ext.SOL.value in self.types else "No"
 
     display_columns = ("name", "title", "tutorial")
-    max_display_widths = {"title": 50, "name": 20, "tutorial": 8}
+    max_display_widths = {"title": 50, "name": 20, "tutorial": 8, "dialog": 60}
     left_gutter = 4
 
     def __init__(self, notebooks: List[Notebook]):
         self._nb_items, self._col_widths = self._create_items(notebooks)
         self._term = Terminal()
+
+        # colors
+        self.c_norm = self._term.white_on_black
+        self.c_rev = self._term.black_on_white
+        self.c_dim = self._term.bright_black
+        self.c_div = self.c_ftr = self._term.magenta
+        self.c_hdr = self._term.green
+        self.c_dim_sel = self._term.bright_black_on_white
+        self.c_norm_sel = self._term.black_on_white
+        self.c_box_border = self._term.black_on_blue
+        self.c_box_ok = self._term.green
+        self.c_box_cancel = self._term.red
+        self.c_box_optc = self._term.green
+
+        # displayed rows range and current selected row
+        self._start, self._cur, self._end = 0, 0, 0
+        self._n = len(self._nb_items)
+
+        # change made that requires refresh
+        self._changed = True
+
+        # quit app
+        self._done = False
 
     def run(self):
         self._event_loop()
@@ -437,7 +465,7 @@ class TerminalUI:
                 nb_map[nb_id].types.append(nb.type)
             else:
                 nb_item = self.Nb(nb.name, nb.title, str(nb.path), [nb.type],
-                                  nb.description)
+                                  nb.description_lines)
                 for k in col_max:
                     col_max[k] = max(col_max[k], len(getattr(nb_item, k)) + 1)
                 nb_map[nb_id] = nb_item
@@ -450,35 +478,44 @@ class TerminalUI:
 
     def _event_loop(self):
         t = self._term
-        start_row = 0
-        cur_row = 0
 
-        with t.cbreak():
-            done = False
-            while not done:
-                print(t.clear())
-                end_row = self._table_height() + start_row
-                self._show_table(start_row, end_row, cur_row)
-                self._show_divider(start_row, end_row)
-                self._show_details(cur_row)
-                self._show_footer()
-                done = self._process_input()
+        with t.fullscreen():
+            while not self._done:
+                if self._changed:
+                    # XXX: dumb refresh on every change
+                    print(t.clear())
+                    self._end = self._table_height() + self._start
+                    self._show_table()
+                    self._show_divider()
+                    self._show_details()
+                    self._show_footer()
+                    _flush()
+                    self._changed = False
+                self._process_input()
 
-    def _show_table(self, start, end, cur):
+    def _show_table(self):
         t = self._term
-        print(t.move_xy(self.left_gutter, 0), end="")
+        prn(t.move_xy(self.left_gutter, 0))
 
         # table header
         for hdr in self.display_columns:
             width = self._col_widths[hdr]
             s = hdr.title()
-            print(f"{t.black_on_white}{s}{t.normal}{t.move_right(width - len(s) + 1)}", end="")
+            prn(f"{self.c_hdr}{s}{self.c_norm}{t.move_right(width - len(s) + 1)}")
+        print()
+
         # table body
-        end_ = min(end, len(self._nb_items))
-        for row in range(start, end_):
+        end_ = min(self._end, len(self._nb_items))
+        for row in range(self._start, end_):
+            # Pick colors depending on whether row is selected
+            if row == self._cur:
+                dim, norm = self.c_dim_sel, self.c_norm_sel
+            else:
+                dim, norm = self.c_dim, self.c_norm
+            # Calculate and print row number
             row_num = f"{{:{self.left_gutter - 1}d}}".format(row + 1)
-            print(f"{t.move_xy(0, row - start + 1)}{t.bright_black}{row_num}{t.normal}", end="")
-            print(t.move_xy(self.left_gutter, row - start + 1), end="")
+            prn(f"{dim}{row_num}{norm} ")
+            # Print row contents
             item = self._nb_items[row]
             for hdr in self.display_columns:
                 width = self._col_widths[hdr]
@@ -487,30 +524,120 @@ class TerminalUI:
                     s, padding = s[:width], 1
                 else:
                     padding = width - len(s) + 1
-                print(f"{s}{t.move_right(padding)}", end="")
-        sys.stdout.flush()
+                prn(f"{s}{' ' * padding}")
+            # Move down to next row
+            print(self.c_norm)
 
-    def _show_divider(self, start, end):
+    def _show_divider(self):
         y = self._table_height() + 1
         t = self._term
         w = t.width
         num = len(self._nb_items)
-        msg = f"Rows {start + 1} - {end} out of {num}"
-        msg += " | Scroll with arrow up/down"
+        msg = f"Rows {self._start + 1} - {self._end} out of {num}"
+        msg += " | Move with arrow Up/Down and PgUp/PgDn"
         rpad = " " * (t.width - len(msg))
-        prn(f"{t.move_xy(0, y)}{t.black_on_white}{msg}{rpad}{t.normal}")
-        sys.stdout.flush()
+        print(f"{t.move_xy(0, y)}{self.c_div}{msg}{rpad}{self.c_norm}")
 
-    def _show_details(self, cur):
-        pass
+    def _show_details(self):
+        nb = self._nb_items[self._cur]
+        t, y = self._term, self._table_height() + 2
+        height = t.height - y - 1
+
+        # Print Path at top
+        path = Path(nb.path).name[:t.width]
+        prn(f"{t.move_xy(0, y)}Path: {self.c_dim}{path}{self.c_norm}")
+        y += 1
+
+        # Print description lines
+        lines = nb.desc_lines[:height]
+        for i, line in enumerate(lines):
+            s = line[:t.width]
+            prn(f"{t.move_xy(0, y + i)}{s}")
 
     def _show_footer(self):
-        pass
+        t = self._term
+        prn(f"{t.move_xy(0, t.height)}{self.c_ftr}Press 'Enter' to run, 'q' to Quit")
 
-    def _process_input(self) -> bool:
-        time.sleep(10)
-        return False
+    def _process_input(self):
+        with self._term.cbreak():
+            val = self._term.inkey(timeout=1)
+            if val:
+                if val.is_sequence:
+                    if val.code == self._term.KEY_UP:
+                        self._select(-1)
+                    elif val.code == self._term.KEY_DOWN:
+                        self._select(1)
+                    elif val.code == self._term.KEY_PGUP:
+                        self._select(-10)
+                    elif val.code == self._term.KEY_PGDOWN:
+                        self._select(10)
+                    elif val.code == self._term.KEY_ENTER:
+                        self._dialog("hello", (("t", "Tutorial"), ("s", "Solution"),
+                                               ("u", "User"), ("b", "Base")))
+                        time.sleep(5)
+                elif val == "q":
+                    self._done = True
 
+    def _select(self, d):
+        cur = self._cur
+        # calculate new row, clipped to number of rows
+        if d > 0:
+            if cur < self._n:
+                cur = min(cur + d, self._n - 1)
+        elif d < 0:
+            if cur > 0:
+                cur = max(cur + d, 0)
+
+        if cur == self._cur:
+            return  # nothing to do, don't set self._changed
+
+        if d < 0 and cur < self._start:
+            self._start = cur
+            self._end = self._start + self._table_height()
+        elif d > 0 and cur >= self._end:
+            self._end = cur
+            self._start = self._end - self._table_height() + 1
+
+        self._cur = cur
+        self._changed = True
+
+    def _dialog(self, title, options):
+        t = self._term
+
+        # Choose box size
+        ul_x, ul_y = 4, 4
+        inner_width = self.max_display_widths["dialog"] - 2  # subtract 2 for border
+        title = title[:inner_width]
+        lr_x, lr_y = min(t.width - 1, ul_x + inner_width + 2), min(t.height - 2, ul_y + 5 + len(options))
+
+        # Draw box border & fill
+        bw = inner_width + 2
+        prn(self.c_box_border)
+        prn(f"{t.move_xy(ul_x, ul_y)}{' ' * bw}")  # top
+        prn(f"{t.move_xy(ul_x, lr_y)}{' ' * bw}")  # bottom
+        fill_spc = " " * inner_width
+        for y in range(ul_y + 1, lr_y):
+            prn(f"{t.move_xy(ul_x, y)}{self.c_box_border} {self.c_norm}{fill_spc}{self.c_box_border} ")
+        prn(self.c_norm)
+
+        # Add action buttons
+        y = lr_y - 1
+        # prn(f"{t.move_xy(ul_x + 2, y)}{self.c_box_ok}[Enter=OK]{self.c_norm}")
+        prn(f"{t.move_xy(lr_x - 14, y)}{self.c_box_cancel}[Esc=CANCEL]{self.c_norm}")
+
+        # Add message
+        n = len(title)
+        x_offs = (inner_width - n) // 2 + 1
+        prn(f"{t.move_xy(ul_x + x_offs, ul_y + 1)}{title}")
+        self._changed = True
+
+        # Add options
+        y = ul_y + 3  # line after, line after title
+        x = ul_x + 4
+        for i, (c, name) in enumerate(options):
+            prn(f"{t.move_xy(x, y + i)}{self.c_box_optc}{c}{self.c_norm} {name}")
+
+        _flush()
 #
 #     primary_bg = "#2092ed"
 #
