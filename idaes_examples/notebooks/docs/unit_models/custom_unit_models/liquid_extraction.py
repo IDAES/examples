@@ -339,7 +339,7 @@ see reaction package for documentation.}""",
         )
 
         # ---------------------------------------------------------------------
-        
+
         self.aqueous_phase = ControlVolume0DBlock(
             dynamic=self.config.dynamic,
             has_holdup=self.config.has_holdup,
@@ -399,8 +399,12 @@ see reaction package for documentation.}""",
         self.liquid_phase.add_geometry()
 
         # Add Ports
-        self.add_inlet_port(name="liquid_inlet", block=self.liquid_phase, doc="Liquid feed")
-        self.add_inlet_port(name="aqueous_inlet", block=self.aqueous_phase, doc="Aqueous feed")
+        self.add_inlet_port(
+            name="liquid_inlet", block=self.liquid_phase, doc="Liquid feed"
+        )
+        self.add_inlet_port(
+            name="aqueous_inlet", block=self.aqueous_phase, doc="Aqueous feed"
+        )
         self.add_outlet_port(
             name="liquid_outlet", block=self.liquid_phase, doc="Bottoms stream"
         )
@@ -436,25 +440,29 @@ see reaction package for documentation.}""",
                 f"{self.name} Liquid-Liquid Extractor only supports mass "
                 f"basis for MaterialFlowBasis."
             )
-        
+
         # Material balances
         def rule_material_aq_balance(self, t, j):
-            if j in common_comps:                
-                return self.aqueous_phase.mass_transfer_term[t, "Aq", j] ==  -self.liquid_phase.config.property_package.diffusion_factor[j]*\
-                    (self.aqueous_phase.properties_in[t].get_mass_comp(j)/self.aqueous_phase.properties_in[t].get_flow_rate())
+            if j in common_comps:
+                return self.aqueous_phase.mass_transfer_term[
+                    t, "Aq", j
+                ] == -self.liquid_phase.config.property_package.diffusion_factor[j] * (
+                    self.aqueous_phase.properties_in[t].get_mass_comp(j)
+                    / self.aqueous_phase.properties_in[t].get_flow_rate()
+                )
             elif j in self.liquid_phase.properties_out.component_list:
                 # No mass transfer term
                 # Set Liquid flowrate to an arbitary small value
-                return self.liquid_phase.mass_transfer_term[
-                    t, "Liq", j
-                ]== 0* lunits(fb)
+                return self.liquid_phase.mass_transfer_term[t, "Liq", j] == 0 * lunits(
+                    fb
+                )
             elif j in self.aqueous_phase.properties_out.component_list:
                 # No mass transfer term
                 # Set aqueous flowrate to an arbitary small value
-                return self.aqueous_phase.mass_transfer_term[
-                    t, "Aq", j
-                ]== 0* aunits(fb)
-            
+                return self.aqueous_phase.mass_transfer_term[t, "Aq", j] == 0 * aunits(
+                    fb
+                )
+
         self.material_aq_balance = Constraint(
             self.flowsheet().time,
             self.aqueous_phase.properties_out.component_list,
@@ -464,21 +472,24 @@ see reaction package for documentation.}""",
 
         def rule_material_liq_balance(self, t, j):
             print(t)
-            if j in common_comps:                
-                return self.liquid_phase.mass_transfer_term[t, "Liq", j] == -self.aqueous_phase.mass_transfer_term[t,"Aq",j]
+            if j in common_comps:
+                return (
+                    self.liquid_phase.mass_transfer_term[t, "Liq", j]
+                    == -self.aqueous_phase.mass_transfer_term[t, "Aq", j]
+                )
             else:
                 # No mass transfer term
                 # Set Liquid flowrate to an arbitary small value
-                return self.liquid_phase.mass_transfer_term[
-                    t, "Liq", j
-                ]== 0* aunits(fb)
+                return self.liquid_phase.mass_transfer_term[t, "Liq", j] == 0 * aunits(
+                    fb
+                )
+
         self.material_liq_balance = Constraint(
             self.flowsheet().time,
             self.liquid_phase.properties_out.component_list,
             rule=rule_material_liq_balance,
             doc="Unit level material balances Liq",
         )
-
 
     def initialize_build(
         self,
@@ -561,7 +572,7 @@ see reaction package for documentation.}""",
                             aqueous_state_args[sv][j] = 0.5
 
                 elif "pressure" in sv:
-                    aqueous_state_args[sv] = 1* value(getattr(liq_state, sv))
+                    aqueous_state_args[sv] = 1 * value(getattr(liq_state, sv))
 
                 else:
                     aqueous_state_args[sv] = value(getattr(liq_state, sv))
