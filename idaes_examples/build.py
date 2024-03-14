@@ -45,12 +45,18 @@ import nbformat as nbf
 #   Logging
 # -------------
 
-_log = logging.getLogger(__name__)
-_h = logging.StreamHandler()
-_h.setFormatter(
-    logging.Formatter("[%(levelname)s] %(asctime)s %(module)s - %(message)s")
-)
-_log.addHandler(_h)
+def setup_logger(log=None):
+    if log is None:
+        log = logging.getLogger(__name__)
+    _h = logging.StreamHandler()
+    _h.setFormatter(
+        logging.Formatter("[%(levelname)s] %(asctime)s %(module)s - %(message)s")
+    )
+    log.addHandler(_h)
+    return log
+
+
+_log = setup_logger()
 
 # -------------
 # Common
@@ -785,7 +791,12 @@ class Commands:
         cls.heading(f"Load notebooks into GUI")
         nb_dir = browse.find_notebook_dir().parent
         cls._run(f"pre-process notebooks", preprocess, srcdir=nb_dir)
-        browse.get_log().setLevel(_log.getEffectiveLevel())  # match this level
+
+        # Make logger in 'browse' module match this one
+        browse.get_log().setLevel(_log.getEffectiveLevel())
+        if browse.get_log_file():
+            _log.info(f"Browser logs in file: {browse.get_log_file()}")
+
         nb = browse.Notebooks()
         if args.console:
             for val in nb._sorted_values:

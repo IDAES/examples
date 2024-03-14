@@ -7,6 +7,7 @@ from importlib import resources
 if not hasattr(resources, "files"):
     # importlib.resources.files() added in Python 3.9
     import importlib_resources as resources
+from datetime import datetime
 import json
 import logging
 from operator import attrgetter
@@ -32,11 +33,42 @@ from idaes_examples.util import (
 #   Logging
 # -------------
 
-_log = logging.getLogger(__name__)
+
+def setup_logger(log: logging.Logger = None):
+    log_file = None
+    if log is None:
+        log = logging.getLogger(__name__)
+    else:
+        log.handlers = []
+    log_dir = Path("~").expanduser() / ".idaes" / "logs"
+    try:
+        log_dir.mkdir(exist_ok=True)
+        t = datetime.now()
+        timestamp = (
+            f"{t.year}{t.month:02d}{t.day:02d}{t.hour:02d}{t.minute:02d}{t.second:02d}"
+        )
+        log_file = log_dir / f"browse_{timestamp}.log"
+        handler = logging.FileHandler(log_file)
+    except FileNotFoundError:
+        handler = None  # XXX: silent failure
+    if handler:
+        handler.setFormatter(
+            logging.Formatter("[%(levelname)s] %(asctime)s %(module)s - %(message)s")
+        )
+        log.addHandler(handler)
+        log.propagate = False
+    return log, log_file
+
+
+_log, _log_file = setup_logger()
 
 
 def get_log():
     return _log
+
+
+def get_log_file():
+    return _log_file
 
 
 def find_notebook_dir() -> Path:
@@ -216,9 +248,9 @@ class Jupyter:
         Returns:
             None
         """
-        _log.info(f"(start) open notebook at path={nb_path}")
+        _log.info(f"begin: open-notebook path={nb_path}")
         proc = Popen([self.COMMAND, self._app, str(nb_path)], stderr=PIPE)
-        _log.info(f"(end) opened notebook at path={nb_path}")
+        _log.info(f"end: open-notebook path={nb_path}")
 
     def stop(self):
         """Stop all running notebooks.
@@ -226,6 +258,8 @@ class Jupyter:
         Returns:
             None
         """
+        # run a Jupyter command line that will list open ports
+        # use 'foo' as the invalid port to stop, so it cannot match
         with Popen([self.COMMAND, self._app, "stop", "foo"], stderr=PIPE) as proc:
             ports = []
             for line in proc.stderr:
@@ -238,87 +272,14 @@ class Jupyter:
             self._stop(int(port))
 
     def _stop(self, port):
-        _log.info(f"(start) stop running notebook, port={port}")
+        _log.info(f"begin: stop-running-notebook port={port}")
         p = Popen([self.COMMAND, self._app, "stop", str(port)], stderr=DEVNULL)
         try:
             p.wait(timeout=5)
-            _log.info(f"(end) stop running notebook, port={port}: Success")
+            _log.info(f"end: stop-running-notebook port={port}: Success")
         except TimeoutExpired:
-            _log.info(f"(end) stop running notebook, port={port}: Timeout")
+            _log.info(f"end: stop-running-notebook port={port}: Timeout")
 
-
-# class NotebookDescription:
-#     """Show notebook descriptions in a UI widget."""
-#
-#     def __init__(self, nb: dict, widget):
-#         self._text = "_Select a notebook to view its description_"
-#         self._nb = nb
-#         self._w = widget
-#         self._html_parser = html_parser.HTMLTextParser()
-#         self._html()
-#
-#     def show(self, section: str, name: str, type_: Ext):
-#         """Show the description in the widget.
-#
-#         Args:
-#             section: Section for notebook being described
-#             name: Name (filename) of notebook
-#             type_: Type (doc, example, etc.) of notebook
-#
-#         Returns:
-#             None
-#         """
-#         key = self._make_key(section, name, type_)
-#         self._text = self._nb[key].description
-#         # self._print()
-#         self._html()
-#
-#     @staticmethod
-#     def _make_key(section, name, type_):
-#         if Notebook.SECTION_SEP in section:
-#             section_tuple = tuple(section.split(Notebook.SECTION_SEP))
-#         else:
-#             section_tuple = (section,)
-#         return section_tuple, name, type_
-#
-#     def _html(self):
-#         """Convert markdown source to HTML using the 'markdown' package."""
-#         m_html = markdown.markdown(
-#             self._text, extensions=["extra", "codehilite"], output_format="html"
-#         )
-#         self._set_html(self._pre_html(m_html))
-#
-#     @staticmethod
-#     def _pre_html(text):
-#         """Pre-process the HTML so it displays more nicely in the relatively crude
-#         Tk HTML viewer.
-#         """
-#         text = re.sub(r"<code>(.*?)</code>", r"<em>\1</em>", text)
-#         text = re.sub(
-#             r"<sub>(.*?)</sub>", r"<span style='font-size: 50%'>\1</span>", text
-#         )
-#         text = re.sub(r"<h1>(.*?)</h1>", r"<h1 style='font-size: 120%'>\1</h1>", text)
-#         text = re.sub(r"<h2>(.*?)</h2>", r"<h2 style='font-size: 110%'>\1</h2>", text)
-#         text = re.sub(r"<h3>(.*?)</h3>", r"<h3 style='font-size: 100%'>\1</h3>", text)
-#         return (
-#             "<div style='font-size: 80%; "
-#             'font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;\'>'
-#             f"{text}</div>"
-#         )
-#
-#     def _set_html(self, html, strip=True):
-#         w = self._w
-#         prev_state = w.cget("state")
-#         w.config(state=PySG.tk.NORMAL)
-#         w.delete("1.0", PySG.tk.END)
-#         w.tag_delete(w.tag_names)
-#         self._html_parser.w_set_html(w, html, strip=strip)
-#         w.config(state=prev_state)
-#
-#     def get_path(self, section, name, type_) -> Path:
-#         key = self._make_key(section, name, type_)
-#         return self._nb[key].path
-#
 
 # -------------
 #  Terminal UI
@@ -329,15 +290,14 @@ def blessed_gui(notebooks, use_lab=True, stop_notebooks_on_quit=True):
     """Create and run a terminal-based UI."""
     _log.info(f"begin: run-ui")
     jupyter_params = {"lab": use_lab}
-    ui = TerminalUI(
-        list(notebooks.notebooks.values()),
-        jupyter_params,
-        stop_notebooks=stop_notebooks_on_quit,
-    )
+    notebook_list = list(notebooks.notebooks.values())
+    ui = TerminalUI(notebook_list, jupyter_params)
     try:
         ui.run()
     except KeyboardInterrupt:
         pass
+    if stop_notebooks_on_quit:
+        ui.stop_notebooks()
     _log.info(f"end: run-ui")
     return 0
 
@@ -377,14 +337,40 @@ class TerminalUI:
         def tutorial(self):
             return "Yes" if Ext.SOL.value in self.types else "No"
 
+    class NbMeta:
+        def __init__(self):
+            self.fields = ("Author", "Maintainer", "Updated")
+            self._data = {k: "?" for k in self.fields}
+
+        def extract(self, line):
+            for field in self.fields:
+                if line.startswith(field + ":"):
+                    _, value = line.split(":")
+                    self._data[field] = value.strip()
+                    return True
+            return False
+
+        def __setitem__(self, key, value):
+            self._data[key] = value
+
+        @property
+        def author(self):
+            return self._data["Author"]
+
+        @property
+        def maintainer(self):
+            return self._data["Maintainer"]
+
+        @property
+        def updated(self):
+            return self._data["Updated"]
+
     display_columns = ("name", "title", "tutorial")
     max_display_widths = {"title": 50, "name": 20, "tutorial": 8, "dialog": 60}
     left_gutter = 4
     row_num_fmt = "{0:" + str(left_gutter - 1) + "d}"
 
-    def __init__(
-        self, notebooks: List[Notebook], jupyter_params: Dict, stop_notebooks=True
-    ):
+    def __init__(self, notebooks: List[Notebook], jupyter_params: Dict):
         self._nb_items, self._col_widths = self._create_items(notebooks)
         self._term = Terminal()
 
@@ -392,6 +378,7 @@ class TerminalUI:
         self.c_norm = self._term.white_on_black
         self.c_rev = self._term.black_on_white
         self.c_dim = self._term.bright_black
+        self.c_dim_rev = self._term.white_on_bright_black
         self.c_div = self.c_ftr = self._term.magenta
         self.c_hdr = self._term.green
         self.c_dim_sel = self._term.bright_black_on_white
@@ -401,6 +388,11 @@ class TerminalUI:
         self.c_box_cancel = self._term.red
         self.c_box_optc = self._term.green
         self.c_dlg_title = self._term.yellow
+        self.c_author = self._term.green
+        self.c_maintainer = self._term.yellow
+        self.c_date = self._term.cyan
+        self.c_subsec = self._term.bright_blue
+        self.c_sec = self._term.bright_blue
 
         # displayed rows range and current selected row
         self._start, self._cur, self._end = 0, 0, 0
@@ -413,18 +405,16 @@ class TerminalUI:
         self._done = False
 
         # Jupyter runner & settings
-        self._stop_notebooks = stop_notebooks
         self._jupyter = Jupyter(**jupyter_params)
 
     def run(self):
         """Run this terminal-based UI."""
         self._event_loop()
 
-    def stop(self):
-        if self._stop_notebooks:
-            _log.info("begin: stop-running-notebooks")
-            self._jupyter.stop()
-            _log.info("end: stop-running-notebooks")
+    def stop_notebooks(self):
+        _log.info("begin: stop-running-notebooks")
+        self._jupyter.stop()
+        _log.info("end: stop-running-notebooks")
 
     def _create_items(self, nb_list: List[Notebook]):
         """Create Nb items and also compute max column widths."""
@@ -516,6 +506,7 @@ class TerminalUI:
 
     def _show_details(self):
         """Show details of selected notebook on the main screen."""
+        _log.info("begin: show-details")
         nb = self._nb_items[self._cur]
         t, y = self._term, self._table_height() + 2
         height = t.height - y - 1
@@ -525,11 +516,52 @@ class TerminalUI:
         prn(f"{t.move_xy(0, y)}Path: {self.c_dim}{path}{self.c_norm}")
         y += 1
 
-        # Print description lines
+        # Print description meta
         lines = nb.desc_lines[:height]
-        for i, line in enumerate(lines):
-            s = line[: t.width - 1].rstrip()
-            prn(f"{t.move_xy(0, y + i)}{s}")
+        meta, lines = self._extract_desc_meta(lines)
+        s = (
+            f"{self.c_author}{meta.author}{self.c_norm}"
+            f" / {self.c_maintainer}{meta.maintainer}{self.c_norm}"
+            f" - {self.c_date}{meta.updated}{self.c_norm}"
+        )
+        prn(f"{t.move_xy(0, y)}{s}")
+        # length of that header discounting all the terminal escape codes
+        line_len = len(meta.author) + len(meta.maintainer) + len(meta.updated) + 6
+        prn(f"{t.move_xy(0, y + 1)}{self.c_dim}{'-' * line_len}")
+        y += 2
+
+        # Print description lines
+        i = 0
+        for line in lines:
+            s = self._desc_line(line)
+            if s:
+                prn(f"{t.move_xy(0, y + i)}{s}")
+                i += 1
+
+    def _extract_desc_meta(self, lines) -> Tuple[NbMeta, List[str]]:
+        t = self._term
+        non_meta_lines = []
+        meta = self.NbMeta()
+        to_find = len(meta.fields)
+        for line in lines:
+            if to_find > 0 and meta.extract(line.strip()):
+                to_find -= 1
+            else:
+                non_meta_lines.append(line)
+        return meta, non_meta_lines
+
+    def _desc_line(self, line: str) -> str:
+        t = self._term
+        line = line.strip()[: t.width - 1]
+        if line.startswith("##"):
+            line = f"{self.c_subsec}{line}{self.c_norm}"
+        elif line.startswith("#"):
+            line = f"{self.c_sec}{line}{self.c_norm}"
+        elif re.match(r"(<.*>)|(<.*/.*>)", line):  # HTML
+            line = ""
+        elif line == "$$":  # Latex math
+            line = ""
+        return line
 
     def _show_footer(self):
         """Show a footer on the main screen."""
@@ -590,7 +622,7 @@ class TerminalUI:
         # Build menu of notebook run options and corresponding paths
         nb_ext_name = {Ext.USER: "User", Ext.SOL: "Solution", Ext.EX: "Exercise"}
         if Ext.SOL.value in nb.types:
-            options = (("s", nb_ext_name[Ext.SOL]), ("", nb_ext_name[Ext.EX]))
+            options = (("s", nb_ext_name[Ext.SOL]), ("u", nb_ext_name[Ext.USER]), ("", nb_ext_name[Ext.EX]))
         else:
             options = (("", nb_ext_name[Ext.USER]),)
 
@@ -638,7 +670,7 @@ class TerminalUI:
             else:
                 keypress = f"{c.upper()}    "
             prn(
-                f"{t.move_xy(x, y + i)}{self.c_box_optc}{keypress}{self.c_norm} Run {self.c_box_optc}{name}{self.c_norm} Notebook"
+                f"{t.move_xy(x, y + i)}{self.c_box_optc}{keypress}{self.c_norm}: Run {self.c_box_optc}{name}{self.c_norm} Notebook"
             )
 
         _flush()
@@ -677,7 +709,10 @@ class TerminalUI:
         try:
             new_name = stem[: stem.rfind("_") + 1] + ext
         except ValueError:
-            raise f"Invalid notebook name '{orig_path}': " f"missing final '_<ext>' before suffix"
+            raise (
+                f"Invalid notebook name '{orig_path}': "
+                f"missing final '_<ext>' before suffix"
+            )
         new_name += suffix
         # rebuild path
         path = orig_path.parent / new_name
