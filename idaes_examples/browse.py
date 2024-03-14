@@ -9,18 +9,14 @@ if not hasattr(resources, "files"):
     import importlib_resources as resources
 import json
 import logging
-from logging.handlers import RotatingFileHandler
 from operator import attrgetter
 from pathlib import Path
 import re
 from subprocess import Popen, DEVNULL, PIPE, TimeoutExpired
 from typing import Tuple, List, Dict, Iterable
 import sys
-import time
-
 
 # third-party
-import markdown
 from blessed import Terminal
 
 # package
@@ -39,9 +35,8 @@ from idaes_examples.util import (
 _log = logging.getLogger(__name__)
 
 
-def set_log(g):
-    global _log
-    _log = g
+def get_log():
+    return _log
 
 
 def find_notebook_dir() -> Path:
@@ -117,26 +112,6 @@ class Notebooks:
 
     def keys(self) -> Iterable:
         return self._nb.keys()
-
-    # def as_table(self):
-    #     tutorials = set()
-    #     for nb in self._sorted_values:
-    #         if nb.type == Ext.EX.value:
-    #             tutorials.add(nb.section_parts)
-    #
-    #     data = []
-    #     metadata = []
-    #     for nb in self._sorted_values:
-    #         if nb.type != Ext.USER.value:
-    #             continue
-    #         parts = nb.section_parts
-    #         is_tut = parts in tutorials
-    #         nbtype = "Tutorial" if is_tut else "Example"
-    #         nbloc = Notebook.SECTION_SEP.join(parts)
-    #         row = (nbtype, nbloc, nb.title)
-    #         data.append(row)
-    #         metadata.append((nb.type, nb.name, is_tut))
-    #     return data, metadata
 
     def is_tree_section(self, key) -> bool:
         return key.startswith(self._section_key_prefix)
@@ -214,7 +189,7 @@ class Notebook:
                         if line.strip().startswith("#"):
                             last_pound = line.rfind("#")
                             self._short_desc = self._shorten_title(
-                                line[last_pound + 1 :].strip()
+                                line[(last_pound + 1) :].strip()
                             )
                             break
                     desc = True
@@ -346,33 +321,52 @@ class Jupyter:
 #
 
 # -------------
-#  Text GUI
+#  Terminal UI
 # -------------
 
 
-def blessed_gui(notebooks, **kwargs):
-    _log.info(f"begin:run-ui")
-    ui = TerminalUI(list(notebooks.notebooks.values()))
+def blessed_gui(notebooks, use_lab=True, stop_notebooks_on_quit=True):
+    """Create and run a terminal-based UI."""
+    _log.info(f"begin: run-ui")
+    jupyter_params = {"lab": use_lab}
+    ui = TerminalUI(
+        list(notebooks.notebooks.values()),
+        jupyter_params,
+        stop_notebooks=stop_notebooks_on_quit,
+    )
     try:
         ui.run()
     except KeyboardInterrupt:
         pass
-    _log.info(f"end:run-ui")
+    _log.info(f"end: run-ui")
     return 0
 
 
 def prn(*args):
+    """Alias to print with no newline at the end."""
     print(*args, end="")
 
 
 def _flush():
+    """Alias to flush the standard output stream."""
     sys.stdout.flush()
 
 
 class TerminalUI:
+    """
+    Terminal-based UI for selecting and running example Jupyter Notebooks.
+    """
+
     # more convenient tuple for working with a notebook
     class Nb:
-        def __init__(self, name, title, path, types, desc_lines):
+        def __init__(
+            self,
+            name: str,
+            title: str,
+            path: str,
+            types: List[str],
+            desc_lines: List[str],
+        ):
             self.name = name
             self.title = title
             self.path = path
@@ -386,11 +380,11 @@ class TerminalUI:
     display_columns = ("name", "title", "tutorial")
     max_display_widths = {"title": 50, "name": 20, "tutorial": 8, "dialog": 60}
     left_gutter = 4
+    row_num_fmt = "{0:" + str(left_gutter - 1) + "d}"
 
-    def __init__(self, notebooks: List[Notebook]):
-        # XXX
-        _log.setLevel(logging.DEBUG)
-
+    def __init__(
+        self, notebooks: List[Notebook], jupyter_params: Dict, stop_notebooks=True
+    ):
         self._nb_items, self._col_widths = self._create_items(notebooks)
         self._term = Terminal()
 
@@ -418,11 +412,22 @@ class TerminalUI:
         # quit app
         self._done = False
 
+        # Jupyter runner & settings
+        self._stop_notebooks = stop_notebooks
+        self._jupyter = Jupyter(**jupyter_params)
+
     def run(self):
+        """Run this terminal-based UI."""
         self._event_loop()
 
+    def stop(self):
+        if self._stop_notebooks:
+            _log.info("begin: stop-running-notebooks")
+            self._jupyter.stop()
+            _log.info("end: stop-running-notebooks")
+
     def _create_items(self, nb_list: List[Notebook]):
-        "Create Nb items and also compute max column widths."
+        """Create Nb items and also compute max column widths."""
         col_max = {c: 0 for c in self.display_columns}
         nb_map = {}
         for nb in nb_list:
@@ -441,9 +446,11 @@ class TerminalUI:
         return list(nb_map.values()), col_max
 
     def _table_height(self):
+        """Get target height of the table."""
         return (self._term.height - 20) - 3  # header, divider, footer
 
     def _event_loop(self):
+        """Main event loop for the app."""
         t = self._term
 
         with t.fullscreen():
@@ -461,6 +468,7 @@ class TerminalUI:
                 self._process_input()
 
     def _show_table(self):
+        """Display the notebooks in a table."""
         t = self._term
         prn(t.move_xy(self.left_gutter, 0))
 
@@ -480,7 +488,7 @@ class TerminalUI:
             else:
                 dim, norm = self.c_dim, self.c_norm
             # Calculate and print row number
-            row_num = f"{{:{self.left_gutter - 1}d}}".format(row + 1)
+            row_num = self.row_num_fmt.format(row + 1)
             prn(f"{dim}{row_num}{norm} ")
             # Print row contents
             item = self._nb_items[row]
@@ -496,6 +504,7 @@ class TerminalUI:
             print(self.c_norm)
 
     def _show_divider(self):
+        """ "Show a divider between the table of notebooks and notebook details."""
         y = self._table_height() + 1
         t = self._term
         w = t.width
@@ -506,6 +515,7 @@ class TerminalUI:
         print(f"{t.move_xy(0, y)}{self.c_div}{msg}{rpad}{self.c_norm}")
 
     def _show_details(self):
+        """Show details of selected notebook on the main screen."""
         nb = self._nb_items[self._cur]
         t, y = self._term, self._table_height() + 2
         height = t.height - y - 1
@@ -522,10 +532,12 @@ class TerminalUI:
             prn(f"{t.move_xy(0, y + i)}{s}")
 
     def _show_footer(self):
+        """Show a footer on the main screen."""
         t = self._term
         prn(f"{t.move_xy(0, t.height)}{self.c_ftr}Press 'Enter' to run, 'q' to Quit")
 
     def _process_input(self):
+        """Get input from the user while in the table of notebooks."""
         with self._term.cbreak():
             val = self._term.inkey(timeout=1)
             if val:
@@ -545,6 +557,7 @@ class TerminalUI:
                     self._done = True
 
     def _select(self, d):
+        """Select a row in the table of notebooks."""
         cur = self._cur
         # calculate new row, clipped to number of rows
         if d > 0:
@@ -568,16 +581,18 @@ class TerminalUI:
         self._changed = True
 
     def _dialog(self, nb: Nb):
+        """Dialog box for selecting and running a notebook."""
         t = self._term
 
         # Title of dialog box is notebook name
         title = nb.name
 
         # Build menu of notebook run options and corresponding paths
+        nb_ext_name = {Ext.USER: "User", Ext.SOL: "Solution", Ext.EX: "Exercise"}
         if Ext.SOL.value in nb.types:
-            options = (("s", "Solution"), ("", "Exercise"))
+            options = (("s", nb_ext_name[Ext.SOL]), ("", nb_ext_name[Ext.EX]))
         else:
-            options = (("", "User"),)
+            options = (("", nb_ext_name[Ext.USER]),)
 
         # Choose box size
         ul_x, ul_y = 4, 4
@@ -628,14 +643,14 @@ class TerminalUI:
 
         _flush()
 
-        # Read input
+        # Read input for the dialog box
         with t.cbreak():
-            nb_choice = None
+            nb_choice = None  # None = invalid
             while nb_choice is None:
                 val = t.inkey(timeout=60)
                 if val:
                     if val.code == t.KEY_ESCAPE:
-                        nb_choice = ""
+                        nb_choice = ""  # special choice for cancel
                         break
                     for c, name in options:
                         if (c == "" and val.code == t.KEY_ENTER) or (
@@ -643,255 +658,28 @@ class TerminalUI:
                         ):
                             nb_choice = name
                             break
-        if not nb_choice:
-            return  # whatevs!
 
-        jp = Jupyter()
-        path_ext = {
-            "User": Ext.USER.value,
-            "Solution": Ext.SOL.value,
-            "Exercise": Ext.EX.value,
-        }[nb_choice]
-        p = Path(nb.path)
-        print(f"PARTS={p.parts}")
-        #jp.open(nb.path)
-        time.sleep(5)
+        if nb_choice:
+            # Map chosen name back to an extension
+            nb_name_ext = {v: k for k, v in nb_ext_name.items()}
+            nb_ext = nb_name_ext[nb_choice]
 
-#
-#     primary_bg = "#2092ed"
-#
-#     sbar_kwargs = dict(
-#         sbar_trough_color=PySG.theme_background_color(),
-#         sbar_background_color="lightgrey",
-#         sbar_frame_color="grey",
-#         sbar_arrow_color="grey",
-#     )
-#     description_widget = PySG.Multiline(
-#         expand_y=True,
-#         expand_x=True,
-#         write_only=True,
-#         background_color="white",
-#         key="Description",
-#         font=get_font(11),
-#         **sbar_kwargs,
-#     )
-#     description_frame = PySG.Frame(
-#         "Description", layout=[[description_widget]], expand_y=True, expand_x=True
-#     )
-#
-#     columns = [0, 0, 0]
-#     for row in nb_table:
-#         for col_index in range(2):
-#             w = len(row[col_index]) // 2
-#             if columns[col_index] < w:
-#                 columns[col_index] = w
-#         w = len(row[2])
-#         if columns[2] < w:
-#             columns[2] = w
-#
-#     header_row = ["Type" + " " * 40, "Location" + " " * 80, "Title" + " " * 160]
-#     sort_order = list(Notebooks.DEFAULT_SORT_KEYS)
-#     sort_dir = [1] * len(sort_order)
-#     nb_table_widget = PySG.Table(
-#         key="Table",
-#         values=nb_table,
-#         # without added spaces, the headings will be centered instead of left-aligned
-#         headings=header_row,
-#         expand_x=True,
-#         expand_y=False,
-#         justification="left",
-#         enable_click_events=True,
-#         enable_events=True,
-#         alternating_row_color="#def",
-#         col_widths=columns,
-#         auto_size_columns=False,
-#         selected_row_colors=("white", primary_bg),
-#         header_text_color="black",
-#         header_font=get_font(11, style="bold"),
-#         font=get_font(11),
-#         header_relief=PySG.RELIEF_FLAT,
-#         header_background_color="#eee",
-#     )
-#
-#     open_buttons = {}
-#     for ext in Ext.USER, Ext.SOL, Ext.EX:
-#         if ext == Ext.USER:
-#             label = "Open Example"
-#         elif ext == Ext.SOL:
-#             label = "Open Solution"
-#         else:
-#             label = "Open Exercise"
-#         open_buttons[ext] = PySG.Button(
-#             label,
-#             tooltip=f"Open selected notebook",
-#             button_color=("white", primary_bg),
-#             disabled_button_color=("#696969", "#EEEEEE"),
-#             border_width=0,
-#             # auto_size_button=True,
-#             size=len(label),
-#             key=f"open+{ext.value}",
-#             disabled=True,
-#             pad=(20, 20),
-#             use_ttk_buttons=True,
-#             font=get_font(11),
-#         )
-#
-#     quit_button = PySG.Button(
-#         "Quit",
-#         tooltip="Quit the application",
-#         button_color=("white", primary_bg),
-#         border_width=0,
-#         key="quit",
-#         disabled=False,
-#         pad=(10, 10),
-#         auto_size_button=False,
-#         use_ttk_buttons=True,
-#         font=get_font(11),
-#     )
-#
-#     intro_nb, flowsheet_nb = "intro", "flowsheet"
-#     start_notebook_paths = {}
-#     for key in notebooks.keys():
-#         sect, name, ext = key
-#         # print(key)
-#         if sect[0] == "docs" and sect[1] == "tut":
-#             if name == "introduction" and ext == Ext.USER.value:
-#                 start_notebook_paths[intro_nb] = notebooks[key].path
-#             elif name == "hda_flowsheet" and ext == Ext.SOL.value:
-#                 start_notebook_paths[flowsheet_nb] = notebooks[key].path
-#
-#     # Find the start-here notebooks and add buttons for them
-#     start_here_panel = []
-#     # Be robust to not-found notebooks
-#     if len(start_notebook_paths) == 0:
-#         _log.warning("Could not find 'Start here' notebooks")
-#     else:
-#         start_here_panel.append(PySG.Text("Not sure where to start? Try one of these:"))
-#         sh_kwargs = dict(
-#             text_color=primary_bg,
-#             font=get_font(11, style="underline"),
-#             enable_events=True,
-#         )
-#         for sh_nb, text in ((intro_nb, "Introduction"), (flowsheet_nb, "Flowsheet")):
-#             if sh_nb in start_notebook_paths:
-#                 button = PySG.Text(text, key=f"starthere_{sh_nb}", **sh_kwargs)
-#                 start_here_panel.append(button)
-#                 if text == "Introduction":
-#                     start_here_panel.append(PySG.Text("for an IDAES overview or"))
-#                 else:
-#                     start_here_panel.append(PySG.Text("for a flowsheet tutorial"))
-#
-#     instructions = PySG.Text(
-#         "Select a notebook and then select 'Open' to open it in Jupyter"
-#     )
-#     full_path = PySG.Text("Path:")
-#
-#     layout = [
-#         [instructions],
-#         [nb_table_widget],
-#         [full_path],
-#         [description_frame],
-#         [
-#             PySG.Text("Actions:"),
-#             open_buttons[Ext.USER],
-#             open_buttons[Ext.EX],
-#             open_buttons[Ext.SOL],
-#             PySG.P(),
-#             quit_button,
-#         ],
-#     ]
-#
-#     if start_here_panel:
-#         layout.insert(0, [PySG.VerticalSeparator(pad=(0, 20)), start_here_panel])
-#
-#     # create main window
-#     w, h = PySG.Window.get_screen_size()
-#     capped_w = min(w, 3840)
-#     width = int(capped_w // 1.4)
-#     height = int(min(h - 10, width // 2))
-#
-#     window = PySG.Window(
-#         "IDAES Notebook Browser",
-#         layout,
-#         size=(width, height),
-#         finalize=True,
-#         icon=IDAES_ICON_B64,
-#         font=get_font(11),
-#         text_justification="left",
-#         resizable=True,
-#     )
-#
-#     nbdesc = NotebookDescription(notebooks, window["Description"].Widget)
-#     # Event Loop to process "events" and get the "values" of the inputs
-#     jupyter = Jupyter(lab=use_lab)
-#     shown = None
-#     try:
-#         while True:
-#             _log.debug("Wait for event")
-#             event, values = window.read()
-#             _log.debug("Event detected")
-#             # if user closes window or clicks cancel
-#             if event == PySG.WIN_CLOSED or event == "quit":
-#                 break
-#             #print(f"@@event: {event} ; values: {values}")
-#             if isinstance(event, int):
-#                 _log.debug(f"Unhandled event: {event}")
-#             elif isinstance(event, str):
-#                 if event == "Table":
-#                     try:
-#                         row_index = values[event][0]
-#                         shown = preview_notebook(
-#                             nb_table, nb_table_meta, nbdesc, open_buttons, row_index
-#                         )
-#                         path = nbdesc.get_path(*shown)
-#                         full_path.update(f"Path: {path}")
-#                     except IndexError:
-#                         pass
-#                 elif event.startswith("open+"):
-#                     if shown:
-#                         path = nbdesc.get_path(*shown)
-#                         jupyter.open(path)
-#                 elif event.startswith("starthere"):
-#                     what = event.split("_")[-1]
-#                     path = start_notebook_paths[what]
-#                     print(path)
-#                     jupyter.open(path)
-#             # event=('Table', '+CLICKED+', (-1, 0)) ; values: {'Table': [5]}
-#             elif isinstance(event, tuple) and event[0] == "Table":
-#                 try:
-#                     row, col = event[2]
-#                     if row == -1:
-#                         # TODO: sort
-#                         pass
-#                 except (ValueError, IndexError):
-#                     pass
-#     except KeyboardInterrupt:
-#         print("Stopped by user")
-#
-#     if stop_notebooks_on_quit:
-#         print("** Stop running notebooks")
-#         try:
-#             jupyter.stop()
-#         except KeyboardInterrupt:
-#             pass
-#     _log.info("Close main window")
-#     window.close()
-#     _log.info(f"end:run-gui")
-#     return 0
-#
-#
-# def preview_notebook(nb_table, nb_table_meta, nbdesc, open_buttons, row_index) -> bool:
-#     data_row = nb_table[row_index]
-#     meta_row = nb_table_meta[row_index]
-#     section = data_row[1]
-#     name = meta_row[1]
-#     type_ = Ext.USER.value
-#     nbdesc.show(section, name, type_)
-#     shown = (section, name, meta_row[0])
-#     is_tut = meta_row[2]
-#     open_buttons[Ext.USER].update(disabled=is_tut)
-#     open_buttons[Ext.EX].update(disabled=not is_tut)
-#     open_buttons[Ext.SOL].update(disabled=not is_tut)
-#     return shown
-#
-#
+            # Get path to notebook and try to run it
+            path = self._notebook_path(nb_ext.value, nb)
+            self._jupyter.open(path)
+
+    @staticmethod
+    def _notebook_path(ext, nb: Nb) -> Path:
+        # Transform name: /path/to/notebook_usr.ipynb -> /path/to/notebook_<ext>.ipynb
+        orig_path = Path(nb.path)
+        stem, suffix = orig_path.stem, orig_path.suffix
+        # change final _<ext>
+        try:
+            new_name = stem[: stem.rfind("_") + 1] + ext
+        except ValueError:
+            raise f"Invalid notebook name '{orig_path}': " f"missing final '_<ext>' before suffix"
+        new_name += suffix
+        # rebuild path
+        path = orig_path.parent / new_name
+
+        return path
