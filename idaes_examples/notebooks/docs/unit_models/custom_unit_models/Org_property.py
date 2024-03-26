@@ -107,7 +107,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
             self.solutes,
             initialize={"NaCl": 2.15, "KNO3": 3, "CaSO4": 1.5},
             within=PositiveReals,
-            mutable=True
+            mutable=True,
         )
 
     @classmethod
@@ -216,10 +216,11 @@ class _StateBlock(StateBlock):
         revert_state_vars(self, flags)
         init_log.info("State Released.")
 
+
 @declare_process_block_class("OrgPhaseStateBlock", block_class=_StateBlock)
 class LiqPhaseStateBlockData(StateBlockData):
     """
-        An example property package for Organic phase for liquid liquid extraction
+    An example property package for Organic phase for liquid liquid extraction
     """
 
     def build(self):
@@ -261,9 +262,9 @@ class LiqPhaseStateBlockData(StateBlockData):
 
         def material_flow_expression(self, j):
             if j == "solvent":
-                return self.flow_vol*self.params.dens_mass
+                return self.flow_vol * self.params.dens_mass
             else:
-                return self.flow_vol*self.conc_mass_comp[j]
+                return self.flow_vol * self.conc_mass_comp[j]
 
         self.material_flow_expression = Expression(
             self.component_list,

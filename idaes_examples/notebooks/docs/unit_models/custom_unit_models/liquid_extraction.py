@@ -345,5 +345,3 @@ class LiqExtractionData(UnitModelBlockData):
             rule=rule_material_liq_balance,
             doc="Unit level material balances Org",
         )
-
-    

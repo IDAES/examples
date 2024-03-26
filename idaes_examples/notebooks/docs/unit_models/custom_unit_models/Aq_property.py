@@ -119,6 +119,7 @@ class _StateBlock(StateBlock):
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
     """
+
     def initialize(
         self,
         state_args=None,
@@ -206,6 +207,7 @@ class _StateBlock(StateBlock):
         revert_state_vars(self, flags)
         init_log.info("State Released.")
 
+
 @declare_process_block_class("AqPhaseStateBlock", block_class=_StateBlock)
 class AqPhaseStateBlockData(StateBlockData):
     """
@@ -253,9 +255,9 @@ class AqPhaseStateBlockData(StateBlockData):
 
         def material_flow_expression(self, j):
             if j == "H2O":
-                return self.flow_vol*self.params.dens_mass
+                return self.flow_vol * self.params.dens_mass
             else:
-                return self.conc_mass_comp[j]*self.flow_vol
+                return self.conc_mass_comp[j] * self.flow_vol
 
         self.material_flow_expression = Expression(
             self.component_list,

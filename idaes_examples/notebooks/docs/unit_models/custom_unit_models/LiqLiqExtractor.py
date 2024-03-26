@@ -34,15 +34,9 @@ m.fs.lex.organic_inlet.conc_mass_comp[0, "CaSO4"].fix(0 * pyo.units.g / pyo.unit
 m.fs.lex.aqueous_inlet.flow_vol.fix(100 * pyo.units.L / pyo.units.hour)
 m.fs.lex.aqueous_inlet.temperature.fix(300 * pyo.units.K)
 m.fs.lex.aqueous_inlet.pressure.fix(1 * pyo.units.atm)
-m.fs.lex.aqueous_inlet.conc_mass_comp[0, "NaCl"].fix(
-    0.15 * pyo.units.g / pyo.units.L
-)
-m.fs.lex.aqueous_inlet.conc_mass_comp[0, "KNO3"].fix(
-    0.2 * pyo.units.g / pyo.units.L
-)
-m.fs.lex.aqueous_inlet.conc_mass_comp[0, "CaSO4"].fix(
-    0.1 * pyo.units.g / pyo.units.L
-)
+m.fs.lex.aqueous_inlet.conc_mass_comp[0, "NaCl"].fix(0.15 * pyo.units.g / pyo.units.L)
+m.fs.lex.aqueous_inlet.conc_mass_comp[0, "KNO3"].fix(0.2 * pyo.units.g / pyo.units.L)
+m.fs.lex.aqueous_inlet.conc_mass_comp[0, "CaSO4"].fix(0.1 * pyo.units.g / pyo.units.L)
 
 print(degrees_of_freedom(m))
 
@@ -66,4 +60,3 @@ m.fs.lex.aqueous_outlet.conc_mass_comp.display()
 m.fs.lex.aqueous_outlet.flow_vol.display()
 m.fs.lex.organic_outlet.flow_vol.display()
 pyo.assert_optimal_termination(results)
-
