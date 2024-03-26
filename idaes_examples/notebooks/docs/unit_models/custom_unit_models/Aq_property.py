@@ -1,5 +1,15 @@
-# Changes the divide behavior to not do integer division
-from __future__ import division
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES).
+#
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
+#################################################################################
 
 # Import Python libraries
 import logging
@@ -10,6 +20,7 @@ from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 # Import Pyomo libraries
 from pyomo.environ import (
     Param,
+    Set,
     Var,
     NonNegativeReals,
     units,
@@ -54,7 +65,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
         """
         Callable method for Block construction.
         """
-        super(PhysicalParameterData, self).build()
+        super().build()
 
         self._state_block_class = AqPhaseStateBlock
 
@@ -67,6 +78,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
         self.CaSO4 = Solute()
         self.H2O = Solvent()
 
+        self.solutes = Set(initialize=["NaCl", "KNO3", "CaSO4"])
         # Heat capacity of solvent
         self.cp_mass = Param(
             mutable=True,
@@ -91,19 +103,11 @@ class PhysicalParameterData(PhysicalParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_properties(
-            {
-                "flow_mol": {"method": None, "units": "kmol/s"},
-                "pressure": {"method": None, "units": "MPa"},
-                "temperature": {"method": None, "units": "K"},
-            }
-        )
-
         obj.add_default_units(
             {
-                "time": units.s,
+                "time": units.hour,
                 "length": units.m,
-                "mass": units.kg,
+                "mass": units.g,
                 "amount": units.mol,
                 "temperature": units.K,
             }
@@ -115,7 +119,6 @@ class _StateBlock(StateBlock):
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
     """
-
     def initialize(
         self,
         state_args=None,
@@ -127,7 +130,6 @@ class _StateBlock(StateBlock):
     ):
         """
         Initialization routine for property package.
-
         Keyword Arguments:
             state_args : Dictionary with initial guesses for the state vars
                          chosen. Note that if this method is triggered
@@ -158,7 +160,6 @@ class _StateBlock(StateBlock):
                          False - state variables are unfixed after
                          initialization by calling the
                          release_state method
-
         Returns:
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
@@ -190,7 +191,6 @@ class _StateBlock(StateBlock):
     def release_state(self, flags, outlvl=idaeslog.NOTSET):
         """
         Method to release state variables fixed during initialization.
-
         Keyword Arguments:
             flags : dict containing information of which state variables
                     were fixed during initialization, and should now be
@@ -206,7 +206,6 @@ class _StateBlock(StateBlock):
         revert_state_vars(self, flags)
         init_log.info("State Released.")
 
-
 @declare_process_block_class("AqPhaseStateBlock", block_class=_StateBlock)
 class AqPhaseStateBlockData(StateBlockData):
     """
@@ -217,7 +216,7 @@ class AqPhaseStateBlockData(StateBlockData):
         """
         Callable method for Block construction
         """
-        super(AqPhaseStateBlockData, self).build()
+        super().build()
         self._make_state_vars()
 
     def _make_state_vars(self):
@@ -225,21 +224,21 @@ class AqPhaseStateBlockData(StateBlockData):
             initialize=1,
             domain=NonNegativeReals,
             doc="Total volumetric flowrate",
-            units=units.ml / units.min,
+            units=units.L / units.hour,
         )
 
-        salts_conc = {"NaCl": 0.15, "KNO3": 0.2, "CaSO4": 0.1}
         self.conc_mass_comp = Var(
-            salts_conc.keys(),
+            self.params.solutes,
             domain=NonNegativeReals,
-            initialize=1,
+            initialize={"NaCl": 0.15, "KNO3": 0.2, "CaSO4": 0.1},
             doc="Component mass concentrations",
-            units=units.g / units.kg,
+            units=units.g / units.L,
         )
+
         self.pressure = Var(
             domain=NonNegativeReals,
             initialize=1,
-            bounds=(1, 5),
+            bounds=(0, 5),
             units=units.atm,
             doc="State pressure [atm]",
         )
@@ -254,9 +253,9 @@ class AqPhaseStateBlockData(StateBlockData):
 
         def material_flow_expression(self, j):
             if j == "H2O":
-                return self.flow_vol * self.params.dens_mass
+                return self.flow_vol*self.params.dens_mass
             else:
-                return self.flow_vol * self.conc_mass_comp[j]
+                return self.conc_mass_comp[j]*self.flow_vol
 
         self.material_flow_expression = Expression(
             self.component_list,
@@ -275,9 +274,6 @@ class AqPhaseStateBlockData(StateBlockData):
         self.enthalpy_flow_expression = Expression(
             rule=enthalpy_flow_expression, doc="Enthalpy flow term"
         )
-
-    def get_mass_comp(self, j):
-        return self.conc_mass_comp[j]
 
     def get_flow_rate(self):
         return self.flow_vol

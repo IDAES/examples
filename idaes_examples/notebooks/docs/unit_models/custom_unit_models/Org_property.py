@@ -1,5 +1,15 @@
-# Changes the divide behavior to not do integer division
-from __future__ import division
+#################################################################################
+# The Institute for the Design of Advanced Energy Systems Integrated Platform
+# Framework (IDAES IP) was produced under the DOE Institute for the
+# Design of Advanced Energy Systems (IDAES).
+#
+# Copyright (c) 2018-2023 by the software owners: The Regents of the
+# University of California, through Lawrence Berkeley National Laboratory,
+# National Technology & Engineering Solutions of Sandia, LLC, Carnegie Mellon
+# University, West Virginia University Research Corporation, et al.
+# All rights reserved.  Please see the files COPYRIGHT.md and LICENSE.md
+# for full copyright and license information.
+#################################################################################
 
 # Import Python libraries
 import logging
@@ -10,6 +20,7 @@ from idaes.core.util.initialization import fix_state_vars, revert_state_vars
 # Import Pyomo libraries
 from pyomo.environ import (
     Param,
+    Set,
     Var,
     NonNegativeReals,
     units,
@@ -41,13 +52,13 @@ __author__ = "Javal Vyas"
 _log = logging.getLogger(__name__)
 
 
-@declare_process_block_class("LiqPhase")
+@declare_process_block_class("OrgPhase")
 class PhysicalParameterData(PhysicalParameterBlock):
     """
     Property Parameter Block Class
 
     Contains parameters and indexing sets associated with properties for
-    liquid Phase
+    organic Phase
 
     """
 
@@ -55,12 +66,12 @@ class PhysicalParameterData(PhysicalParameterBlock):
         """
         Callable method for Block construction.
         """
-        super(PhysicalParameterData, self).build()
+        super().build()
 
-        self._state_block_class = LiqPhaseStateBlock
+        self._state_block_class = OrgPhaseStateBlock
 
         # List of valid phases in property package
-        self.Liq = LiquidPhase()
+        self.Org = LiquidPhase()
 
         # Component list - a list of component identifiers
         self.NaCl = Solute()
@@ -70,6 +81,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
             Solvent()
         )  # Solvent used here is ethylene dibromide (Organic Polar)
 
+        self.solutes = Set(initialize=["NaCl", "KNO3", "CaSO4"])
         # Heat capacity of solvent
         self.cp_mass = Param(
             mutable=True,
@@ -91,27 +103,20 @@ class PhysicalParameterData(PhysicalParameterBlock):
             doc="Reference temperature",
             units=units.K,
         )
-        salts_d = {"NaCl": 2.15, "KNO3": 3, "CaSO4": 1.5}
         self.diffusion_factor = Param(
-            salts_d.keys(), initialize=salts_d, within=PositiveReals
+            self.solutes,
+            initialize={"NaCl": 2.15, "KNO3": 3, "CaSO4": 1.5},
+            within=PositiveReals,
+            mutable=True
         )
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_properties(
-            {
-                "flow_vol": {"method": None, "units": "kmol/s"},
-                "pressure": {"method": None, "units": "MPa"},
-                "temperature": {"method": None, "units": "K"},
-                "conc_mass_comp": {"method": None},
-            }
-        )
-
         obj.add_default_units(
             {
-                "time": units.s,
+                "time": units.hour,
                 "length": units.m,
-                "mass": units.kg,
+                "mass": units.g,
                 "amount": units.mol,
                 "temperature": units.K,
             }
@@ -135,7 +140,6 @@ class _StateBlock(StateBlock):
     ):
         """
         Initialization routine for property package.
-
         Keyword Arguments:
             state_args : Dictionary with initial guesses for the state vars
                          chosen. Note that if this method is triggered
@@ -166,7 +170,6 @@ class _StateBlock(StateBlock):
                          False - state variables are unfixed after
                          initialization by calling the
                          release_state method
-
         Returns:
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
@@ -198,7 +201,6 @@ class _StateBlock(StateBlock):
     def release_state(self, flags, outlvl=idaeslog.NOTSET):
         """
         Method to release state variables fixed during initialization.
-
         Keyword Arguments:
             flags : dict containing information of which state variables
                     were fixed during initialization, and should now be
@@ -214,18 +216,17 @@ class _StateBlock(StateBlock):
         revert_state_vars(self, flags)
         init_log.info("State Released.")
 
-
-@declare_process_block_class("LiqPhaseStateBlock", block_class=_StateBlock)
+@declare_process_block_class("OrgPhaseStateBlock", block_class=_StateBlock)
 class LiqPhaseStateBlockData(StateBlockData):
     """
-    An example property package for ideal gas properties with Gibbs energy
+        An example property package for Organic phase for liquid liquid extraction
     """
 
     def build(self):
         """
         Callable method for Block construction
         """
-        super(LiqPhaseStateBlockData, self).build()
+        super().build()
         self._make_state_vars()
 
     def _make_state_vars(self):
@@ -233,16 +234,14 @@ class LiqPhaseStateBlockData(StateBlockData):
             initialize=1,
             domain=NonNegativeReals,
             doc="Total volumetric flowrate",
-            units=units.ml / units.min,
+            units=units.L / units.hour,
         )
-
-        salts_conc = {"NaCl": 0.15, "KNO3": 0.2, "CaSO4": 0.1}
         self.conc_mass_comp = Var(
-            salts_conc.keys(),
+            self.params.solutes,
             domain=NonNegativeReals,
             initialize=1,
             doc="Component mass concentrations",
-            units=units.g / units.kg,
+            units=units.g / units.L,
         )
         self.pressure = Var(
             domain=NonNegativeReals,
@@ -260,14 +259,11 @@ class LiqPhaseStateBlockData(StateBlockData):
             doc="State temperature [K]",
         )
 
-        salts_d = {"NaCl": 2.15, "KNO3": 3, "CaSO4": 1.5}
-        self.D = Param(salts_d.keys(), initialize=salts_d, within=PositiveReals)
-
         def material_flow_expression(self, j):
             if j == "solvent":
-                return self.flow_vol * self.params.dens_mass
+                return self.flow_vol*self.params.dens_mass
             else:
-                return self.flow_vol * self.conc_mass_comp[j]
+                return self.flow_vol*self.conc_mass_comp[j]
 
         self.material_flow_expression = Expression(
             self.component_list,
@@ -286,9 +282,6 @@ class LiqPhaseStateBlockData(StateBlockData):
         self.enthalpy_flow_expression = Expression(
             rule=enthalpy_flow_expression, doc="Enthalpy flow term"
         )
-
-    def get_mass_comp(self, j):
-        return self.conc_mass_comp[j]
 
     def get_flow_rate(self):
         return self.flow_vol
