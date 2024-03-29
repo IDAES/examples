@@ -32,6 +32,7 @@ parts:
   - file: docs/flowsheets/hda_flowsheet_with_distillation_doc
   - file: docs/flowsheets/methanol_synthesis_doc
   - file: docs/flowsheets/CO2_adsorption_desorption/CO2_Adsorption_Desorption_1DFixedBed_doc
+  - file: docs/flowsheets/power_gen/ngcc/ngcc_doc
 - caption: Unit Models
   chapters:
   - file: docs/unit_models/operations/index
@@ -85,10 +86,10 @@ parts:
   # note: directory active/ will not be included in the docs, but
   # it is kept here so it is visible to the 'idaesx' command (e.g. for preprocessing or browsing)
   # The 'file' entry generates a warning, but it is required by the TOC format
-  - file: active/power_gen/ngcc/index
-    sections:
-    # Moved this one to 'held'
-    # - file: active/power_gen/ngcc/ngcc_soec_doc
-    - file: active/power_gen/ngcc/ngcc_doc
+  # - file: active/power_gen/ngcc/index
+  #   sections:
+  #   # Moved this one to 'held'
+  #   # - file: active/power_gen/ngcc/ngcc_soec_doc
+  #   - file: active/power_gen/ngcc/ngcc_doc
 root: index
 
