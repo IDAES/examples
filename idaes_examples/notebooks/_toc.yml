@@ -32,13 +32,10 @@ parts:
   - file: docs/flowsheets/hda_flowsheet_with_costing_doc
   - file: docs/flowsheets/hda_flowsheet_with_distillation_doc
   - file: docs/flowsheets/methanol_synthesis_doc
-<<<<<<< HEAD
   - file: docs/flowsheets/CO2_adsorption_desorption/CO2_Adsorption_Desorption_1DFixedBed_doc
   - file: docs/flowsheets/power_gen/ngcc/ngcc_doc
-=======
   - file: docs/flowsheets/temperature_swing_adsorption/temperature_swing_adsorption_doc
 #  - file: docs/flowsheets/CO2_adsorption_desorption/CO2_Adsorption_Desorption_1DFixedBed_doc
->>>>>>> 300c6c51772252221dd24755a04a1a981c0c362f
 - caption: Unit Models
   chapters:
   - file: docs/unit_models/operations/index
