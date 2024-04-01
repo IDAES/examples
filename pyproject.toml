@@ -50,7 +50,6 @@ keywords = ["IDAES", "energy systems", "chemical engineering", "process modeling
 [project.optional-dependencies]
 gui = [
     # For the small embedded GUI
-    "PySimpleGUI~=4.60.4",
     "tkhtmlview==0.1.1.post5",
     "Markdown~=3.4.1",
 ]
