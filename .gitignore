@@ -143,7 +143,7 @@ idaes_examples/notebooks/**/pysmo/*.pickle
 idaes_examples/notebooks/**/omlt/keras_surrogate/*.pb
 idaes_examples/notebooks/**/omlt/keras_surrogate/*.pdf
 idaes_examples/notebooks/**/omlt/*.pdf
-idaes_examples/notebooks/**/power_generation/solid_oxide_cell/soc_dynamic_flowsheet.svg
+idaes_examples/notebooks/docs/power_gen/solid_oxide_cell/soc_dynamic_flowsheet.svg
 alamo_run.alm
 idaes_examples/notebooks/docs/tut/sin_data.csv
 *.pb
