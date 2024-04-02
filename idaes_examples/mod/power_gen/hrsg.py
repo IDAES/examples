@@ -93,6 +93,7 @@ class HrsgFlowsheetData(FlowsheetBlockData):
         prop_water = self.prop_water
         prop_gas = self.prop_gas
 
+        
         ######### LP Section ###########
         self.econ_lp = BoilerHeatExchanger(
             doc="LP Economizer",
@@ -100,9 +101,11 @@ class HrsgFlowsheetData(FlowsheetBlockData):
             cold_side_name="tube",
             hot_side_name="shell",
             tube={"property_package": prop_water,
-                  "has_pressure_change": False,},
+                  "has_pressure_change": False,
+                  },
             shell={"property_package": prop_gas,
-                   "has_pressure_change": False,},
+                   "has_pressure_change": False,
+                   },
             has_holdup=False,
             flow_pattern=HeatExchangerFlowPattern.countercurrent,
             tube_arrangement=TubeArrangement.inLine,
@@ -115,10 +118,12 @@ class HrsgFlowsheetData(FlowsheetBlockData):
             property_package=prop_water,
             momentum_mixing_type=MomentumMixingType.none,
             inlet_list=["econ_lp", "Preheater"],
+            property_package_args={'has_phase_equilibrium':False}
         )
         self.drum_lp = HelmPhaseSeparator(
             doc="Phase seperator for LP evaporator (parital evaporator)",
             property_package=prop_water,
+            property_package_args={'has_phase_equilibrium':False}
         )
         self.evap_lp = HeatExchanger(
             doc="LP evaporator heat exchanger section",
@@ -135,6 +140,7 @@ class HrsgFlowsheetData(FlowsheetBlockData):
             property_package=prop_water,
             momentum_mixing_type=MomentumMixingType.none,
             inlet_list=["main", "soec_makeup"],
+            property_package_args={'has_phase_equilibrium':False}            
         )
         self.split_fg_lp = Splitter(
             doc="LP superheater flue bypass gas splitter",
@@ -166,14 +172,19 @@ class HrsgFlowsheetData(FlowsheetBlockData):
             doc="LP liquid split to IP and HP pumps",
             property_package=prop_water,
             outlet_list=["toIP", "toHP"],
+            property_package_args={'has_phase_equilibrium':False}
         )
         self.pump_ip = WaterPump(
             doc="Intermediate pressure pump",
             property_package=prop_water,
+            has_phase_equilibrium=False,
+            property_package_args={'has_phase_equilibrium':False}
         )
         self.pump_hp = WaterPump(
             doc="High pressure pump",
             property_package=prop_water,
+            has_phase_equilibrium=False,
+            property_package_args={'has_phase_equilibrium':False}
         )
         ######### IP Section ###########
         self.econ_ip1 = BoilerHeatExchanger(
@@ -182,9 +193,9 @@ class HrsgFlowsheetData(FlowsheetBlockData):
             hot_side_name="shell",
             cold_side_name="tube",
             tube={"property_package": prop_water,
-                  "has_pressure_change": True,},
+                  "has_pressure_change": True},
             shell={"property_package": prop_gas,
-                   "has_pressure_change": True,},
+                   "has_pressure_change": True},
             has_holdup=False,
             flow_pattern=HeatExchangerFlowPattern.countercurrent,
             tube_arrangement=TubeArrangement.inLine,
@@ -195,6 +206,7 @@ class HrsgFlowsheetData(FlowsheetBlockData):
             doc="IP economizer hot water split for natural gas preheater",
             property_package=prop_water,
             outlet_list=["toIP_ECON2", "toNGPH"],
+            property_package_args={'has_phase_equilibrium':False}
         )
         self.econ_ip2 = BoilerHeatExchanger(
             doc="IP ecomonmizer part 2",
@@ -202,14 +214,15 @@ class HrsgFlowsheetData(FlowsheetBlockData):
             hot_side_name="shell",
             cold_side_name="tube",
             tube={"property_package": prop_water,
-                  "has_pressure_change": True,},
+                  "has_pressure_change": True},
             shell={"property_package": prop_gas,
-                   "has_pressure_change": True,},
+                   "has_pressure_change": True},
             has_holdup=False,
             flow_pattern=HeatExchangerFlowPattern.countercurrent,
             tube_arrangement=TubeArrangement.inLine,
             cold_side_water_phase="Liq",
             has_radiation=False,
+            # has_phase_equilibrium=False,
         )
         self.evap_ip = HeatExchanger(
             doc="IP evaporator (total evaporator)",
@@ -219,6 +232,7 @@ class HrsgFlowsheetData(FlowsheetBlockData):
             tube={"property_package": prop_water},
             delta_temperature_callback=delta_temperature_lmtd_callback,
             flow_pattern=HeatExchangerFlowPattern.countercurrent,
+            
         )
         self.sh_ip1 = BoilerHeatExchanger(
             doc="IP superheater 1",
@@ -226,9 +240,9 @@ class HrsgFlowsheetData(FlowsheetBlockData):
             hot_side_name="shell",
             cold_side_name="tube",
             tube={"property_package": prop_water,
-                  "has_pressure_change": True,},
+                  "has_pressure_change": True},
             shell={"property_package": prop_gas,
-                   "has_pressure_change": True,},
+                   "has_pressure_change": True},
             has_holdup=False,
             flow_pattern=HeatExchangerFlowPattern.countercurrent,
             tube_arrangement=TubeArrangement.inLine,
@@ -241,11 +255,14 @@ class HrsgFlowsheetData(FlowsheetBlockData):
             property_package=prop_water,
             momentum_mixing_type=MomentumMixingType.none,
             inlet_list=["sh_ip1", "Cold_reheat"],
+            property_package_args={'has_phase_equilibrium':False}
         )
         self.splitter_ip2 = HelmSplitter(
             doc="IP Splitter 2, for ejector, reclaimer and dryer",
             property_package=prop_water,
             outlet_list=["Cold_reheat", "toEjector", "toReclaimer", "toDryer"],
+            # has_phase_equilibrium=False,
+            property_package_args={'has_phase_equilibrium':False}
         )
         self.sh_ip2 = BoilerHeatExchanger(
             doc="IP superheater 2",
@@ -253,9 +270,9 @@ class HrsgFlowsheetData(FlowsheetBlockData):
             hot_side_name="shell",
             cold_side_name="tube",
             tube={"property_package": prop_water,
-                  "has_pressure_change": True,},
+                  "has_pressure_change": True},
             shell={"property_package": prop_gas,
-                   "has_pressure_change": True,},
+                   "has_pressure_change": True},
             has_holdup=False,
             flow_pattern=HeatExchangerFlowPattern.countercurrent,
             tube_arrangement=TubeArrangement.inLine,
@@ -355,6 +372,7 @@ class HrsgFlowsheetData(FlowsheetBlockData):
         self.evap_hp_valve = HelmValve(
             doc="HP evaporator valve",
             property_package=prop_water,
+            property_package_args={'has_phase_equilibrium':False}
         )
         self.evap_hp_valve.pressure_flow_equation.deactivate()
         self.evap_hp = HeatExchanger(
@@ -436,7 +454,7 @@ class HrsgFlowsheetData(FlowsheetBlockData):
         def ip_sat_vap_eqn(b, t):
             return (
                 b.tube.properties_out[t].enth_mol / 1e4
-                == (b.tube.properties_out[t].enth_mol_sat_phase["Vap"] + 30) / 1e4
+                == (b.tube.properties_out[t].enth_mol_sat_phase["Vap"] + 30*pyo.units.J/pyo.units.mol) / 1e4
             )
 
         @self.evap_hp.Constraint(
@@ -445,7 +463,7 @@ class HrsgFlowsheetData(FlowsheetBlockData):
         def hp_sat_vap_eqn(b, t):
             return (
                 b.tube.properties_out[t].enth_mol / 1e4
-                == (b.tube.properties_out[t].enth_mol_sat_phase["Vap"] + 30) / 1e4
+                == (b.tube.properties_out[t].enth_mol_sat_phase["Vap"] + 30*pyo.units.J/pyo.units.mol) / 1e4
             )
 
         @self.mixer1.Constraint(self.config.time, doc="Mixed state pressure eqn.")

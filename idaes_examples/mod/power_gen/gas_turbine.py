@@ -234,7 +234,7 @@ class GasTurbineFlowsheetData(FlowsheetBlockData):
             support_isentropic_performance_curves=True,
         )
 
-    def _add_performance_curves_gts1(self, flow_scale=0.896):
+    def _add_performance_curves_gts1(self, flow_scale=0.896*pyo.units.s/pyo.units.m**3):
         """Add isentropic head and efficiency curves for gas turbine stage 1"""
 
         @self.gts1.performance_curve.Constraint(
@@ -262,9 +262,9 @@ class GasTurbineFlowsheetData(FlowsheetBlockData):
             )
             return b.head_isentropic[t] == -(
                 -2085.1 * f**3 + 38433 * f**2 - 150764 * f + 422313
-            )
+            )*pyo.units.m**2/pyo.units.s**2
 
-    def _add_performance_curves_gts2(self, flow_scale=0.896):
+    def _add_performance_curves_gts2(self, flow_scale=0.896*pyo.units.s/pyo.units.m**3):
         """Add isentropic head and efficiency curves for gas turbine stage 2"""
 
         @self.gts2.performance_curve.Constraint(
@@ -290,9 +290,9 @@ class GasTurbineFlowsheetData(FlowsheetBlockData):
             )
             return b.head_isentropic[t] == -(
                 -1676.3 * f**3 + 34916 * f**2 - 173801 * f + 456957
-            )
+            )*pyo.units.m**2/pyo.units.s**2
 
-    def _add_performance_curves_gts3(self, flow_scale=0.896):
+    def _add_performance_curves_gts3(self, flow_scale=0.896*pyo.units.s/pyo.units.m**3):
         """Add isentropic head and efficiency curves for gas turbine stage 3"""
 
         @self.gts3.performance_curve.Constraint(
@@ -320,7 +320,7 @@ class GasTurbineFlowsheetData(FlowsheetBlockData):
             )
             return b.head_isentropic[t] == -(
                 -1373.6 * f**3 + 31759 * f**2 - 188528 * f + 500520
-            )
+            )*pyo.units.m**2/pyo.units.s**2
 
     def _add_constraints(self):
         """Add addtional flowsheet constraints and expressions"""

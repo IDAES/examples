@@ -360,7 +360,7 @@ class NgccFlowsheetData(FlowsheetBlockData):
 
         @self.Constraint(self.config.time)
         def net_power_constraint(b, t):
-            return b.net_power_mw[t] / 100.0 == -b.net_power[t] / 1e6 / 100.0
+            return b.net_power_mw[t] / 100.0 == pyo.units.convert(-b.net_power[t] / 100.0,to_units=pyo.units.MW)
 
         @self.Constraint(self.config.time)
         def lp_steam_temperature_eqn(b, t):
@@ -438,7 +438,6 @@ class NgccFlowsheetData(FlowsheetBlockData):
             self.cap_additional_reboiler_duty.fix()
             self.fuel_lhv.fix()
             self.fuel_hhv.fix()
-
             self.gt.initialize(
                 load_from="gas_turbine_init.json.gz",
                 save_to="gas_turbine_init.json.gz",
