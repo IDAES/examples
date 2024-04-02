@@ -688,9 +688,15 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
 
         ssf(self.total_electric_power, 1e-8)
         ssf(self.soec_water_consumption_rate, 1e-3)
+        ssf(self.feed_recycle_split.recycle_ratio, 1)
+        ssf(self.sweep_recycle_split.recycle_ratio, 1)
+        ssf(self.condenser_split.recycle_ratio, 1)
+        ssf(self.h2_mass_production, 1)
 
         scale_indexed_constraint(self.total_electric_power_eqn, 1e-8)
         scale_indexed_constraint(self.soec_water_consumption_rate_eqn, 1e-3)
+
+        ssf(self.condenser_flash.control_volume.heat, 1e-7)
 
         ssf(self.feed_heater.control_volume.area, 1e-1)
         ssf(self.sweep_heater.control_volume.area, 1e-1)
@@ -818,7 +824,6 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
         def fix_hx_params(hx):
             hx.pitch_x.fix(0.1)
             hx.pitch_y.fix(0.1)
-            hx.delta_elevation.fix(0)
             hx.therm_cond_wall = 43.0
             hx.rfouling_tube = 0.0001
             hx.rfouling_shell = 0.0001
@@ -1262,7 +1267,7 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
             fname: Name of file to save svg.  If None, return the svg string
         Returns: (None or Str)
         """
-        infilename = os.path.join(this_file_dir(), "soec_dynamic_template.svg")
+        infilename = os.path.join(this_file_dir(), "soc_dynamic_template.svg")
         with open(infilename, "r") as f:
             s = svg_tag(svg=f, tag_group=self.tags_streams, outfile=None)
         s = svg_tag(svg=s, tag_group=self.tags_output, outfile=None)
@@ -1304,7 +1309,7 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
         dz = soec.zfaces.at(2) - soec.zfaces.at(1)
         # Going to assume that the zfaces are evenly spaced
         for iz in soec.iznodes:
-            assert abs(soec.zfaces[iz + 1] - soec.zfaces[iz] - dz) < 1e-8
+            assert abs(soec.zfaces.at(iz + 1) - soec.zfaces.at(iz) - dz) < 1e-8
         dz = dz * soec.length_z
         def finite_difference(expr, t, ix, iz):
             # Since this is mostly for reference, no need to worry about upwinding or whatever
