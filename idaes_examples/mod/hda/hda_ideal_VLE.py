@@ -376,34 +376,40 @@ class HDAParameterData(PhysicalParameterBlock):
     def define_metadata(cls, obj):
         """Define properties supported and units."""
         obj.add_properties(
-            {'flow_mol': {'method': None},
-             'flow_mol_phase_comp': {'method': None},
-             'mole_frac_comp': {'method': None},
-             'temperature': {'method': None},
-             'pressure': {'method': None},
-             'flow_mol_phase': {'method': None},
-             'dens_mol_phase': {'method': '_dens_mol_phase'},
-             'pressure_sat': {'method': '_pressure_sat'},
-             'mole_frac_phase_comp': {'method': '_mole_frac_phase'},
-             'energy_internal_mol_phase_comp': {
-                     'method': '_energy_internal_mol_phase_comp'},
-             'energy_internal_mol_phase': {
-                     'method': '_energy_internal_mol_phase'},
-             'enth_mol_phase_comp': {'method': '_enth_mol_phase_comp'},
-             'enth_mol_phase': {'method': '_enth_mol_phase'},
-             'entr_mol_phase_comp': {'method': '_entr_mol_phase_comp'},
-             'entr_mol_phase': {'method': '_entr_mol_phase'},
-             'temperature_bubble': {'method': '_temperature_bubble'},
-             'temperature_dew': {'method': '_temperature_dew'},
-             'pressure_bubble': {'method': '_pressure_bubble'},
-             'pressure_dew': {'method': '_pressure_dew'},
-             'fug_vap_comp': {'method': '_fug_vap_comp'},
-             'fug_liq_comp': {'method': '_fug_liq_comp'},
-             })
+            {
+                'flow_mol': {'method': None},
+                'flow_mol_phase_comp': {'method': None},
+                'mole_frac_comp': {'method': None},
+                'temperature': {'method': None},
+                'pressure': {'method': None},
+                'flow_mol_phase': {'method': None},
+                'dens_mol_phase': {'method': '_dens_mol_phase'},
+                'pressure_sat': {'method': '_pressure_sat'},
+                'mole_frac_phase_comp': {'method': '_mole_frac_phase'},
+                'energy_internal_mol_phase_comp': {
+                        'method': '_energy_internal_mol_phase_comp'},
+                'energy_internal_mol_phase': {
+                        'method': '_energy_internal_mol_phase'},
+                'enth_mol_phase_comp': {'method': '_enth_mol_phase_comp'},
+                'enth_mol_phase': {'method': '_enth_mol_phase'},
+                'entr_mol_phase_comp': {'method': '_entr_mol_phase_comp'},
+                'entr_mol_phase': {'method': '_entr_mol_phase'},
+                'temperature_bubble': {'method': '_temperature_bubble'},
+                'temperature_dew': {'method': '_temperature_dew'},
+                'pressure_bubble': {'method': '_pressure_bubble'},
+                'pressure_dew': {'method': '_pressure_dew'},
+                'fug_phase_comp': {'method': '_fug_phase_comp'},
+             }
+        )
 
         obj.define_custom_properties(
-            {'dh_vap': {'method': '_dh_vap', "units": obj.derived_units.ENERGY_MOLE},
-             'ds_vap': {'method': '_ds_vap', "units": obj.derived_units.ENERGY_MASS}})
+            {
+                # Enthalpy of vaporization
+                'dh_vap': {'method': '_dh_vap', "units": obj.derived_units.ENERGY_MOLE},
+                # Entropy of vaporization
+                'ds_vap': {'method': '_ds_vap', "units": obj.derived_units.ENTROPY_MOLE},
+            }
+        )
         
         obj.add_default_units({'time': pyunits.s,
                                'length': pyunits.m,
@@ -674,7 +680,7 @@ class IdealStateBlockData(StateBlockData):
                     doc='Component reduced temperatures')
 
             def rule_equilibrium(b, i):
-                return b.fug_vap_comp[i] == b.fug_liq_comp[i]
+                return b.fug_phase_comp["Liq", i] == b.fug_phase_comp["Vap", i]
             self.equilibrium_constraint = Constraint(
                     self._params.component_list, rule=rule_equilibrium)
 
@@ -1044,14 +1050,24 @@ class IdealStateBlockData(StateBlockData):
                  b._params.dens_liq_param_4[j])
                 for j in ['benzene', 'toluene'])
 
-    def _fug_liq_comp(self):
-        def fug_liq_comp_rule(b, i):
-            if i in ['hydrogen', 'methane']:
-                return b.mole_frac_phase_comp['Liq', i]
+    def _fug_phase_comp(self):
+        def fug_phase_comp_rule(b, p, i):
+            if p == "Liq":
+                if i in ['hydrogen', 'methane']:
+                    return b.mole_frac_phase_comp['Liq', i]
+                else:
+                    return b.pressure_sat[i] * b.mole_frac_phase_comp['Liq', i]
             else:
-                return b.pressure_sat[i] * b.mole_frac_phase_comp['Liq', i]
-        self.fug_liq_comp = Expression(self._params.component_list,
-                                  rule=fug_liq_comp_rule)
+                if i in ['hydrogen', 'methane']:
+                    return 1e-6
+                else:
+                    return b.mole_frac_phase_comp['Vap', i] * b.pressure
+        
+        self.fug_phase_comp = Expression(
+            self._params.phase_list,
+            self._params.component_list,
+            rule=fug_phase_comp_rule
+        )
 
     def _pressure_sat(self):
         self.pressure_sat = Var(self._params.component_list,
@@ -1102,15 +1118,6 @@ class IdealStateBlockData(StateBlockData):
         return b.pressure == (b.dens_mol_phase['Vap'] *
                               const.gas_constant *
                               b.temperature)
-
-    def _fug_vap_comp(self):
-        def fug_vap_comp_rule(b, i):
-            if i in ['hydrogen', 'methane']:
-                return 1e-6
-            else:
-                return b.mole_frac_phase_comp['Vap', i] * b.pressure
-        self.fug_vap_comp = Expression(self._params.component_list,
-                                  rule=fug_vap_comp_rule)
 
     def _dh_vap(self):
         # heat of vaporization

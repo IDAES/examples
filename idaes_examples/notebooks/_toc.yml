@@ -17,6 +17,7 @@ parts:
   chapters:
   - file: docs/diagnostics/index
     sections:
+    - file: docs/diagnostics/diagnostics_toolbox_doc
     - file: docs/diagnostics/degeneracy_hunter_doc
   - file: docs/param_est/index
     sections:
@@ -31,7 +32,8 @@ parts:
   - file: docs/flowsheets/hda_flowsheet_with_costing_doc
   - file: docs/flowsheets/hda_flowsheet_with_distillation_doc
   - file: docs/flowsheets/methanol_synthesis_doc
-  - file: docs/flowsheets/CO2_adsorption_desorption/CO2_Adsorption_Desorption_1DFixedBed_doc
+  - file: docs/flowsheets/temperature_swing_adsorption/temperature_swing_adsorption_doc
+#  - file: docs/flowsheets/CO2_adsorption_desorption/CO2_Adsorption_Desorption_1DFixedBed_doc
 - caption: Unit Models
   chapters:
   - file: docs/unit_models/operations/index
@@ -80,6 +82,27 @@ parts:
   - file: docs/surrogates/omlt/index
     sections:
     - file: docs/surrogates/omlt/keras_flowsheet_optimization_doc
+  - file: docs/surrogates/sco2/alamo/index
+    sections:
+    - file: docs/surrogates/sco2/alamo/alamo_training_doc
+    - file: docs/surrogates/sco2/alamo/surrogate_embedding_doc
+    - file: docs/surrogates/sco2/alamo/flowsheet_optimization_doc
+  - file: docs/surrogates/sco2/omlt/index
+    sections:
+    - file: docs/surrogates/sco2/omlt/keras_training_doc
+    - file: docs/surrogates/sco2/omlt/surrogate_embedding_doc
+    - file: docs/surrogates/sco2/omlt/flowsheet_optimization_doc
+  - file: docs/surrogates/sco2/pysmo/index
+    sections:
+    - file: docs/surrogates/sco2/pysmo/pysmo_training_doc
+    - file: docs/surrogates/sco2/pysmo/surrogate_embedding_doc
+    - file: docs/surrogates/sco2/pysmo/flowsheet_optimization_doc
+- caption: Power generation
+  chapters:
+  - file: docs/power_gen/supercritical/index
+    sections:
+    - file: docs/power_gen/supercritical/supercritical_power_plant_doc
+    - file: docs/power_gen/supercritical/supercritical_steam_cycle_doc
   # -----------------------------
   #  active (not documented)
   # -----------------------------
@@ -92,4 +115,3 @@ parts:
     # - file: active/power_gen/ngcc/ngcc_soec_doc
     - file: active/power_gen/ngcc/ngcc_doc
 root: index
-
