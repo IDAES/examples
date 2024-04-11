@@ -37,8 +37,6 @@ from idaes_examples.util import (
 from idaes_examples.util import _log as util_log
 
 # third-party
-from jupyter_cache import get_cache
-import nbformat as nbf
 
 
 # -------------
@@ -770,22 +768,27 @@ class Commands:
         return cls._run("format notebook code", black, srcdir=args.dir)
 
     @classmethod
-    def gui(cls, args):
+    def serve(cls, args):
         from idaes_examples import browse
 
-        cls.heading(f"Load notebooks into GUI")
-        nb_dir = browse.find_notebook_dir().parent
+        nb_dir = browse.find_notebook_dir()
         cls._run(f"pre-process notebooks", preprocess, srcdir=nb_dir)
         browse.set_log_level(_log.getEffectiveLevel())
-        nb = browse.Notebooks()
-        if args.console:
-            for val in nb._sorted_values:
-                pth = Path(val.path).relative_to(Path.cwd())
-                print(f"{val.type}{' '*(10 - len(val.type))} {val.title} -> {pth}")
-            status = 0
-        else:
-            status = browse.gui(nb, use_lab=args.lab, stop_notebooks_on_quit=args.stop)
-        return status
+
+        def _run_jupyter_server():
+            try:
+                ret = subprocess.run(
+                    [
+                        "jupyter",
+                        "notebook",
+                        str(nb_dir),
+                        "-y",  # answer 'yes' to skip confirmation prompts
+                    ],
+                )
+            except KeyboardInterrupt:
+                return
+
+        return cls._run(f"starting Jupyter server in {nb_dir}", _run_jupyter_server)
 
     @classmethod
     def where(cls, args):
@@ -857,7 +860,7 @@ def main():
         ("hdr", "View or edit headers"),
         ("clean", "Clean generated files"),
         ("black", "Format code in notebooks with Black"),
-        ("gui", "Graphical notebook browser"),
+        ("serve", "Start local Jupyter server to browse and run notebooks"),
         ("skipped", "List notebooks tagged to skip some pre-processing"),
         ("where", "Print example notebook directory path"),
         ("new", "Terminal-based UI for starting a new notebook"),
