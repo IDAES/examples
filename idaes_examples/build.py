@@ -8,7 +8,7 @@ import os
 from pathlib import Path
 import re
 import shutil
-from subprocess import check_call
+import subprocess
 import sys
 import time
 import traceback
@@ -371,7 +371,7 @@ def black(srcdir=None):
     src_path = find_notebook_root(Path(srcdir)) / NB_ROOT
     commandline = ["black", "--include", ".*_src\\.ipynb", str(src_path)]
     add_vb_flags(_log, commandline)
-    check_call(commandline)
+    subprocess.check_call(commandline)
 
 
 # --------------------
@@ -406,7 +406,7 @@ def jupyterbook(srcdir=None, quiet=0, dev=False):
         else:
             add_vb_flags(_log, commandline)
         # run build
-        check_call(commandline)
+        subprocess.check_call(commandline)
     finally:
         os.chdir(cwd)
     _copy_built_files(path)
@@ -487,7 +487,7 @@ def modify_conf(
     if sphinx:
         Commands.subheading(f"Updating Sphinx config file")
         commandline = ["jupyter-book", "config", "sphinx", str(config_file.parent)]
-        check_call(commandline)
+        subprocess.check_call(commandline)
 
     if show:
 
