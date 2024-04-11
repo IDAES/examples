@@ -922,25 +922,6 @@ def main():
     subp["conf"].add_argument(
         "--sphinx", action="store_true", help="Run JB command to update Sphinx conf.py"
     )
-    subp["gui"].add_argument("--console", "-c", action="store_true", dest="console")
-    subp["gui"].add_argument(
-        "--stderr",
-        "-e",
-        action="store_true",
-        default=False,
-        dest="log_console",
-        help=(
-            "Print logs to the console "
-            "(stderr) instead of redirecting "
-            "them to a file in ~/.idaes/logs"
-        ),
-    )
-    subp["gui"].add_argument(
-        "--lab", help="Use Jupyter Lab instead of Jupyter Notebook", action="store_true"
-    )
-    subp["gui"].add_argument(
-        "--stop", help="Stop notebooks on GUI quit", action="store_true"
-    )
     subp["hdr"].add_argument("--path", help="Path to notebook for `--edit`")
     subp["hdr"].add_argument(
         "--edit", help="Edit mode (default is print)", action="store_true"
