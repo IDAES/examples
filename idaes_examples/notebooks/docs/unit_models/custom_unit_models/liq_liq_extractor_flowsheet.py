@@ -25,8 +25,8 @@ from idaes.core.initialization import InitializationStatus
 from idaes.core.initialization.block_triangularization import (
     BlockTriangularizationInitializer,
 )
-from org_property import OrgPhase
-from aq_property import AqPhase
+from organic_property import OrgPhase
+from aqueous_property import AqPhase
 from liquid_liquid_extractor import LiqExtraction
 
 m = pyo.ConcreteModel()
