@@ -177,7 +177,7 @@ class LiqExtractionData(UnitModelBlockData):
         # Check phase lists match assumptions
         if self.config.aqueous_property_package.phase_list != ["Aq"]:
             raise ConfigurationError(
-                f"{self.name} Liquid-Liquid Extractor model requires that the aquoues "
+                f"{self.name} Liquid-Liquid Extractor model requires that the aqueous "
                 f"phase property package have a single phase named 'Aq'"
             )
         if self.config.organic_property_package.phase_list != ["Org"]:
@@ -285,7 +285,7 @@ class LiqExtractionData(UnitModelBlockData):
 
         # Get units for unit conversion
         aunits = self.config.aqueous_property_package.get_metadata().get_derived_units
-        lunits = self.config.organic_property_package.get_metadata().get_derived_units
+        ounits = self.config.organic_property_package.get_metadata().get_derived_units
         flow_basis = self.aqueous_phase.properties_out[t_init].get_material_flow_basis()
 
         if flow_basis == MaterialFlowBasis.mass:
@@ -309,7 +309,7 @@ class LiqExtractionData(UnitModelBlockData):
             elif j in self.organic_phase.properties_out.component_list:
                 # No mass transfer term
                 # Set organic flowrate to an arbitary small value
-                return self.organic_phase.mass_transfer_term[t, "Org", j] == 0 * lunits(
+                return self.organic_phase.mass_transfer_term[t, "Org", j] == 0 * ounits(
                     fb
                 )
             elif j in self.aqueous_phase.properties_out.component_list:
