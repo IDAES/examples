@@ -79,7 +79,7 @@ class _IdealStateBlock(StateBlock):
 
                      * 0 = no output (default)
                      * 1 = return solver state for each step in routine
-                     * 2 = include solver output infomation (tee=True)
+                     * 2 = include solver output information (tee=True)
 
             optarg : solver options dictionary object (default=None)
             solver : str indicating which solver to use during
