@@ -101,7 +101,7 @@ def add_results_for_costing(m):
         return b.CO2_aux_load[t] == baseline_CO2_aux_load*(b.CO2_captured[t]/baseline_capture)
 
     # CO2 compressor auxiliary load
-    # this load is included in CO2_aux_load but needed seperatly for costing
+    # this load is included in CO2_aux_load but needed separately for costing
     m.fs.CO2_compressor_load = pyo.Var(m.fs.time, units=pyunits.kW)
 
     @m.fs.Constraint(m.fs.time)
@@ -760,7 +760,7 @@ def get_ngcc_soec_capital_cost(m, CE_index_year):
         },
     )
 
-    # accounts with auxilliary load as the process parameter
+    # accounts with auxiliary load as the process parameter
     aux_load_accounts = ["11.2", "11.3", "11.4", "11.5", "11.6",
                          "12.1", "12.2", "12.3", "12.4", "12.5", "12.6",
                          "12.7", "12.8", "12.9"]
