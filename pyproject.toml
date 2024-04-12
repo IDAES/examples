@@ -10,7 +10,7 @@ build-backend = "setuptools.build_meta"
 name = "idaes-examples"
 description = "IDAES Process Systems Engineering Examples"
 readme = "README.md"
-version = "2.2.dev0"
+version = "2.5.dev0"
 license = {text="BSD"}
 requires-python = ">=3.8"
 authors = [
@@ -56,7 +56,7 @@ gui = [
 omlt = [
     # For Keras/OMLT
     "omlt",
-    "tensorflow",
+    'tensorflow<2.16.1 ; python_version < "3.12"',
 ]
 idaes = [
     "idaes-pse",  # installing IDAES (from release) is opt-in
@@ -67,11 +67,11 @@ testing = [
     # pytest reporting
     "pytest-reportlog ~= 0.1.2",
     "nbclient",
-    "nbmake",
+    "nbmake == 1.5.*",
 ]
 # dependencies for building documentation
 docs = [
-    "jupyter-book ~= 0.13.1",
+    "jupyter-book ~= 0.15.0",
     # "jupyter-cache ~= 0.4.3",
     "jupyter-cache",
     # the older version of nbmake goes with the older
@@ -80,8 +80,9 @@ docs = [
     "nbclient",
     "nbformat",
     # markdown in Sphinx
-    "myst-nb ~= 0.13.2",
-    "myst-parser ~= 0.15.2",
+    # we don't specify these as we assume jupyter-book will install compatible versions
+    # "myst-nb ~= 0.17.1",
+    # "myst-parser ~= 0.18.0",
 ]
 # For developers
 dev = [
