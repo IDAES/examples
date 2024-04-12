@@ -47,7 +47,6 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 # Some more information about this module
 __author__ = "Javal Vyas"
 
-
 # Set up logger
 _log = logging.getLogger(__name__)
 
