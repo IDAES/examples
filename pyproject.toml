@@ -149,3 +149,27 @@ markers = [
     "needs_solver"
 ]
 testpaths = "idaes_examples"
+
+[tool.typos.files]
+extend-exclude = [
+    "*.svg",
+    "*.json",
+    "*.css",
+]
+
+[tool.typos.default.extend-words]
+# Ignore IDAES
+IDAES = "IDAES"
+# Ignore HDA, assumes it's on purpose and not a typo of "had"
+HDA = "HDA" 
+# Ignore ba in hexadecimal values, or block names
+ba = "ba"
+# Ignore equil, assumes it's on purpose and not a typo of "equal"
+equil = "equil"
+# Atomic elements
+#Nd = "Nd"
+[tool.typos.default]
+extend-ignore-re = [
+    # Jupyter notebooks: ignore hexadecimal values in "id" cell metadata field
+    '"id": "[0-9a-f]+",'
+]
