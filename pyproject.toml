@@ -162,12 +162,16 @@ extend-exclude = [
 IDAES = "IDAES"
 # Ignore HDA, assumes it's on purpose and not a typo of "had"
 HDA = "HDA" 
+# Ignore Attemp - assume it is abbreviating attemperator
+Attemp = "Attemp"
 # Ignore ba in hexadecimal values, or block names
 ba = "ba"
 # Ignore equil, assumes it's on purpose and not a typo of "equal"
 equil = "equil"
 # Atomic elements
 #Nd = "Nd"
+# Numpy
+arange = "arange"
 [tool.typos.default]
 extend-ignore-re = [
     # Jupyter notebooks: ignore hexadecimal values in "id" cell metadata field
