@@ -129,7 +129,7 @@ class _StateBlock(StateBlock):
             hold_state : flag indicating whether the initialization routine
                          should unfix any state variables fixed during
                          initialization (default=False).
-                         - True - states varaibles are not unfixed, and
+                         - True - states variables are not unfixed, and
                                  a dict of returned containing flags for
                                  which states were fixed during
                                  initialization.
