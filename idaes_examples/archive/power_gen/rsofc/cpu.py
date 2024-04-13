@@ -640,7 +640,7 @@ class CPUData(UnitModelBlockData):
             outlvl : sets output level of initialisation routine
 
             optarg : solver options dictionary object (default={'tol': 1e-6})
-            solver : str indicating whcih solver to use during
+            solver : str indicating which solver to use during
                      initialization (default = 'ipopt')
 
         Returns:
