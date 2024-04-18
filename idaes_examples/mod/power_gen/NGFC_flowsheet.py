@@ -74,7 +74,7 @@ from idaes_examples.mod.power_gen.SOFC_ROM import (
 import logging
 
 
-def build_power_island(m):
+def build_properties(m):
     # create property packages - 3 property packages and 1 reaction
     NG_config = get_prop(
         components=[
@@ -105,6 +105,8 @@ def build_power_island(m):
         **get_rxn(m.fs.syn_props, reactions=["h2_cmb", "co_cmb", "ch4_cmb"])
     )
 
+
+def build_power_island(m):
     # build anode side units
     m.fs.anode_mix = Mixer(
         inlet_list=["feed", "recycle"],
@@ -1676,6 +1678,7 @@ def main():
 
     if os.path.exists("../../notebooks/archive/power_gen/ngfc/NGFC_flowsheet_init.json.gz") and reinit is False:
         # already initialized, can build model and load results from json
+        build_properties(m)
         build_power_island(m)
         build_reformer(m)
         scale_flowsheet(m)
@@ -1713,6 +1716,7 @@ def main():
             ms.to_json(m, fname="NGFC_flowsheet_solution.json.gz")
     else:
         # need to initialize model, serialize, and try to solve/serialize
+        build_properties(m)
         build_power_island(m)
         build_reformer(m)
         scale_flowsheet(m)
