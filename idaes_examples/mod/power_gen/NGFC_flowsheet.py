@@ -769,200 +769,159 @@ def scale_flowsheet(m):
     m.fs.NG_props.set_default_scaling("flow_mol_phase", 1e-3)
     m.fs.NG_props.set_default_scaling("temperature", 1e-2)
     m.fs.NG_props.set_default_scaling("pressure", 1e-5)
-
     m.fs.NG_props.set_default_scaling("mole_frac_comp", 1e2)
-    m.fs.NG_props.set_default_scaling("mole_frac_comp", 1e2, index="C2H6")
-    m.fs.NG_props.set_default_scaling("mole_frac_comp", 1e2, index="C3H8")
-    m.fs.NG_props.set_default_scaling("mole_frac_comp", 1e2, index="C4H10")
-
     m.fs.NG_props.set_default_scaling("mole_frac_phase_comp", 1e2)
-    m.fs.NG_props.set_default_scaling(
-        "mole_frac_phase_comp", 1e2, index=("Vap", "C2H6")
-    )
-    m.fs.NG_props.set_default_scaling(
-        "mole_frac_phase_comp", 1e2, index=("Vap", "C3H8")
-    )
-    m.fs.NG_props.set_default_scaling(
-        "mole_frac_phase_comp", 1e2, index=("Vap", "C4H10")
-    )
-
     m.fs.NG_props.set_default_scaling("enth_mol_phase", 1e-6)
-    m.fs.NG_props.set_default_scaling("entr_mol_phase", 1e-4)
+    m.fs.NG_props.set_default_scaling("entr_mol_phase", 1e-1)
+    m.fs.NG_props.set_default_scaling("entr_mol", 1e-1)
 
     # set syn_props default scaling
     m.fs.syn_props.set_default_scaling("flow_mol", 1e-3)
     m.fs.syn_props.set_default_scaling("flow_mol_phase", 1e-3)
+    m.fs.syn_props.set_default_scaling("flow_mol_phase_comp", 1e-3)
     m.fs.syn_props.set_default_scaling("temperature", 1e-2)
     m.fs.syn_props.set_default_scaling("pressure", 1e-5)
     m.fs.syn_props.set_default_scaling("mole_frac_comp", 1e2)
     m.fs.syn_props.set_default_scaling("mole_frac_phase_comp", 1e2)
     m.fs.syn_props.set_default_scaling("enth_mol_phase", 1e-6)
-    m.fs.syn_props.set_default_scaling("entr_mol_phase", 1e-4)
+    m.fs.syn_props.set_default_scaling("entr_mol_phase", 1e-1)
+    m.fs.syn_props.set_default_scaling("entr_mol", 1e-1)
 
     # set air_props default scaling
     m.fs.air_props.set_default_scaling("flow_mol", 1e-3)
     m.fs.air_props.set_default_scaling("flow_mol_phase", 1e-3)
+    m.fs.air_props.set_default_scaling("flow_mol_phase_comp", 1)
     m.fs.air_props.set_default_scaling("temperature", 1e-2)
     m.fs.air_props.set_default_scaling("pressure", 1e-5)
     m.fs.air_props.set_default_scaling("mole_frac_comp", 1e2)
     m.fs.air_props.set_default_scaling("mole_frac_phase_comp", 1e2)
     m.fs.air_props.set_default_scaling("enth_mol_phase", 1e-6)
-    m.fs.air_props.set_default_scaling("entr_mol_phase", 1e-4)
+    m.fs.air_props.set_default_scaling("entr_mol_phase", 1e-1)
+    m.fs.air_props.set_default_scaling("entr_mol", 1e-1)
 
-    iscale.set_scaling_factor(m.fs.prereformer.lagrange_mult, 1e-4)
-    iscale.set_scaling_factor(m.fs.anode.lagrange_mult, 1e-4)
+    built_units = []
 
-    iscale.set_scaling_factor(m.fs.reformer.lagrange_mult, 1e-4)
+    if hasattr(m.fs, "reformer"):
+        iscale.set_scaling_factor(m.fs.reformer.lagrange_mult, 1e-4)
 
-    # overwrite mole_frac lower bound to remove warnings
-    print('overwriting mole_frac lower bound, set to 0 to remove warnings')
-    for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
-        if '.mole_frac' in var.name: # don't catch log_mole_frac variables
-            var.setlb(0)
+        # heat exchanger areas and overall heat transfer coefficiencts
+        iscale.set_scaling_factor(m.fs.reformer_recuperator.area, 1e-3)
+        iscale.set_scaling_factor(m.fs.reformer_recuperator.overall_heat_transfer_coefficient, 1e-1)
 
-    # some specific variable scaling
-    
-    # heat exchanger areas and overall heat transfer coefficiencts
-    iscale.set_scaling_factor(m.fs.anode_hx.area, 1e-4)
-    iscale.set_scaling_factor(m.fs.anode_hx.overall_heat_transfer_coefficient, 1)
-    iscale.set_scaling_factor(m.fs.cathode_hx.area, 1e-4)
-    iscale.set_scaling_factor(m.fs.cathode_hx.overall_heat_transfer_coefficient, 1)
-    iscale.set_scaling_factor(m.fs.reformer_recuperator.area, 1e-4)
-    iscale.set_scaling_factor(m.fs.reformer_recuperator.overall_heat_transfer_coefficient, 1)
+        # control volume heats
+        iscale.set_scaling_factor(m.fs.intercooler_s1.control_volume.heat, 1e-4)
+        iscale.set_scaling_factor(m.fs.intercooler_s2.control_volume.heat, 1e-5)
+        iscale.set_scaling_factor(m.fs.reformer.control_volume.heat, 1e-6)
+        iscale.set_scaling_factor(m.fs.reformer_recuperator.shell.heat, 1e-6)
+        iscale.set_scaling_factor(m.fs.reformer_recuperator.tube.heat, 1e-6)
 
-    # control volume heats
-    iscale.set_scaling_factor(m.fs.anode_hx.tube.heat, 1e-7)
-    iscale.set_scaling_factor(m.fs.anode_hx.shell.heat, 1e-7)
-    iscale.set_scaling_factor(m.fs.anode.control_volume.heat, 1e-8)
-    iscale.set_scaling_factor(m.fs.cathode_hx.tube.heat, 1e-8)
-    iscale.set_scaling_factor(m.fs.cathode_hx.shell.heat, 1e-8)
-    iscale.set_scaling_factor(m.fs.cathode_heat.control_volume.heat, 1e-8)
-    iscale.set_scaling_factor(m.fs.cathode_HRSG.control_volume.heat, 1e-6)
-    iscale.set_scaling_factor(m.fs.intercooler_s1.control_volume.heat, 1e-6)
-    iscale.set_scaling_factor(m.fs.intercooler_s2.control_volume.heat, 1e-6)
-    iscale.set_scaling_factor(m.fs.anode_HRSG.control_volume.heat, 1e-8)
-    iscale.set_scaling_factor(m.fs.prereformer.control_volume.heat, 1e-6)
-    iscale.set_scaling_factor(m.fs.reformer.control_volume.heat, 1e-6)
-    iscale.set_scaling_factor(m.fs.reformer_recuperator.shell.heat, 1e-6)
-    iscale.set_scaling_factor(m.fs.reformer_recuperator.tube.heat, 1e-6)
+        # work
+        iscale.set_scaling_factor(m.fs.air_compressor_s1.control_volume.work, 1e-5)
+        iscale.set_scaling_factor(m.fs.air_compressor_s2.control_volume.work, 1e-5)
+        iscale.set_scaling_factor(m.fs.NG_expander.control_volume.work, 1e-6)
 
-    # work
-    iscale.set_scaling_factor(m.fs.anode_blower.control_volume.work, 1e-5)
-    iscale.set_scaling_factor(m.fs.air_blower.control_volume.work, 1e-6)
-    iscale.set_scaling_factor(m.fs.cathode_blower.control_volume.work, 1e-5)
-    iscale.set_scaling_factor(m.fs.air_compressor_s1.control_volume.work, 1e-6)
-    iscale.set_scaling_factor(m.fs.air_compressor_s2.control_volume.work, 1e-6)
-    iscale.set_scaling_factor(m.fs.cathode_expander.control_volume.work, 1e-6)
-    iscale.set_scaling_factor(m.fs.combustor_expander.control_volume.work, 1e-6)
-    iscale.set_scaling_factor(m.fs.NG_expander.control_volume.work, 1e-6)
+        reformer_units = [
+            'reformer_recuperator', 'NG_expander', 'reformer_bypass',
+            'air_compressor_s1', 'intercooler_s1', 'air_compressor_s2',
+            'intercooler_s2', 'reformer_mix', 'reformer', 'bypass_rejoin'
+        ]
+        built_units += reformer_units
 
-    # reaction extents
-    iscale.set_scaling_factor(m.fs.combustor.control_volume.rate_reaction_extent[0, "h2_cmb"], 1e2)
-    iscale.set_scaling_factor(m.fs.combustor.control_volume.rate_reaction_extent[0, "co_cmb"], 1e2)
-    iscale.set_scaling_factor(m.fs.combustor.control_volume.rate_reaction_extent[0, "ch4_cmb"], 1e5)
+    if hasattr(m.fs, "anode"):
+        iscale.set_scaling_factor(m.fs.anode.lagrange_mult, 1e-4)
+        iscale.set_scaling_factor(m.fs.prereformer.lagrange_mult, 1e-4)
 
-    print('Scaling flowsheet constraints')
+        # heat exchanger areas and overall heat transfer coefficiencts
+        iscale.set_scaling_factor(m.fs.anode_hx.area, 1e-4)
+        iscale.set_scaling_factor(m.fs.anode_hx.overall_heat_transfer_coefficient, 1e-1)
+        iscale.set_scaling_factor(m.fs.cathode_hx.area, 1e-4)
+        iscale.set_scaling_factor(m.fs.cathode_hx.overall_heat_transfer_coefficient, 1e-1)
 
-    list_units = ['anode_mix', 'anode_hx', 'prereformer', 'anode_translator',
-                  'fuel_cell_mix', 'anode', 'anode_recycle', 'anode_blower',
-                  'recycle_translator', 'air_blower', 'cathode_hx',
-                  'cathode_mix', 'cathode', 'cathode_translator',
-                  'cathode_heat', 'cathode_recycle', 'cathode_blower',
-                  'cathode_exhaust_split', 'cathode_expander', 'cathode_HRSG',
-                  'cathode_exhaust_translator', 'combustor_mix', 'combustor',
-                  'combustor_expander', 'anode_HRSG', 'reformer_recuperator',
-                  'NG_expander', 'reformer_bypass', 'air_compressor_s1',
-                  'intercooler_s1', 'air_compressor_s2', 'intercooler_s2',
-                  'reformer_mix', 'reformer', 'bypass_rejoin']
+        # control volume heats
+        iscale.set_scaling_factor(m.fs.anode_hx.tube.heat, 1e-7)
+        iscale.set_scaling_factor(m.fs.anode_hx.shell.heat, 1e-7)
+        iscale.set_scaling_factor(m.fs.anode.control_volume.heat, 1e-8)
+        iscale.set_scaling_factor(m.fs.cathode_hx.tube.heat, 1e-8)
+        iscale.set_scaling_factor(m.fs.cathode_hx.shell.heat, 1e-8)
+        iscale.set_scaling_factor(m.fs.cathode_heat.control_volume.heat, 1e-8)
+        iscale.set_scaling_factor(m.fs.cathode_HRSG.control_volume.heat, 1e-7)
+        iscale.set_scaling_factor(m.fs.anode_HRSG.control_volume.heat, 1e-8)
+        iscale.set_scaling_factor(m.fs.prereformer.control_volume.heat, 1)
+
+        # work
+        iscale.set_scaling_factor(m.fs.anode_blower.control_volume.work, 1e-4)
+        iscale.set_scaling_factor(m.fs.air_blower.control_volume.work, 1e-5)
+        iscale.set_scaling_factor(m.fs.cathode_blower.control_volume.work, 1e-5)
+        iscale.set_scaling_factor(m.fs.cathode_expander.control_volume.work, 1e-3)
+        iscale.set_scaling_factor(m.fs.combustor_expander.control_volume.work, 1e-3)
+
+        # reaction extents
+        iscale.set_scaling_factor(m.fs.combustor.control_volume.rate_reaction_extent[0, "h2_cmb"], 1)
+        iscale.set_scaling_factor(m.fs.combustor.control_volume.rate_reaction_extent[0, "co_cmb"], 1)
+        iscale.set_scaling_factor(m.fs.combustor.control_volume.rate_reaction_extent[0, "ch4_cmb"], 1e1)
+
+        iscale.set_scaling_factor(m.fs.combustor.control_volume.rate_reaction_generation[0, "Vap", "H2"], 1e-1)
+        iscale.set_scaling_factor(m.fs.combustor.control_volume.rate_reaction_generation[0, "Vap", "CO"], 1e-1)
+        iscale.set_scaling_factor(m.fs.combustor.control_volume.rate_reaction_generation[0, "Vap", "H2O"], 1e-1)
+        iscale.set_scaling_factor(m.fs.combustor.control_volume.rate_reaction_generation[0, "Vap", "CO2"], 1e-1)
+        iscale.set_scaling_factor(m.fs.combustor.control_volume.rate_reaction_generation[0, "Vap", "O2"], 1e-1)
+
+        power_island_units = [
+            'anode_mix', 'anode_hx', 'prereformer', 'anode_translator',
+            'fuel_cell_mix', 'anode', 'anode_recycle', 'anode_blower',
+            'recycle_translator', 'air_blower', 'cathode_hx',
+            'cathode_mix', 'cathode', 'cathode_translator',
+            'cathode_heat', 'cathode_recycle', 'cathode_blower',
+            'cathode_exhaust_split', 'cathode_expander', 'cathode_HRSG',
+            'cathode_exhaust_translator', 'combustor_mix', 'combustor',
+            'combustor_expander', 'anode_HRSG'
+        ]
+        built_units += power_island_units
 
     # set scaling for unit constraints
-    for name in list_units:
+    for name in built_units:
         unit = getattr(m.fs, name)
-        # mixer constraints
+        # mixer
         if hasattr(unit, 'material_mixing_equations'):
             for (t, j), c in unit.material_mixing_equations.items():
                 iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
-        if hasattr(unit, 'enthalpy_mixing_equations'):
-            for t, c in unit.enthalpy_mixing_equations.items():
-                iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
-        if hasattr(unit, 'minimum_pressure_constraint'):
-            for (t, i), c in unit.minimum_pressure_constraint.items():
-                iscale.constraint_scaling_transform(c, 1e-5, overwrite=False)
-        if hasattr(unit, 'mixture_pressure'):
-            for t, c in unit.mixture_pressure.items():
-                iscale.constraint_scaling_transform(c, 1e-5, overwrite=False)
-
-        # separator constraints
-        if hasattr(unit, 'material_splitting_eqn'):
-            for (t, o, j), c in unit.material_splitting_eqn.items():
-                iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
-        if hasattr(unit, 'temperature_equality_eqn'):
-            for (t, o), c in unit.temperature_equality_eqn.items():
-                iscale.constraint_scaling_transform(c, 1e-2, overwrite=False)
-        if hasattr(unit, 'pressure_equality_eqn'):
-            for (t, o), c in unit.pressure_equality_eqn.items():
-                iscale.constraint_scaling_transform(c, 1e-5, overwrite=False)
-        if hasattr(unit, 'sum_split_frac'):
-            for t, c in unit.sum_split_frac.items():
-                iscale.constraint_scaling_transform(c, 1, overwrite=False)
-
-        # pressurechanger constraints
-
-        if hasattr(unit, "ratioP_calculation"):
-            for t, c in unit.ratioP_calculation.items():
-                iscale.constraint_scaling_transform(c, 1e-5, overwrite=False)
-
-        if hasattr(unit, "actual_work"):
-            for t, c in unit.actual_work.items():
-                iscale.constraint_scaling_transform(c, 1e-6, overwrite=False)
-
-        if hasattr(unit, "isentropic_pressure"):
-            for t, c in unit.isentropic_pressure.items():
-                iscale.constraint_scaling_transform(c, 1e-5, overwrite=False)
-
-        if hasattr(unit, "isentropic"):
-            for t, c in unit.isentropic.items():
-                iscale.constraint_scaling_transform(c, 1e-1, overwrite=False)
-
+        # pressure changer
         if hasattr(unit, "isentropic_energy_balance"):
             for t, c in unit.isentropic_energy_balance.items():
                 iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
-
-        if hasattr(unit, "state_material_balances"):
-            for (t, j), c in unit.state_material_balances.items():
-                iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
-
-        # HeatExchanger non-CV constraints
+        # heat exchanger
         if hasattr(unit, "heat_transfer_equation"):
             for t, c in unit.heat_transfer_equation.items():
                 iscale.constraint_scaling_transform(c, 1e-7, overwrite=False)
 
-        if hasattr(unit, "unit_heat_balance"):
-            for t, c in unit.unit_heat_balance.items():
-                iscale.constraint_scaling_transform(c, 1e-7, overwrite=False)
-
-        if hasattr(unit, "delta_temperature_in_equation"):
-            for t, c in unit.delta_temperature_in_equation.items():
-                iscale.constraint_scaling_transform(c, 1e-1, overwrite=False)
-
-        if hasattr(unit, "delta_temperature_out_equation"):
-            for t, c in unit.delta_temperature_out_equation.items():
-                iscale.constraint_scaling_transform(c, 1e-1, overwrite=False)
-
-        # Translator has no constraints to scale
-        # Gibbs reactor minimization is scaled elsewhere, set by gibbs_scaling
-        # adding scaling factors of unity here for completeness
-        if hasattr(unit, "gibbs_minimization"):
-            for (t, p, j), c in unit.gibbs_minimization.items():
-                iscale.constraint_scaling_transform(c, 1, overwrite=False)
-
-        if hasattr(unit, "inert_species_balance"):
-            for (t, p, j), c in unit.inert_species_balance.items():
-                iscale.constraint_scaling_transform(c, 1, overwrite=False)
-
-    print('Calculating scaling factors')
     iscale.calculate_scaling_factors(m)
-    print()
+
+    constraints_to_scale = {
+        m.fs.prereformer.control_volume.element_balances[0.0, "H"]: 1e-2,
+        m.fs.prereformer.control_volume.element_balances[0.0, "C"]: 1e-2,
+        m.fs.prereformer.control_volume.element_balances[0.0, "O"]: 1e-2,
+        m.fs.prereformer.control_volume.element_balances[0.0, "N"]: 1e-2,
+        m.fs.prereformer.control_volume.element_balances[0.0, "Ar"]: 1e-2,
+        m.fs.prereformer.inert_species_balance[0.0, "Vap", "O2"]: 1e-2,
+        m.fs.anode.control_volume.element_balances[0.0, "H"]: 1e-2,
+        m.fs.anode.control_volume.element_balances[0.0, "C"]: 1e-2,
+        m.fs.anode.control_volume.element_balances[0.0, "O"]: 1e-2,
+        m.fs.anode.control_volume.element_balances[0.0, "N"]: 1e-2,
+        m.fs.anode.control_volume.element_balances[0.0, "Ar"]: 1e-2,
+        m.fs.anode_recycle.material_splitting_eqn[0.0, "exhaust", "CH4"]: 0.01,
+        m.fs.anode_recycle.material_splitting_eqn[0.0, "recycle", "CH4"]: 0.01,
+        m.fs.anode_hx.hot_side.material_balances[0.0, "CH4"]: 0.01,
+        m.fs.combustor_mix.material_mixing_equations[0.0, "CH4"]: 0.01,
+        m.fs.combustor.control_volume.material_balances[0.0, "CH4"]: 0.01,
+        m.fs.anode_blower.isentropic_energy_balance[0.0]: 1e-5,
+        m.fs.air_blower.isentropic_energy_balance[0.0]: 1e-5,
+        m.fs.cathode_blower.isentropic_energy_balance[0.0]: 1e-5,
+        m.fs.cathode_expander.isentropic_energy_balance[0.0]: 1e-5,
+        m.fs.combustor_expander.isentropic_energy_balance[0.0]: 1e-4,
+    }
+
+    for c, sf in constraints_to_scale.items():
+        iscale.constraint_scaling_transform(c, sf)
 
 
 def initialize_power_island(m, outlvl=logging.INFO):
