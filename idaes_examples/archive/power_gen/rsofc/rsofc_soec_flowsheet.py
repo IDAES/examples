@@ -202,7 +202,7 @@ def add_asu(fs):
     fs.intercooler_s2.outlet.temperature.fix(310.93)  # K (100 F)
     fs.intercooler_s2.deltaP.fix(-3447)  # Pa (-0.5 psi)
 
-    # air seperation unit
+    # air separation unit
     fs.ASU.split_fraction[0, "O2_outlet", "CO2"].fix(1e-10)
     fs.ASU.split_fraction[0, "O2_outlet", "H2O"].fix(1e-10)
     fs.ASU.split_fraction[0, "O2_outlet", "N2"].fix(0.0005)

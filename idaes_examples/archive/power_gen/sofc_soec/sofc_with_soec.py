@@ -766,7 +766,7 @@ def set_inputs(m):
     m.fs.asu_ic02.outlet.temperature.fix(310.93)  # K (100 F)
     m.fs.asu_ic02.deltaP.fix(-3447)  # kPa (-0.5 psi)
 
-    # air seperation unit
+    # air separation unit
     m.fs.asu_split.split_fraction[0, "o2_outlet", "N2"].fix(0.0005)
     m.fs.asu_split.split_fraction[0, "o2_outlet", "O2"].fix(0.9691)
     m.fs.asu_split.split_fraction[0, "o2_outlet", "Ar"].fix(0.0673)

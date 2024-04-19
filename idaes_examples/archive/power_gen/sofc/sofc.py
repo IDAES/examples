@@ -738,7 +738,7 @@ def set_inputs(m):
     m.fs.intercooler_s2.outlet.temperature.fix(310.93)  # K (100 F)
     m.fs.intercooler_s2.deltaP.fix(-3.447)  # kPa (-0.5 psi)
 
-    # air seperation unit
+    # air separation unit
     m.fs.asu.O2_outlet.mole_frac_comp[0, "CO2"].fix(1e-19)
     m.fs.asu.O2_outlet.mole_frac_comp[0, "H2O"].fix(1e-19)
     m.fs.asu.split_fraction[0, "O2_outlet", "N2"].fix(0.0005)
