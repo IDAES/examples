@@ -155,6 +155,7 @@ extend-exclude = [
     "*.svg",
     "*.json",
     "*.css",
+    "*.yml",
 ]
 
 [tool.typos.default.extend-words]
@@ -169,7 +170,11 @@ ba = "ba"
 # Ignore equil, assumes it's on purpose and not a typo of "equal"
 equil = "equil"
 # Atomic elements
-#Nd = "Nd"
+Nd = "Nd"
+# RIPE specific variable names, remove exceptions if RIPE examples are removed
+nd = "nd"
+dum = "dum"
+fre = "fre"
 # Numpy
 arange = "arange"
 [tool.typos.default]
