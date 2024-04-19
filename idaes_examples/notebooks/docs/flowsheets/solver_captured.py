@@ -11,7 +11,7 @@
 # for full copyright and license information.
 #################################################################################
 """
-Captured sover
+Captured solver
 """
 
 import json

@@ -143,7 +143,7 @@ def sim(data):
         results = opt.solve(cracmodel)
         cracmodel.solutions.store_to(results)
         klist = ['a','b','c','d','f','g','h','i','j']
-        # Add noise of the specifiec SNR, noise has variance eps ~ N(0,noise*conc)
+        # Add noise of the specific SNR, noise has variance eps ~ N(0,noise*conc)
         vn = [results.Solution.Variable[key]['Value']+np.random.normal(0,noise*results.Solution.Variable[key]['Value']) for key in klist]
         return vn
     
