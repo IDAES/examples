@@ -18,6 +18,8 @@ details can be found in the associated jupyter notebook.
 """
 
 import os
+import logging
+
 from collections import OrderedDict
 
 # Import Pyomo libraries
@@ -33,7 +35,6 @@ from idaes.core.util.initialization import propagate_state
 from idaes.core.util import model_serializer as ms, ModelTag, ModelTagGroup
 from idaes.core.util.tags import svg_tag
 from idaes.core.util.tables import create_stream_table_dataframe
-from idaes.core.util.exceptions import InitializationError
 
 import idaes.core.util.scaling as iscale
 
@@ -65,14 +66,11 @@ from idaes.models_extra.power_generation.properties.natural_gas_PR import (
     get_prop,
     get_rxn,
 )
-import sys
-sys.path.append("C:\\Users\\alxor\\Documents\\IDAES\\examples")
+
 from idaes_examples.mod.power_gen.SOFC_ROM import (
     build_SOFC_ROM,
     initialize_SOFC_ROM,
 )
-
-import logging
 
 
 def build_properties(m):
@@ -1653,7 +1651,7 @@ def pfd_result(outfile, m, df):
         tag_group.str_include_units = False
 
     original_svg_file = os.path.join(this_file_dir(),
-                                     "../../notebooks/archive/power_gen/ngfc/NGFC_results_template.svg")
+                                     "../../archive/power_gen/ngfc/NGFC_results_template.svg")
     with open(original_svg_file, "r") as f:
         svg_tag(svg=f, tag_group=tag_group, outfile=outfile)
 
@@ -1663,8 +1661,8 @@ def main():
     m = pyo.ConcreteModel(name="NGFC without carbon capture")
     m.fs = FlowsheetBlock(dynamic=False)
 
-    reinit = True  # switch to True to re-initialize and re-solve
-    resolve = True  # switch to True to re-solve only (for debugging)
+    reinit = False  # switch to True to re-initialize and re-solve
+    resolve = False  # switch to True to re-solve only (for debugging)
 
     if os.path.exists("../../notebooks/archive/power_gen/ngfc/NGFC_flowsheet_init.json.gz") and reinit is False:
         # already initialized, can build model and load results from json
@@ -1724,7 +1722,7 @@ def main():
         add_SOFC_energy_balance(m)
         add_result_constraints(m)
 
-        # ms.to_json(m, fname="NGFC_flowsheet_init.json.gz")
+        ms.to_json(m, fname="NGFC_flowsheet_init.json.gz")
 
         solver_ma97 = pyo.SolverFactory("ipopt")
         solver_ma97.options = {
@@ -1737,13 +1735,13 @@ def main():
         }
         solver_ma97.solve(m, tee=True)
 
-        # ms.to_json(m, fname="NGFC_flowsheet_solution.json.gz")
+        ms.to_json(m, fname="NGFC_flowsheet_solution.json.gz")
 
     # uncomment to report results
-    # make_stream_dict(m)
-    # df = create_stream_table_dataframe(streams=m._streams, orient="index")
-    # pfd_result("NGFC_results.svg", m, df)
-    # print('PFD Results Created')
+    make_stream_dict(m)
+    df = create_stream_table_dataframe(streams=m._streams, orient="index")
+    pfd_result("NGFC_results.svg", m, df)
+    print('PFD Results Created')
 
     return m
 
