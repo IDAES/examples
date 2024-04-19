@@ -65,7 +65,8 @@ from idaes.models_extra.power_generation.properties.natural_gas_PR import (
     get_prop,
     get_rxn,
 )
-
+import sys
+sys.path.append("C:\\Users\\alxor\\Documents\\IDAES\\examples")
 from idaes_examples.mod.power_gen.SOFC_ROM import (
     build_SOFC_ROM,
     initialize_SOFC_ROM,
@@ -1026,8 +1027,6 @@ def initialize_power_island(m, outlvl=logging.INFO):
     m.fs.anode.lagrange_mult[0, "H"] = 78296
     m.fs.anode.lagrange_mult[0, "O"] = 291784
 
-    m.fs.anode.outlet.mole_frac_comp[0, "O2"] = 1e-11
-
     m.fs.anode.initialize(outlvl=outlvl, optarg=solver.options)
 
     propagate_state(
@@ -1075,19 +1074,11 @@ def initialize_power_island(m, outlvl=logging.INFO):
         destination=m.fs.prereformer.inlet
     )
 
-    # propagate_state(m.fs.prereformer.outlet, m.fs.prereformer.inlet)
-
     m.fs.prereformer.gibbs_scaling = 1e-4
 
     m.fs.prereformer.lagrange_mult[0, "C"] = 9707
     m.fs.prereformer.lagrange_mult[0, "H"] = 62744
     m.fs.prereformer.lagrange_mult[0, "O"] = 293569
-
-    m.fs.prereformer.outlet.mole_frac_comp[0, "O2"] = 1e-11
-    m.fs.prereformer.outlet.mole_frac_comp[0, "Ar"] = 0.003
-    m.fs.prereformer.outlet.mole_frac_comp[0, "C2H6"] = 1e-11
-    m.fs.prereformer.outlet.mole_frac_comp[0, "C3H8"] = 1e-11
-    m.fs.prereformer.outlet.mole_frac_comp[0, "C4H10"] = 1e-11
 
     m.fs.prereformer.initialize(outlvl=outlvl, optarg=solver.options)
 
@@ -1289,7 +1280,7 @@ def connect_reformer_to_power_island(m):
     pyo.TransformationFactory("network.expand_arcs").apply_to(m.fs)
 
 
-def SOFC_ROM_setup(m):
+def SOFC_ROM_setup(m, init=True):
     # create the ROM
     build_SOFC_ROM(m.fs)
 
@@ -1402,11 +1393,14 @@ def SOFC_ROM_setup(m):
     m.fs.SOFC.pressure.fix(1)
 
     # initialize ROM
-    calculate_variable_from_constraint(
-        m.fs.SOFC.air_temperature, m.fs.ROM_air_inlet_temperature
-    )
-    calculate_variable_from_constraint(m.fs.SOFC.air_util, m.fs.ROM_air_utilization)
-    initialize_SOFC_ROM(m.fs.SOFC)
+    if init:
+        calculate_variable_from_constraint(
+            m.fs.SOFC.air_temperature, m.fs.ROM_air_inlet_temperature
+        )
+        calculate_variable_from_constraint(
+            m.fs.SOFC.air_util, m.fs.ROM_air_utilization
+        )
+        initialize_SOFC_ROM(m.fs.SOFC)
 
     # add constraints for power calculations
     m.fs.F = pyo.Param(initialize=96487, units=pyunits.C / pyunits.mol)
@@ -1669,8 +1663,8 @@ def main():
     m = pyo.ConcreteModel(name="NGFC without carbon capture")
     m.fs = FlowsheetBlock(dynamic=False)
 
-    reinit = False  # switch to True to re-initialize and re-solve
-    resolve = False  # switch to True to re-solve only (for debugging)
+    reinit = True  # switch to True to re-initialize and re-solve
+    resolve = True  # switch to True to re-solve only (for debugging)
 
     if os.path.exists("../../notebooks/archive/power_gen/ngfc/NGFC_flowsheet_init.json.gz") and reinit is False:
         # already initialized, can build model and load results from json
@@ -1679,7 +1673,7 @@ def main():
         build_reformer(m)
         scale_flowsheet(m)
         connect_reformer_to_power_island(m)
-        SOFC_ROM_setup(m)
+        SOFC_ROM_setup(m, init=False)
         add_SOFC_energy_balance(m)
         add_result_constraints(m)
         if os.path.exists("../../notebooks/archive/power_gen/ngfc/NGFC_flowsheet_solution.json.gz") and resolve is False:
@@ -1692,23 +1686,16 @@ def main():
             print('Loading initialized model')
             ms.from_json(m, fname="NGFC_flowsheet_init.json.gz")
             # solver and options
-            solver = pyo.SolverFactory("ipopt")
-            solver.options = {
-                "max_iter": 50,
-                "tol": 1e-5,
-                "bound_push": 1e-8,
-                "linear_solver": "ma57",
-                "ma57_pivtol": 1e-3,
-                "OF_ma57_automatic_scaling": "yes",
+            solver_ma97 = pyo.SolverFactory("ipopt")
+            solver_ma97.options = {
+                "max_iter": 200,
+                "tol": 1e-7,
+                "bound_push": 1e-5,
+                "mu_init": 1e-2,
+                "linear_solver": "ma97",
                 "nlp_scaling_method": "user-scaling"
-                  }
-            solve_iteration = 0
-            for i in range(1, 10):  # keep looping until condition is met
-                solve_iteration += 1
-                print('Solve # ', solve_iteration)
-                res = solver.solve(m, tee=True)
-                if 'Optimal Solution Found' in res.solver.message:
-                    break
+            }
+            solver_ma97.solve(m, tee=True)
             ms.to_json(m, fname="NGFC_flowsheet_solution.json.gz")
     else:
         # need to initialize model, serialize, and try to solve/serialize
@@ -1721,35 +1708,42 @@ def main():
         initialize_power_island(m)
         initialize_reformer(m)
         connect_reformer_to_power_island(m)
-        SOFC_ROM_setup(m)
-        add_SOFC_energy_balance(m)
-        add_result_constraints(m)
-        ms.to_json(m, fname="NGFC_flowsheet_init.json.gz")
-        solver = pyo.SolverFactory("ipopt")
-        solver.options = {
-            "max_iter": 50,
-            "tol": 1e-5,
-            "bound_push": 1e-8,
+
+        solver_ma57 = pyo.SolverFactory("ipopt")
+        solver_ma57.options = {
+            "max_iter": 200,
+            "tol": 1e-7,
+            "bound_push": 1e-5,
             "linear_solver": "ma57",
-            "ma57_pivtol": 1e-3,
             "OF_ma57_automatic_scaling": "yes",
             "nlp_scaling_method": "user-scaling"
-              }
-        solve_iteration = 0
-        for i in range(1, 10):  # keep looping until condition is met
-            solve_iteration += 1
-            print('Solve # ', solve_iteration)
-            res = solver.solve(m, tee=True)
-            if 'Optimal Solution Found' in res.solver.message:
-                break
+        }
+        solver_ma57.solve(m, tee=True)
 
-        ms.to_json(m, fname="NGFC_flowsheet_solution.json.gz")
+        SOFC_ROM_setup(m, init=True)
+        add_SOFC_energy_balance(m)
+        add_result_constraints(m)
+
+        # ms.to_json(m, fname="NGFC_flowsheet_init.json.gz")
+
+        solver_ma97 = pyo.SolverFactory("ipopt")
+        solver_ma97.options = {
+            "max_iter": 200,
+            "tol": 1e-7,
+            "bound_push": 1e-5,
+            "mu_init": 1e-2,
+            "linear_solver": "ma97",
+            "nlp_scaling_method": "user-scaling"
+        }
+        solver_ma97.solve(m, tee=True)
+
+        # ms.to_json(m, fname="NGFC_flowsheet_solution.json.gz")
 
     # uncomment to report results
-    make_stream_dict(m)
-    df = create_stream_table_dataframe(streams=m._streams, orient="index")
-    pfd_result("NGFC_results.svg", m, df)
-    print('PFD Results Created')
+    # make_stream_dict(m)
+    # df = create_stream_table_dataframe(streams=m._streams, orient="index")
+    # pfd_result("NGFC_results.svg", m, df)
+    # print('PFD Results Created')
 
     return m
 
