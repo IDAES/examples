@@ -727,7 +727,7 @@ def set_reformer_inputs(m):
     m.fs.reformer_bypass.split_fraction[0, "bypass_outlet"].fix(0.6)
 
     # air to reformer
-    m.fs.air_compressor_s1.inlet.flow_mol[0] == 1332.9  # mol/s
+    m.fs.air_compressor_s1.inlet.flow_mol[0] = 1332.9  # mol/s
     m.fs.air_compressor_s1.inlet.temperature.fix(288.15)  # K
     m.fs.air_compressor_s1.inlet.pressure.fix(101353)  # Pa, equal to 14.7 psia
     m.fs.air_compressor_s1.inlet.mole_frac_comp.fix(1e-11)
@@ -751,7 +751,7 @@ def set_reformer_inputs(m):
     m.fs.intercooler_s2.deltaP.fix(-3447)  # Pa, equal to -0.5 psi
 
     # steam to reformer
-    m.fs.reformer_mix.steam_inlet.flow_mol[0] == 464.77  # mol/s
+    m.fs.reformer_mix.steam_inlet.flow_mol[0] = 464.77  # mol/s
     m.fs.reformer_mix.steam_inlet.temperature.fix(422)  # K
     m.fs.reformer_mix.steam_inlet.pressure.fix(206843)  # Pa, equal to 30 psia
     m.fs.reformer_mix.steam_inlet.mole_frac_comp.fix(1e-11)
@@ -965,23 +965,25 @@ def scale_flowsheet(m):
     print()
 
 
-def initialize_power_island(m):
+def initialize_power_island(m, outlvl=logging.INFO):
     solver = pyo.SolverFactory("ipopt")
     solver.options = {
         "max_iter": 500,
         "tol": 1e-5,
         "bound_push": 1e-8,
         "linear_solver": "ma57",
-        "ma57_pivtol": 1e-3,
         "OF_ma57_automatic_scaling": "yes",
         "nlp_scaling_method": "user-scaling"
-          }
+    }
     # cathode side
-    m.fs.air_blower.initialize(outlvl=logging.INFO)
+    m.fs.air_blower.initialize(outlvl=outlvl, optarg=solver.options)
 
-    propagate_state(m.fs.cathode_hx.tube_inlet, m.fs.air_blower.outlet)
+    propagate_state(
+        source=m.fs.air_blower.outlet,
+        destination=m.fs.cathode_hx.tube_inlet
+    )
 
-    # fix cathode inlet to initial guess
+    # set cathode inlet to initial guess
     m.fs.cathode.inlet.flow_mol[0] = 34174
     m.fs.cathode.inlet.temperature[0] = 892
     m.fs.cathode.inlet.pressure[0] = 105490
@@ -991,39 +993,61 @@ def initialize_power_island(m):
     m.fs.cathode.inlet.mole_frac_comp[0, "O2"] = 0.1690
     m.fs.cathode.inlet.mole_frac_comp[0, "Ar"] = 0.0099
 
-    m.fs.cathode.initialize(outlvl=logging.INFO)
-
-    m.fs.cathode.inlet.unfix()
+    m.fs.cathode.initialize(outlvl=outlvl, optarg=solver.options)
 
     # cathode translator block
-    propagate_state(m.fs.cathode_translator.inlet, m.fs.cathode.ion_outlet)
+    propagate_state(
+        source=m.fs.cathode.ion_outlet,
+        destination=m.fs.cathode_translator.inlet
+    )
 
-    m.fs.cathode_translator.initialize()
+    m.fs.cathode_translator.initialize(outlvl=outlvl, optarg=solver.options)
 
     # rest of cathode side
-    propagate_state(m.fs.cathode_heat.inlet, m.fs.cathode.air_outlet)
+    propagate_state(
+        source=m.fs.cathode.air_outlet,
+        destination=m.fs.cathode_heat.inlet
+    )
 
-    m.fs.cathode_heat.initialize(outlvl=logging.INFO)
+    m.fs.cathode_heat.initialize(outlvl=outlvl, optarg=solver.options)
 
-    propagate_state(m.fs.cathode_recycle.inlet, m.fs.cathode_heat.outlet)
+    propagate_state(
+        source=m.fs.cathode_heat.outlet,
+        destination=m.fs.cathode_recycle.inlet
+    )
 
-    m.fs.cathode_recycle.initialize(outlvl=logging.INFO)
+    m.fs.cathode_recycle.initialize(outlvl=outlvl, optarg=solver.options)
 
-    propagate_state(m.fs.cathode_hx.shell_inlet, m.fs.cathode_recycle.exhaust)
+    propagate_state(
+        source=m.fs.cathode_recycle.exhaust,
+        destination=m.fs.cathode_hx.shell_inlet
+    )
 
-    m.fs.cathode_hx.initialize(outlvl=logging.INFO)
+    m.fs.cathode_hx.initialize(outlvl=outlvl, optarg=solver.options)
 
-    propagate_state(m.fs.cathode_blower.inlet, m.fs.cathode_recycle.recycle)
+    propagate_state(
+        source=m.fs.cathode_recycle.recycle,
+        destination=m.fs.cathode_blower.inlet
+    )
 
-    m.fs.cathode_blower.initialize(outlvl=logging.INFO)
+    m.fs.cathode_blower.initialize(outlvl=outlvl, optarg=solver.options)
 
-    propagate_state(m.fs.cathode_mix.recycle, m.fs.cathode_blower.outlet)
+    propagate_state(
+        source=m.fs.cathode_blower.outlet,
+        destination=m.fs.cathode_mix.recycle
+    )
 
-    propagate_state(m.fs.cathode_mix.feed, m.fs.cathode_hx.tube_outlet)
+    propagate_state(
+        source=m.fs.cathode_hx.tube_outlet,
+        destination=m.fs.cathode_mix.feed
+    )
 
-    m.fs.cathode_mix.initialize(outlvl=logging.INFO)
+    m.fs.cathode_mix.initialize(outlvl=outlvl, optarg=solver.options)
 
-    propagate_state(m.fs.cathode.inlet, m.fs.cathode_mix.outlet)
+    propagate_state(
+        source=m.fs.cathode_mix.outlet,
+        destination=m.fs.cathode.inlet
+    )
 
     # anode side
     # anode inlet is used as tear stream
@@ -1043,51 +1067,56 @@ def initialize_power_island(m):
     m.fs.anode.lagrange_mult[0, "H"] = 78296
     m.fs.anode.lagrange_mult[0, "O"] = 291784
 
-    m.fs.anode.outlet.mole_frac_comp[0, "O2"] = 0
+    m.fs.anode.outlet.mole_frac_comp[0, "O2"] = 1e-11
 
-    # This initialization step fails to converge, but is sufficient to resolve
-    try:
-        m.fs.anode.initialize(outlvl=logging.INFO)
-    except InitializationError:
-        # this step may end on Solve to Acceptable Level, add resolve condition
-        for i in range(1, 10):  # keep looping until condition is met
-            res = solver.solve(m.fs.anode, tee=True)
-            if 'Optimal Solution Found' in res.solver.message:
-                break
+    m.fs.anode.initialize(outlvl=outlvl, optarg=solver.options)
 
-    propagate_state(m.fs.anode_recycle.inlet, m.fs.anode.outlet)
+    propagate_state(
+        source=m.fs.anode.outlet,
+        destination=m.fs.anode_recycle.inlet
+    )
 
-    m.fs.anode_recycle.initialize(outlvl=logging.INFO)
+    m.fs.anode_recycle.initialize(outlvl=outlvl, optarg=solver.options)
 
-    propagate_state(m.fs.anode_blower.inlet, m.fs.anode_recycle.recycle)
+    propagate_state(
+        source=m.fs.anode_recycle.recycle,
+        destination=m.fs.anode_blower.inlet
+    )
 
-    # This initialization step fails to converge, but is sufficient to resolve
-    try:
-        m.fs.anode_blower.initialize(outlvl=logging.INFO)
-    except InitializationError:
-        # this step may end on Solve to Acceptable Level, add resolve condition
-        for i in range(1, 10):  # keep looping until condition is met
-            res = solver.solve(m.fs.anode_blower, tee=True)
-            if 'Optimal Solution Found' in res.solver.message:
-                break
+    m.fs.anode_blower.initialize(outlvl=outlvl, optarg=solver.options)
 
-    propagate_state(m.fs.recycle_translator.inlet, m.fs.anode_blower.outlet)
+    propagate_state(
+        source=m.fs.anode_blower.outlet,
+        destination=m.fs.recycle_translator.inlet
+    )
 
-    m.fs.recycle_translator.initialize()
+    m.fs.recycle_translator.initialize(outlvl=outlvl, optarg=solver.options)
 
-    propagate_state(m.fs.anode_mix.recycle, m.fs.recycle_translator.outlet)
+    propagate_state(
+        source=m.fs.recycle_translator.outlet,
+        destination=m.fs.anode_mix.recycle
+    )
 
-    m.fs.anode_mix.initialize(outlvl=logging.INFO)
+    m.fs.anode_mix.initialize(outlvl=outlvl, optarg=solver.options)
 
-    propagate_state(m.fs.anode_hx.tube_inlet, m.fs.anode_mix.outlet)
+    propagate_state(
+        source=m.fs.anode_mix.outlet,
+        destination=m.fs.anode_hx.tube_inlet
+    )
 
-    propagate_state(m.fs.anode_hx.shell_inlet, m.fs.anode_recycle.exhaust)
+    propagate_state(
+        source=m.fs.anode_recycle.exhaust,
+        destination=m.fs.anode_hx.shell_inlet
+    )
 
-    m.fs.anode_hx.initialize(outlvl=logging.INFO)
+    m.fs.anode_hx.initialize(outlvl=outlvl, optarg=solver.options)
 
-    propagate_state(m.fs.prereformer.inlet, m.fs.anode_hx.tube_outlet)
+    propagate_state(
+        source=m.fs.anode_hx.tube_outlet,
+        destination=m.fs.prereformer.inlet
+    )
 
-    propagate_state(m.fs.prereformer.outlet, m.fs.prereformer.inlet)
+    # propagate_state(m.fs.prereformer.outlet, m.fs.prereformer.inlet)
 
     m.fs.prereformer.gibbs_scaling = 1e-4
 
@@ -1095,91 +1124,112 @@ def initialize_power_island(m):
     m.fs.prereformer.lagrange_mult[0, "H"] = 62744
     m.fs.prereformer.lagrange_mult[0, "O"] = 293569
 
-    m.fs.prereformer.outlet.mole_frac_comp[0, "O2"] = 0
+    m.fs.prereformer.outlet.mole_frac_comp[0, "O2"] = 1e-11
     m.fs.prereformer.outlet.mole_frac_comp[0, "Ar"] = 0.003
-    m.fs.prereformer.outlet.mole_frac_comp[0, "C2H6"] = 0
-    m.fs.prereformer.outlet.mole_frac_comp[0, "C3H8"] = 0
-    m.fs.prereformer.outlet.mole_frac_comp[0, "C4H10"] = 0
+    m.fs.prereformer.outlet.mole_frac_comp[0, "C2H6"] = 1e-11
+    m.fs.prereformer.outlet.mole_frac_comp[0, "C3H8"] = 1e-11
+    m.fs.prereformer.outlet.mole_frac_comp[0, "C4H10"] = 1e-11
 
-    m.fs.prereformer.initialize(outlvl=logging.INFO)
+    m.fs.prereformer.initialize(outlvl=outlvl, optarg=solver.options)
 
-    propagate_state(m.fs.anode_translator.inlet, m.fs.prereformer.outlet)
+    propagate_state(
+        source=m.fs.prereformer.outlet,
+        destination=m.fs.anode_translator.inlet
+    )
 
-    m.fs.anode_translator.initialize()
+    m.fs.anode_translator.initialize(outlvl=outlvl, optarg=solver.options)
 
-    propagate_state(m.fs.fuel_cell_mix.fuel_inlet, m.fs.anode_translator.outlet)
+    propagate_state(
+        source=m.fs.anode_translator.outlet,
+        destination=m.fs.fuel_cell_mix.fuel_inlet
+    )
 
-    propagate_state(m.fs.fuel_cell_mix.ion_inlet, m.fs.cathode_translator.outlet)
+    propagate_state(
+        source=m.fs.cathode_translator.outlet,
+        destination=m.fs.fuel_cell_mix.ion_inlet
+    )
 
-    m.fs.fuel_cell_mix.initialize(outlvl=logging.INFO)
+    m.fs.fuel_cell_mix.initialize(outlvl=outlvl, optarg=solver.options)
 
     ##############################
     # Combustor and HRSG section #
     ##############################
 
     # cathode side
-    propagate_state(m.fs.cathode_exhaust_split.inlet, m.fs.cathode_hx.shell_outlet)
-
-    m.fs.cathode_exhaust_split.initialize(outlvl=logging.INFO)
-
     propagate_state(
-        m.fs.cathode_expander.inlet, m.fs.cathode_exhaust_split.exhaust_outlet
+        source=m.fs.cathode_hx.shell_outlet,
+        destination=m.fs.cathode_exhaust_split.inlet
     )
 
-    m.fs.cathode_expander.initialize(outlvl=logging.INFO)
-
-    propagate_state(m.fs.cathode_HRSG.inlet, m.fs.cathode_expander.outlet)
-
-    m.fs.cathode_HRSG.initialize(outlvl=logging.INFO)
+    m.fs.cathode_exhaust_split.initialize(outlvl=outlvl, optarg=solver.options)
 
     propagate_state(
-        m.fs.cathode_exhaust_translator.inlet,
-        m.fs.cathode_exhaust_split.combustor_outlet,
+        source=m.fs.cathode_exhaust_split.exhaust_outlet,
+        destination=m.fs.cathode_expander.inlet
     )
 
-    m.fs.cathode_exhaust_translator.initialize()
+    m.fs.cathode_expander.initialize(outlvl=outlvl, optarg=solver.options)
+
+    propagate_state(
+        source=m.fs.cathode_expander.outlet,
+        destination=m.fs.cathode_HRSG.inlet
+    )
+
+    m.fs.cathode_HRSG.initialize(outlvl=outlvl, optarg=solver.options)
+
+    propagate_state(
+        source=m.fs.cathode_exhaust_split.combustor_outlet,
+        destination=m.fs.cathode_exhaust_translator.inlet
+    )
+
+    m.fs.cathode_exhaust_translator.initialize(outlvl=outlvl, optarg=solver.options)
 
     # anode side
     propagate_state(
-        m.fs.combustor_mix.cathode_inlet, m.fs.cathode_exhaust_translator.outlet
+        source=m.fs.cathode_exhaust_translator.outlet,
+        destination=m.fs.combustor_mix.cathode_inlet
     )
 
-    propagate_state(m.fs.combustor_mix.anode_inlet, m.fs.anode_hx.shell_outlet)
+    propagate_state(
+        source=m.fs.anode_hx.shell_outlet,
+        destination=m.fs.combustor_mix.anode_inlet
+    )
 
-    m.fs.combustor_mix.initialize(outlvl=logging.INFO)
+    m.fs.combustor_mix.initialize(outlvl=outlvl, optarg=solver.options)
 
-    propagate_state(m.fs.combustor.inlet, m.fs.combustor_mix.outlet)
+    propagate_state(
+        source=m.fs.combustor_mix.outlet,
+        destination=m.fs.combustor.inlet
+    )
 
-    # This initialization step fails to converge, but is sufficient to resolve
-    try:
-        m.fs.combustor.initialize(outlvl=logging.INFO)
-    except InitializationError:
-        # this step may end on Solve to Acceptable Level, add resolve condition
-        for i in range(1, 10):  # keep looping until condition is met
-            res = solver.solve(m.fs.combustor, tee=True)
-            if 'Optimal Solution Found' in res.solver.message:
-                break
+    m.fs.combustor.initialize(outlvl=outlvl, optarg=solver.options)
 
-    propagate_state(m.fs.combustor_expander.inlet, m.fs.combustor.outlet)
+    propagate_state(
+        source=m.fs.combustor.outlet,
+        destination=m.fs.combustor_expander.inlet
+    )
 
-    m.fs.combustor_expander.initialize()
+    m.fs.combustor_expander.initialize(outlvl=outlvl, optarg=solver.options)
 
-    propagate_state(m.fs.anode_HRSG.inlet, m.fs.combustor_expander.outlet)
+    propagate_state(
+        source=m.fs.combustor_expander.outlet,
+        destination=m.fs.anode_HRSG.inlet
+    )
 
-    m.fs.anode_HRSG.initialize()
+    m.fs.anode_HRSG.initialize(outlvl=outlvl, optarg=solver.options)
 
 
-def initialize_reformer(m):
+def initialize_reformer(m, outlvl=logging.INFO):
     solver = pyo.SolverFactory("ipopt")
     solver.options = {
         "max_iter": 500,
         "tol": 1e-5,
         "bound_push": 1e-8,
         "linear_solver": "ma57",
-        "ma57_pivtol": 1e-3,
         "OF_ma57_automatic_scaling": "yes",
         "nlp_scaling_method": "user-scaling"
-          }
+    }
+
     m.fs.reformer.inlet.flow_mol[0] = 2262  # mol/s
     m.fs.reformer.inlet.temperature[0] = 470  # K
     m.fs.reformer.inlet.pressure[0] = 203395  # Pa
@@ -1187,102 +1237,89 @@ def initialize_reformer(m):
     m.fs.reformer.inlet.mole_frac_comp[0, "C2H6"] = 0.006
     m.fs.reformer.inlet.mole_frac_comp[0, "C3H8"] = 0.002
     m.fs.reformer.inlet.mole_frac_comp[0, "C4H10"] = 0.001
-    m.fs.reformer.inlet.mole_frac_comp[0, "H2"] = 0
-    m.fs.reformer.inlet.mole_frac_comp[0, "CO"] = 0
+    m.fs.reformer.inlet.mole_frac_comp[0, "H2"] = 1e-19
+    m.fs.reformer.inlet.mole_frac_comp[0, "CO"] = 1e-19
     m.fs.reformer.inlet.mole_frac_comp[0, "CO2"] = 0.002
     m.fs.reformer.inlet.mole_frac_comp[0, "H2O"] = 0.212
     m.fs.reformer.inlet.mole_frac_comp[0, "N2"] = 0.458
     m.fs.reformer.inlet.mole_frac_comp[0, "O2"] = 0.122
     m.fs.reformer.inlet.mole_frac_comp[0, "Ar"] = 0.006
 
-    m.fs.reformer.lagrange_mult[0, "C"] = 39230
-    m.fs.reformer.lagrange_mult[0, "H"] = 81252
-    m.fs.reformer.lagrange_mult[0, "O"] = 315049
-
-    m.fs.reformer.outlet.mole_frac_comp[0, "O2"] = 0
-    m.fs.reformer.outlet.mole_frac_comp[0, "Ar"] = 0.004
-    m.fs.reformer.outlet.mole_frac_comp[0, "CH4"] = 0.0005
-    m.fs.reformer.outlet.mole_frac_comp[0, "C2H6"] = 0
-    m.fs.reformer.outlet.mole_frac_comp[0, "C3H8"] = 0
-    m.fs.reformer.outlet.mole_frac_comp[0, "C4H10"] = 0
-
-    # This initialization step fails to converge, but is sufficient to resolve
-    try:
-        m.fs.reformer.initialize(outlvl=logging.INFO)
-    except InitializationError:
-        # this step may end on Solve to Acceptable Level, add resolve condition
-        for i in range(1, 10):  # keep looping until condition is met
-            res = solver.solve(m.fs.reformer, tee=True)
-            if 'Optimal Solution Found' in res.solver.message:
-                break
+    m.fs.reformer.initialize(outlvl=outlvl, optarg=solver.options)
 
     # reformer recuperator
-    propagate_state(m.fs.reformer_recuperator.shell_inlet, m.fs.reformer.outlet)
+    propagate_state(
+        source=m.fs.reformer.outlet,
+        destination=m.fs.reformer_recuperator.shell_inlet
+    )
 
-    # This initialization step fails to converge, but is sufficient to resolve
-    try:
-        m.fs.reformer_recuperator.initialize(outlvl=logging.INFO)
-    except InitializationError:
-        # this step may end on Solve to Acceptable Level, add resolve condition
-        for i in range(1, 10):  # keep looping until condition is met
-            res = solver.solve(m.fs.reformer_recuperator, tee=True)
-            if 'Optimal Solution Found' in res.solver.message:
-                break
+    m.fs.reformer_recuperator.initialize(outlvl=outlvl, optarg=solver.options)
 
     # NG expander
-    propagate_state(m.fs.NG_expander.inlet, m.fs.reformer_recuperator.tube_outlet)
+    propagate_state(
+        source=m.fs.reformer_recuperator.tube_outlet,
+        destination=m.fs.NG_expander.inlet
+    )
 
-    # This initialization step fails to converge, but is sufficient to resolve
-    try:
-        m.fs.NG_expander.initialize(outlvl=logging.INFO)
-    except InitializationError:
-        # this step may end on Solve to Acceptable Level, add resolve condition
-        for i in range(1, 10):  # keep looping until condition is met
-            res = solver.solve(m.fs.NG_expander, tee=True)
-            if 'Optimal Solution Found' in res.solver.message:
-                break
+    m.fs.NG_expander.initialize(outlvl=outlvl, optarg=solver.options)
 
     # reformer bypass
-    propagate_state(m.fs.reformer_bypass.inlet, m.fs.NG_expander.outlet)
+    propagate_state(
+        source=m.fs.NG_expander.outlet,
+        destination=m.fs.reformer_bypass.inlet
+    )
 
-    m.fs.reformer_bypass.initialize()
+    m.fs.reformer_bypass.initialize(outlvl=outlvl, optarg=solver.options)
 
     # air compressor train
-    m.fs.air_compressor_s1.initialize()
+    m.fs.air_compressor_s1.initialize(outlvl=outlvl, optarg=solver.options)
 
-    propagate_state(m.fs.intercooler_s1.inlet, m.fs.air_compressor_s1.outlet)
+    propagate_state(
+        source=m.fs.air_compressor_s1.outlet,
+        destination=m.fs.intercooler_s1.inlet
+    )
 
-    m.fs.intercooler_s1.initialize()
+    m.fs.intercooler_s1.initialize(outlvl=outlvl, optarg=solver.options)
 
-    propagate_state(m.fs.air_compressor_s2.inlet, m.fs.intercooler_s1.outlet)
+    propagate_state(
+        source=m.fs.intercooler_s1.outlet,
+        destination=m.fs.air_compressor_s2.inlet
+    )
 
-    # This initialization step fails to converge, but is sufficient to resolve
-    try:
-        m.fs.air_compressor_s2.initialize(outlvl=logging.INFO)
-    except InitializationError:
-        # this step may end on Solve to Acceptable Level, add resolve condition
-        for i in range(1, 10):  # keep looping until condition is met
-            res = solver.solve(m.fs.air_compressor_s2, tee=True)
-            if 'Optimal Solution Found' in res.solver.message:
-                break
+    m.fs.air_compressor_s2.initialize(outlvl=outlvl, optarg=solver.options)
 
-    propagate_state(m.fs.intercooler_s2.inlet, m.fs.air_compressor_s2.outlet)
+    propagate_state(
+        source=m.fs.air_compressor_s2.outlet,
+        destination=m.fs.intercooler_s2.inlet
+    )
 
-    m.fs.intercooler_s2.initialize()
+    m.fs.intercooler_s2.initialize(outlvl=outlvl, optarg=solver.options)
 
     # reformer mixer
-    propagate_state(m.fs.reformer_mix.oxygen_inlet, m.fs.intercooler_s2.outlet)
+    propagate_state(
+        source=m.fs.intercooler_s2.outlet,
+        destination=m.fs.reformer_mix.oxygen_inlet
+    )
 
-    propagate_state(m.fs.reformer_mix.gas_inlet, m.fs.reformer_bypass.reformer_outlet)
+    propagate_state(
+        source=m.fs.reformer_bypass.reformer_outlet,
+        destination=m.fs.reformer_mix.gas_inlet
+    )
 
-    m.fs.reformer_mix.initialize()
+    m.fs.reformer_mix.initialize(outlvl=outlvl, optarg=solver.options)
 
     # bypass rejoin
-    propagate_state(m.fs.bypass_rejoin.syngas_inlet, m.fs.reformer_recuperator.shell_outlet)
+    propagate_state(
+        source=m.fs.reformer_recuperator.shell_outlet,
+        destination=m.fs.bypass_rejoin.syngas_inlet
+    )
 
-    propagate_state(m.fs.bypass_rejoin.bypass_inlet, m.fs.reformer_bypass.bypass_outlet)
+    propagate_state(
+        source=m.fs.reformer_bypass.bypass_outlet,
+        destination=m.fs.bypass_rejoin.bypass_inlet
+    )
 
-    m.fs.bypass_rejoin.initialize()
+    m.fs.bypass_rejoin.initialize(outlvl=outlvl, optarg=solver.options)
 
 
 def connect_reformer_to_power_island(m):
