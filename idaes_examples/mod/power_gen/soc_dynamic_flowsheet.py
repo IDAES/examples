@@ -25,13 +25,11 @@ from idaes.core.solvers import get_solver
 from idaes.core.util.tags import svg_tag
 from idaes.models_extra.power_generation.unit_models import CrossFlowHeatExchanger1D
 from idaes.models.unit_models.heat_exchanger import HeatExchangerFlowPattern
-from idaes.models.unit_models import Flash
 from idaes.models_extra.power_generation.unit_models import Heater1D
 from idaes.models.control.controller import (
     PIDController, ControllerType
 )
 from pyomo.common.collections import ComponentSet
-from idaes.core.util.model_diagnostics import DegeneracyHunter
 from pyomo.dae import DerivativeVar
 
 def scale_indexed_constraint(con, sf):
@@ -802,19 +800,19 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
             heater.pitch_x.fix(0.1)
             heater.pitch_y.fix(0.1)
             heater.length_tube_seg.fix(10)
-            heater.nseg_tube.fix(1)
+            heater.number_passes.fix(1)
             heater.rfouling = 0.0001
             heater.fcorrection_htc_shell.fix(1)
             heater.cp_wall = 502.4
 
         fix_heater_params(self.feed_heater)
-        self.feed_heater.ncol_tube.fix(40)
-        self.feed_heater.nrow_inlet.fix(40)
+        self.feed_heater.number_rows_per_pass.fix(40)
+        self.feed_heater.number_columns_per_pass.fix(40)
         self.feed_heater.electric_heat_duty[:].fix(2840706)
         
         fix_heater_params(self.sweep_heater)
-        self.sweep_heater.ncol_tube.fix(60)
-        self.sweep_heater.nrow_inlet.fix(60)
+        self.sweep_heater.number_rows_per_pass.fix(60)
+        self.sweep_heater.number_columns_per_pass.fix(60)
         self.sweep_heater.electric_heat_duty[:].fix(4807703.46412979)
 
         self.condenser_flash.control_volume.deltaP.fix(0)
@@ -834,11 +832,11 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
             
         fix_hx_params(self.sweep_exchanger)
         # number of tube bundle segments, typically it is the same as or a multiple of the "finite_elements" in the config
-        self.sweep_exchanger.nseg_tube.fix(10)
+        self.sweep_exchanger.number_passes.fix(10)
         # number of tube columns in the direction perpendicular to the shell side flow direction
-        self.sweep_exchanger.ncol_tube.fix(50)
+        self.sweep_exchanger.number_columns_per_pass.fix(50)
         # number of tube rows at tube side inlet
-        self.sweep_exchanger.nrow_inlet.fix(25)
+        self.sweep_exchanger.number_rows_per_pass.fix(25)
         self.sweep_exchanger.di_tube.fix(0.0525018)
         self.sweep_exchanger.length_tube_seg.fix(5.5)
         self.sweep_exchanger.thickness_tube.fix(0.0039116)
@@ -850,20 +848,20 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
         self.feed_medium_exchanger.thickness_tube.fix(0.0039116)
         self.feed_medium_exchanger.length_tube_seg.fix(3.5)
         # number of tube bundle segments, typically it is the same as or a multiple of the "finite_elements" in the config
-        self.feed_medium_exchanger.nseg_tube.fix(3)
+        self.feed_medium_exchanger.number_passes.fix(3)
         # number of tube columns in the direction perpendicular to the shell side flow direction
-        self.feed_medium_exchanger.ncol_tube.fix(40)
+        self.feed_medium_exchanger.number_columns_per_pass.fix(40)
         # number of tube rows at tube side inlet
-        self.feed_medium_exchanger.nrow_inlet.fix(25)
+        self.feed_medium_exchanger.number_rows_per_pass.fix(25)
         
         fix_hx_params(self.feed_hot_exchanger)
         
         self.feed_hot_exchanger.di_tube.fix(0.0525018)
         self.feed_hot_exchanger.thickness_tube.fix(0.0039116)
         self.feed_hot_exchanger.length_tube_seg.fix(4.3)
-        self.feed_hot_exchanger.nseg_tube.fix(12)
-        self.feed_hot_exchanger.ncol_tube.fix(50)
-        self.feed_hot_exchanger.nrow_inlet.fix(25)
+        self.feed_hot_exchanger.number_passes.fix(12)
+        self.feed_hot_exchanger.number_columns_per_pass.fix(50)
+        self.feed_hot_exchanger.number_rows_per_pass.fix(25)
 
     def initialize_build(
         self,
@@ -989,8 +987,14 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
 
         propagate_state(self.feed03)
         propagate_state(self.sweep03)
-        self.sweep_heater.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
-        self.feed_heater.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
+        self.sweep_heater.default_initializer(
+            solver=solver, solver_options=optarg, output_level=outlvl
+        ).initialize(model=self.sweep_heater)
+        self.feed_heater.default_initializer(
+            solver=solver, solver_options=optarg, output_level=outlvl
+        ).initialize(model=self.feed_heater)
+        # self.sweep_heater.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
+        # self.feed_heater.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
         propagate_state(self.feed04)
         propagate_state(self.sweep04)
         
@@ -1027,7 +1031,10 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
         propagate_state(self.hstrm02)
         propagate_state(self.hstrm03)
 
-        self.sweep_exchanger.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
+        self.sweep_exchanger.default_initializer(
+            solver=solver, solver_options=optarg, output_level=outlvl
+        ).initialize(model=self.sweep_exchanger)
+        # self.sweep_exchanger.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
 
         propagate_state(self.ostrm04)
 
@@ -1035,11 +1042,17 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
 
         propagate_state(self.feed00)
 
-        self.feed_medium_exchanger.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
+        self.feed_medium_exchanger.default_initializer(
+            solver=solver, solver_options=optarg, output_level=outlvl
+        ).initialize(model=self.feed_medium_exchanger)
+        # self.feed_medium_exchanger.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
         
         propagate_state(self.feed01)
 
-        self.feed_hot_exchanger.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
+        self.feed_hot_exchanger.default_initializer(
+            solver=solver, solver_options=optarg, output_level=outlvl
+        ).initialize(model=self.feed_hot_exchanger)
+        # self.feed_hot_exchanger.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
         
         propagate_state(self.feed02)
         propagate_state(self.hstrmShortcut)
