@@ -25,7 +25,6 @@ except:
 
 # third-party
 import markdown
-from tkhtmlview import html_parser
 
 # package
 import idaes_examples
@@ -311,91 +310,3 @@ class Jupyter:
             _log.info(f"(end) stop running notebook, port={port}: Success")
         except TimeoutExpired:
             _log.info(f"(end) stop running notebook, port={port}: Timeout")
-
-
-class NotebookDescription:
-    """Show notebook descriptions in a UI widget."""
-
-    def __init__(self, nb: dict, widget):
-        self._text = "_Select a notebook to view its description_"
-        self._nb = nb
-        self._w = widget
-        self._html_parser = html_parser.HTMLTextParser()
-        self._html()
-
-    def show(self, section: str, name: str, type_: Ext):
-        """Show the description in the widget.
-
-        Args:
-            section: Section for notebook being described
-            name: Name (filename) of notebook
-            type_: Type (doc, example, etc.) of notebook
-
-        Returns:
-            None
-        """
-        key = self._make_key(section, name, type_)
-        self._text = self._nb[key].description
-        # self._print()
-        self._html()
-
-    @staticmethod
-    def _make_key(section, name, type_):
-        if Notebook.SECTION_SEP in section:
-            section_tuple = tuple(section.split(Notebook.SECTION_SEP))
-        else:
-            section_tuple = (section,)
-        return section_tuple, name, type_
-
-    def _html(self):
-        """Convert markdown source to HTML using the 'markdown' package."""
-        m_html = markdown.markdown(
-            self._text, extensions=["extra", "codehilite"], output_format="html"
-        )
-        self._set_html(self._pre_html(m_html))
-
-    @staticmethod
-    def _pre_html(text):
-        """Pre-process the HTML so it displays more nicely in the relatively crude
-        Tk HTML viewer.
-        """
-        text = re.sub(r"<code>(.*?)</code>", r"<em>\1</em>", text)
-        text = re.sub(
-            r"<sub>(.*?)</sub>", r"<span style='font-size: 50%'>\1</span>", text
-        )
-        text = re.sub(r"<h1>(.*?)</h1>", r"<h1 style='font-size: 120%'>\1</h1>", text)
-        text = re.sub(r"<h2>(.*?)</h2>", r"<h2 style='font-size: 110%'>\1</h2>", text)
-        text = re.sub(r"<h3>(.*?)</h3>", r"<h3 style='font-size: 100%'>\1</h3>", text)
-        return (
-            "<div style='font-size: 80%; "
-            'font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;\'>'
-            f"{text}</div>"
-        )
-
-    def _set_html(self, html, strip=True):
-        w = self._w
-        prev_state = w.cget("state")
-        w.config(state=PySG.tk.NORMAL)
-        w.delete("1.0", PySG.tk.END)
-        w.tag_delete(w.tag_names)
-        self._html_parser.w_set_html(w, html, strip=strip)
-        w.config(state=prev_state)
-
-    def get_path(self, section, name, type_) -> Path:
-        key = self._make_key(section, name, type_)
-        return self._nb[key].path
-
-
-def preview_notebook(nb_table, nb_table_meta, nbdesc, open_buttons, row_index) -> bool:
-    data_row = nb_table[row_index]
-    meta_row = nb_table_meta[row_index]
-    section = data_row[1]
-    name = meta_row[1]
-    type_ = Ext.USER.value
-    nbdesc.show(section, name, type_)
-    shown = (section, name, meta_row[0])
-    is_tut = meta_row[2]
-    open_buttons[Ext.USER].update(disabled=is_tut)
-    open_buttons[Ext.EX].update(disabled=not is_tut)
-    open_buttons[Ext.SOL].update(disabled=not is_tut)
-    return shown
