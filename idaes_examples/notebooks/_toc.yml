@@ -111,6 +111,7 @@ parts:
   # note: directory active/ will not be included in the docs, but
   # it is kept here so it is visible to the 'idaesx' command (e.g. for preprocessing or browsing)
   # The 'file' entry generates a warning, but it is required by the TOC format
+    - file: docs/power_gen/solid_oxide_cell/soc_steady_state_optimization_doc
   - file: active/power_gen/ngcc/index
     sections:
     # Moved this one to 'held'
