@@ -993,8 +993,6 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
         self.feed_heater.default_initializer(
             solver=solver, solver_options=optarg, output_level=outlvl
         ).initialize(model=self.feed_heater)
-        # self.sweep_heater.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
-        # self.feed_heater.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
         propagate_state(self.feed04)
         propagate_state(self.sweep04)
         
@@ -1034,7 +1032,6 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
         self.sweep_exchanger.default_initializer(
             solver=solver, solver_options=optarg, output_level=outlvl
         ).initialize(model=self.sweep_exchanger)
-        # self.sweep_exchanger.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
 
         propagate_state(self.ostrm04)
 
@@ -1045,14 +1042,12 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
         self.feed_medium_exchanger.default_initializer(
             solver=solver, solver_options=optarg, output_level=outlvl
         ).initialize(model=self.feed_medium_exchanger)
-        # self.feed_medium_exchanger.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
         
         propagate_state(self.feed01)
 
         self.feed_hot_exchanger.default_initializer(
             solver=solver, solver_options=optarg, output_level=outlvl
         ).initialize(model=self.feed_hot_exchanger)
-        # self.feed_hot_exchanger.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
         
         propagate_state(self.feed02)
         propagate_state(self.hstrmShortcut)
