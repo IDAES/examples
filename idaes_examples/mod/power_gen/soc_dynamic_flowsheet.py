@@ -1396,7 +1396,6 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
         set_indexed_variable_bounds(self.soc_module.potential_cell, [0.7, 1.4])
         set_indexed_variable_bounds(self.feed_heater.electric_heat_duty, (0, 2e6))
         set_indexed_variable_bounds(self.sweep_heater.electric_heat_duty, (0, 4e6))
-
         set_indexed_variable_bounds(self.soc_module.solid_oxide_cell.fuel_electrode.dtemperature_dz, (-750, 750))
         
         for t in self.time:
@@ -1414,6 +1413,12 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
             return b.fuel_electrode.temperature[t, 1, iz] <= 750 + 273.15
 
         scale_indexed_constraint(self.soc_module.solid_oxide_cell.temperature_upper_bound_eqn, 1e-2)
+
+        @self.soc_module.solid_oxide_cell.Constraint(self.time, self.soc_module.solid_oxide_cell.iznodes)
+        def temperature_lower_bound_eqn(b, t, iz):
+            return b.fuel_electrode.temperature[t, 1, iz] >= 600 + 273.15
+
+        scale_indexed_constraint(self.soc_module.solid_oxide_cell.temperature_lower_bound_eqn, 1e-2)
 
         delta_T_limit = 75
 
