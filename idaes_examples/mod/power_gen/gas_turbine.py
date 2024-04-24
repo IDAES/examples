@@ -759,10 +759,10 @@ class GasTurbineFlowsheetData(FlowsheetBlockData):
         for i in ["air05", "air07", "air09"]:
             iscale.set_scaling_factor(self.splt1.split_fraction[0.0, i], 100)
 
-        iscale.set_scaling_factor(self.valve01.control_volume.work, 1e-8)
-        iscale.set_scaling_factor(self.valve02.control_volume.work, 1e-8)
-        iscale.set_scaling_factor(self.valve03.control_volume.work, 1e-8)
-        iscale.set_scaling_factor(self.vsv.control_volume.work, 1e-8)
+        iscale.set_scaling_factor(self.valve01.control_volume.work, 1)
+        iscale.set_scaling_factor(self.valve02.control_volume.work, 1)
+        iscale.set_scaling_factor(self.valve03.control_volume.work, 1)
+        iscale.set_scaling_factor(self.vsv.control_volume.work, 1)
         iscale.set_scaling_factor(self.cmp1.control_volume.work, 1e-8)
         iscale.set_scaling_factor(self.gts1.control_volume.work, 1e-8)
         iscale.set_scaling_factor(self.gts2.control_volume.work, 1e-8)
@@ -889,6 +889,7 @@ class GasTurbineFlowsheetData(FlowsheetBlockData):
         self.feed_fuel1.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
         # compressor
         propagate_state(self.air01)
+        self.vsv.valve_opening.fix(1-1e-6)
         self.vsv.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
         propagate_state(self.air02)
         self.cmp1.initialize(outlvl=outlvl, solver=solver, optarg=optarg)

@@ -32,7 +32,6 @@ parts:
   - file: docs/flowsheets/hda_flowsheet_with_costing_doc
   - file: docs/flowsheets/hda_flowsheet_with_distillation_doc
   - file: docs/flowsheets/methanol_synthesis_doc
-  - file: docs/flowsheets/power_gen/ngcc/ngcc_doc
   - file: docs/flowsheets/temperature_swing_adsorption/temperature_swing_adsorption_doc
 #  - file: docs/flowsheets/CO2_adsorption_desorption/CO2_Adsorption_Desorption_1DFixedBed_doc
 - caption: Unit Models
@@ -103,6 +102,9 @@ parts:
     sections:
     - file: docs/power_gen/supercritical/supercritical_power_plant_doc
     - file: docs/power_gen/supercritical/supercritical_steam_cycle_doc
+  - file: docs/power_gen/ngcc/index
+    sections:
+    - file: docs/power_gen/ngcc/ngcc_doc
   # -----------------------------
   #  active (not documented)
   # -----------------------------

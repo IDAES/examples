@@ -1038,6 +1038,8 @@ class HrsgFlowsheetData(FlowsheetBlockData):
             if hasattr(unit, "deltaP_tube_uturn"):
                 iscale.set_scaling_factor(unit.deltaP_tube_uturn, 1e-2)
 
+        # iscale.set_scaling_factor(self.sh_ip2.N_Pr_tube_eqn, 1e9)
+        # iscale.set_scaling_factor(self.sh_hp4.N_Pr_tube_eqn, 1e9)
         iscale.set_scaling_factor(self.evap_lp.shell.heat, 1e-8)
         iscale.set_scaling_factor(self.evap_lp.tube.heat, 1e-8)
         iscale.set_scaling_factor(self.evap_lp.tube.heat, 1e-8)
