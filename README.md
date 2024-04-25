@@ -30,9 +30,15 @@ These are *not* tested and *not* in the docs, and should generally be ignored by
 This repository can be installed with *pip*:
 
 ```shell
-# RECOMMENDED: this will install the IDEAS examples, accessory code,
-# plus the Graphical User Interface (GUI) to browse them (see section below)
-pip install "idaes-examples[gui]"
+# install the IDAES examples with a core set of dependencies
+pip install idaes-examples
+
+# install the IDAES examples with additional dependencies needed to run specific examples,
+# e.g. `omlt` for surrogate modeling with OMLT
+pip install "idaes-examples[omlt]"
+
+# install the IDAES examples with dependencies need to build the documentation
+pip install "idaes-examples[docs]"
 ```
 
 We recommend you use a virtual environment tool such as
