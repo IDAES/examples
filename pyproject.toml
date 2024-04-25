@@ -171,10 +171,6 @@ ba = "ba"
 equil = "equil"
 # Atomic elements
 Nd = "Nd"
-# RIPE specific variable names, remove exceptions if RIPE examples are removed
-nd = "nd"
-dum = "dum"
-fre = "fre"
 # Numpy
 arange = "arange"
 [tool.typos.default]
