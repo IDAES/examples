@@ -82,13 +82,15 @@ Which one you run depends in which directory you run tests.
 
 If your current directory is the root of the repository:
 
-1. `pytest .`: Runs **Python test modules**, matching the usual patterns (e.g., `*_test.py`).
+1. `pytest .`: Runs **Python test modules**, matching the usual patterns (e.g., `test_*.py`).
 2. `pytest idaes_examples`: Runs **Jupyter notebook tests.** Due to the presence of a special `conftest.py` file in this directory, Jupyter Notebooks will be preprocessed and then all test notebooks (their filename ending in `_test.ipynb`) will be executed.
 
-### Integration tests
+The `-v` or `--verbose` flag can be added to any pytest command so that more information is displayed while the test suite runs.
 
-Run integration tests from the top-level (root) directory of the repository.
-In the root directory, tests are configured by `pyproject.toml`; see the *tool.pytest.ini_options* section.
+### Testing the notebooks
+
+To run all registered notebooks, run the following command from the top-level (root) directory of the repository, specifying `idaes_examples` as an argument.
+The `pytest.ini` file and `conftest.py` files contained in `idaes_examples` will override the top-level pytest configuration defined in `pyproject.toml` under `[tool.pytest.ini_options]`.
 
 ```shell
 # from the root directory of the repository
@@ -99,8 +101,7 @@ pytest idaes_examples
 
 To test just one notebook, you need to use the name of the *test* notebook not the source.
 For example, to test the `compressor.ipynb` notebook (in the `unit_models/operations` subdirectory)
-you need to add `-c` and the path to the top-level *pyproject.toml*, which has the pytest configuration,
-then use the name of the test notebook:
+you need to use the name of the test notebook:
 
 ```shell
 pytest -v idaes_examples/notebooks/docs/unit_models/operations/compressor_test.ipynb
