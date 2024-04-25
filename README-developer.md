@@ -303,7 +303,8 @@ The output will be in `_dev/notebooks/_build/html`.
 In addition to per-cell tags, the preprocessor also can look at notebook-level metadata.
 This is currently used for only one purpose: to tell the preprocessor not to generate a 'test' notebook, and thereby to skip the given notebook in the tests.
 In order to make this happen, either manually edit the notebook source or use the Jupyter notebook "Edit -> Edit Notebook Metadata" menu item to add the following section to the notebook-level metadata:
-```
+
+```json
 "idaes": {
    "skip": ["test"]
 }
@@ -329,16 +330,19 @@ Instructions to package and distribute the examples as idaes-examples in PyPI.
 Based on the PyPA [packaging projects](https://packaging.python.org/en/latest/tutorials/packaging-projects/)  documentation.
 
 Install dependencies for packaging into your current (virtual) Python environment:
+
 ```shell
-pip install -e .[dev,jb,pkg]
+pip install -e .[dev,packaging]
 ```
 
 Edit the `pyproject.toml` file:
-  1. Ensure that you have commented out the line under `[project.optional-dependencies]`, in the `dev` section,
+
+1. Ensure that you have commented out the line under `[project.optional-dependencies]`, in the `dev` section,
      that reads `"idaes-pse @ git+https://github.com/IDAES/idaes-pse"`.
-  2. Set the release version.  You should increment the version for each new release.
+2. Set the release version.  You should increment the version for each new release.
 
 **Build** the distribution:
+
 ```shell
 > python -m build
 # Many lines of output later, you should see a message like:
@@ -352,6 +356,7 @@ To generate an API token, go to _Settings_ &rarr; _API Tokens_, and selecting _A
 You will paste this token in the commands below.
 
 **Upload** to [TestPyPI](https://packaging.python.org/en/latest/guides/using-testpypi/):
+
 ```shell
 > python -m twine upload --repository testpypi dist/*
 Uploading distributions to https://test.pypi.org/legacy/
@@ -360,17 +365,20 @@ Enter your password: {{paste token here}}
 ```
 
 Create a new virtual environment and install the package from test.pypi into it:
+
 ```shell
 pip install --extra-index-url https://test.pypi.org/simple/ idaes-examples
 ```
 
 If the installation succeeds, you should be able to serve the notebooks:
+
 ```shell
 idaesx serve
 ```
 
 If it all looks good, you can repeat the **Upload** step with the real [PyPI](pypi.org) 
 (you will need to get an account and token, just as for test.pypi.org, above):
+
 ```shell
 > python -m twine upload dist/*
 Uploading distributions to https://upload.pypi.org/legacy/
@@ -388,4 +396,4 @@ Enter your password: {{past token here}}
 
 ----
 Author: Dan Gunter  
-Last modified: 13 Mar 2023
+Last modified: 25 Apr 2024
