@@ -43,19 +43,16 @@ to install and run the notebooks in an isolated environment.
 
 Use the command 
 ```
-idaesx gui
+idaesx serve
 ```
-to get a simple graphical UI that lets you 
-browse and open notebooks (with Jupyter) for local execution and experimentation.
-The GUI will show the description of each notebook and allow selection of tutorial or exercise versions of the notebook, if these exist.
+to start a Jupyter server to browser and open the notebooks for local execution and experimentation.
 
 Alternately, you may use Jupyter notebook's file browser in the installed notebooks directory,
 using the `idaesx where` command to find that directory:
 `jupyter notebook $(idaesx where)`.
 
 Only the source notebooks (ending in '_src.ipynb') are included in the repository.
-The `idaesx gui` command will generate the other versions, or you can run preprocessing manually with: `idaesx pre -d "$(idaesx where)\.."`.
-
+The `idaesx serve` command will generate the other versions, or you can run preprocessing manually with: `idaesx pre -d "$(idaesx where)\.."`.
 
 ## Build documentation
 
