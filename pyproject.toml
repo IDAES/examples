@@ -170,5 +170,9 @@ arange = "arange"
 [tool.typos.default]
 extend-ignore-re = [
     # Jupyter notebooks: ignore hexadecimal values in "id" cell metadata field
-    '"id": "[0-9a-f]+",'
+    '"id": "[0-9a-f]+",',
+    # ser is used as a variable name for pd.Series, so we exclude it when followed by a dot
+    # as of 2024-04-25, the false positive are all due to warnings in the output of certain notebooks
+    # which should be resolved regardless (see IDAES/examples#108)
+    "ser[.].*",
 ]
