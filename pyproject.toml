@@ -159,12 +159,11 @@ IDAES = "IDAES"
 HDA = "HDA" 
 # Ignore Attemp - assume it is abbreviating attemperator
 Attemp = "Attemp"
-# Ignore ba in hexadecimal values, or block names
-ba = "ba"
 # Ignore equil, assumes it's on purpose and not a typo of "equal"
 equil = "equil"
 # Atomic elements
 Nd = "Nd"
+Ba = "Ba" # ba is also used in block names in RSOFC-SOEC example
 # Numpy
 arange = "arange"
 [tool.typos.default]
