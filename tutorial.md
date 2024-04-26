@@ -94,7 +94,7 @@ To demonstrate how the tags work, we will add tags to a couple of these cells:
 2. Add the tag `noauto` to the cell with the print statement. This will skip this cell 
    in the versions of the notebook used for documentation and testing.
 3. Add the tag `testing` to the cell with the assert statement. This will only
-   include this cell in the version fo the notebook used for testing. 
+   include this cell in the version of the notebook used for testing. 
 
 ### Run preprocessing
 
