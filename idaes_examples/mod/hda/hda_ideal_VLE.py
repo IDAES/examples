@@ -433,7 +433,7 @@ class _IdealStateBlock(StateBlock):
             state_args : Dictionary with initial guesses for the state vars
                          chosen. Note that if this method is triggered
                          through the control volume, and if initial guesses
-                         were not provied at the unit model level, the
+                         were not provided at the unit model level, the
                          control volume passes the inlet values as initial
                          guess.The keys for the state_args dictionary are:
 
@@ -444,7 +444,7 @@ class _IdealStateBlock(StateBlock):
             outlvl : sets output level of initialization routine
                      * 0 = no output (default)
                      * 1 = return solver state for each step in routine
-                     * 2 = include solver output infomation (tee=True)
+                     * 2 = include solver output information (tee=True)
             optarg : solver options dictionary object (default=None)
             state_vars_fixed: Flag to denote if state vars have already been
                               fixed.
@@ -455,18 +455,18 @@ class _IdealStateBlock(StateBlock):
                                        with 0D blocks.
                              - False - states have not been fixed. The state
                                        block will deal with fixing/unfixing.
-            solver : str indicating whcih solver to use during
+            solver : str indicating which solver to use during
                      initialization (default = 'ipopt')
             hold_state : flag indicating whether the initialization routine
                          should unfix any state variables fixed during
                          initialization (default=False).
-                         - True - states varaibles are not unfixed, and
+                         - True - states variables are not unfixed, and
                                  a dict of returned containing flags for
                                  which states were fixed during
                                  initialization.
                         - False - state variables are unfixed after
                                  initialization by calling the
-                                 relase_state method
+                                 release_state method
         Returns:
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
@@ -554,7 +554,7 @@ class _IdealStateBlock(StateBlock):
 
     def release_state(blk, flags, outlvl=0):
         '''
-        Method to relase state variables fixed during initialization.
+        Method to release state variables fixed during initialization.
         Keyword Arguments:
             flags : dict containing information of which state variables
                     were fixed during initialization, and should now be
@@ -712,7 +712,7 @@ class IdealStateBlockData(StateBlockData):
                 return b.energy_internal_mol_phase_comp[p, j] == \
                         b.enth_mol_phase_comp[p, j] - \
                         const.gas_constant*(b.temperature -
-                                             b._params.temeprature_ref)
+                                             b._params.temperature_ref)
             else:
                 return b.energy_internal_mol_phase_comp[p, j] == \
                         b.enth_mol_phase_comp[p, j]
