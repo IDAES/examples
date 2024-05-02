@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Example property package for the VLE calucations for the methanol synthesis
+Example property package for the VLE calculations for the methanol synthesis
 problem from Turkay & Grossmann. The parameters and correlations are from the
 paper.
 """
@@ -37,7 +37,7 @@ from idaes.core.util.constants import Constants
 
 from .methanol_state_block_VLE import IdealStateBlock
 
-# Some more inforation about this module
+# Some more information about this module
 __author__ = "Jaffer Ghouse", "Brandon Paul"
 __version__ = "0.0.1"
 
