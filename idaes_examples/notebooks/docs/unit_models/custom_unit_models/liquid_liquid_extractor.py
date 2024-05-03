@@ -242,7 +242,7 @@ class LiqExtractionData(UnitModelBlockData):
         self.aqueous_phase.add_geometry()
 
         # ---------------------------------------------------------------------
-        # Check flow basis is compatable
+        # Check flow basis is compatible
         t_init = self.flowsheet().time.first()
         if (
             self.aqueous_phase.properties_out[t_init].get_material_flow_basis()
@@ -308,13 +308,13 @@ class LiqExtractionData(UnitModelBlockData):
                 )
             elif j in self.organic_phase.properties_out.component_list:
                 # No mass transfer term
-                # Set organic flowrate to an arbitary small value
+                # Set organic flowrate to an arbitrary small value
                 return self.organic_phase.mass_transfer_term[t, "Org", j] == 0 * ounits(
                     fb
                 )
             elif j in self.aqueous_phase.properties_out.component_list:
                 # No mass transfer term
-                # Set aqueous flowrate to an arbitary small value
+                # Set aqueous flowrate to an arbitrary small value
                 return self.aqueous_phase.mass_transfer_term[t, "Aq", j] == 0 * aunits(
                     fb
                 )
@@ -334,7 +334,7 @@ class LiqExtractionData(UnitModelBlockData):
                 )
             else:
                 # No mass transfer term
-                # Set organic flowrate to an arbitary small value
+                # Set organic flowrate to an arbitrary small value
                 return self.organic_phase.mass_transfer_term[t, "Org", j] == 0 * aunits(
                     fb
                 )
