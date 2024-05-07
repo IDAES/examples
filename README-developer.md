@@ -13,6 +13,7 @@ This file provides details needed by developers to properly create and add new e
 * Notebook names
 * How to create an example
   * Jupyter Notebook file extensions
+  * Jupyter Notebook header
   * Jupyter Notebook cell tags
   * Jupyter notebook metadata
 * Packaging
@@ -221,6 +222,50 @@ Each source Jupyter notebook (ending in '.ipynb') is preprocessed to create addi
 | documentation | Show in documentation      | _doc.ipynb      |
 | user          | Run by end-users           | _usr.ipynb      |
 
+### Jupyter Notebook header
+
+Every notebook *must* have a copyright header as its first cell (see the section 
+"Copyright headers"). The cell immediately after the copyright header *must* be another 
+markdown cell that follows this format:
+
+```markdown
+# Title of notebook
+Author: Author Name
+Maintainer: Maintainer Name
+Updated: YYYY-MM-DD
+
+Description of what this notebook does.
+```
+
+For example,
+```markdown
+# NGCC Baseline and Turndown
+Author: John Eslick
+Maintainer: John Eslick
+Updated: 2023-06-01
+
+This notebook runs a series of net electric power outputs from 650 MW to 160 MW
+(about 100% to 25%) for an NGCC with 97% CO2 capture. The NGCC model is based on 
+the NETL report "Cost and Performance Baseline for Fossil Energy Plants Volume 1: 
+Bituminous Coal and Natural Gas to Electricity." Sept 2019, Case B31B 
+(https://www.netl.doe.gov/projects/files/CostAndPerformanceBaselineForFossilEnergyPlantsVol1BitumCoalAndNGtoElectBBRRev4-1_092419.pdf).
+```
+
+To be clear, there *must* be some cell that has this format in the notebook, but
+it doesn't have to come right after the copyright, e.g. if you want to
+have a logo or some vacation photos first you can do that. But it must be present as
+its own cell.
+
+There is a test in `idaes_examples.tests.test_notebooks` called `test_headers()`
+that will enforce the requirement that all notebooks have an author and maintainer
+field as shown above.
+
+You can print all headers or add specific headers with the `idaesx hdr` command.
+See `idaes hdr --help` for more details.
+
+The utility code to parse the headers is called by and adjacent to the 
+`idaes_examples.build` module's `print_header()` function.
+
 ### Jupyter Notebook cell tags
 
 Preprocessing uses the feature of Jupyter notebook [cell tags][celltags] to understand which additional notebooks to 
@@ -319,9 +364,9 @@ Create a new virtual environment and install the package from test.pypi into it:
 pip install --extra-index-url https://test.pypi.org/simple/ idaes-examples
 ```
 
-If the installation succeeds, you should be able to browse the notebooks using the built-in GUI:
+If the installation succeeds, you should be able to serve the notebooks:
 ```shell
-idaesx gui
+idaesx serve
 ```
 
 If it all looks good, you can repeat the **Upload** step with the real [PyPI](pypi.org) 

@@ -7,7 +7,8 @@ import logging
 import os
 from pathlib import Path
 import re
-from subprocess import check_call
+import shutil
+import subprocess
 import sys
 import time
 import traceback
@@ -31,12 +32,11 @@ from idaes_examples.util import (
     Tags,
     path_suffix,
     processing_report,
+    change_notebook_ext,
 )
 from idaes_examples.util import _log as util_log
 
 # third-party
-from jupyter_cache import get_cache
-import nbformat as nbf
 
 
 # -------------
@@ -256,17 +256,32 @@ def _change_suffix(p: Path, suffix: str = None) -> Path:
 # -------------
 
 
-def clean(srcdir=None, outputs=True, ids=False):
+def clean(srcdir=None, outputs=True, ids=False, all_files=False):
     src_path = find_notebook_root(Path(srcdir)) / NB_ROOT
     toc = read_toc(src_path)
     t0 = time.time()
+    if all_files:
+        results = find_notebooks(src_path, toc, _remove_files)
+        Commands.subheading(processing_report("removed files", t0, results, _log))
+        return  # don't bother with anything else, the files are gone
     if outputs:
         results = find_notebooks(src_path, toc, _remove_outputs)
-        Commands.subheading(processing_report("removed", t0, results, _log))
+        Commands.subheading(processing_report("removed outputs", t0, results, _log))
     t0 = time.time()
     if ids:
         results = find_notebooks(src_path, toc, _remove_ids)
-        Commands.subheading(processing_report("removed", t0, results, _log))
+        Commands.subheading(processing_report("removed ids", t0, results, _log))
+
+def _remove_files(nb_path: Path, **kwargs):
+    changed = False
+    if nb_path.exists():
+        for ext in Ext.USER, Ext.TEST, Ext.DOC, Ext.SOL, Ext.EX:
+            gen_path = change_notebook_ext(nb_path, ext.value)
+            if gen_path.exists() and gen_path.is_file():
+                _log.debug(f"Removing generated file '{nb_path}'")
+                gen_path.unlink()
+                changed = True
+    return changed
 
 
 def _remove_outputs(nb_path: Path, **kwargs):
@@ -302,6 +317,13 @@ def _remove_ids(nb_path: Path, **kwargs):
             json_dump(nb, f)
         _log.debug(f"Removed code cell id(s) from {nb_path}")
     return changed
+
+def remove_build(srcdir=None):
+    nb_path = find_notebook_root(Path(srcdir)) / NB_ROOT
+    build = nb_path / "_build"
+    if build.exists():
+        _log.info(f"remove build directory: {build}")
+        shutil.rmtree(build)
 
 # ---------------
 # List skipped
@@ -347,7 +369,7 @@ def black(srcdir=None):
     src_path = find_notebook_root(Path(srcdir)) / NB_ROOT
     commandline = ["black", "--include", ".*_src\\.ipynb", str(src_path)]
     add_vb_flags(_log, commandline)
-    check_call(commandline)
+    subprocess.check_call(commandline)
 
 
 # --------------------
@@ -382,9 +404,19 @@ def jupyterbook(srcdir=None, quiet=0, dev=False):
         else:
             add_vb_flags(_log, commandline)
         # run build
-        check_call(commandline)
+        subprocess.check_call(commandline)
     finally:
         os.chdir(cwd)
+    _copy_built_files(path)
+
+def _copy_built_files(dst: Path):
+    src = dst / "_build" / "jupyter_execute"
+    src_len = len(src.parts)
+    _log.info(f"copy built notebooks from {src} -> {dst}")
+    for p in src.glob("**/*.ipynb"):
+        q = dst.joinpath(*p.parts[src_len:])
+        _log.info(f"copy {p} -> {q}")
+        shutil.copy(p, q)
 
 
 # -------------
@@ -453,7 +485,7 @@ def modify_conf(
     if sphinx:
         Commands.subheading(f"Updating Sphinx config file")
         commandline = ["jupyter-book", "config", "sphinx", str(config_file.parent)]
-        check_call(commandline)
+        subprocess.check_call(commandline)
 
     if show:
 
@@ -472,6 +504,156 @@ def modify_conf(
                     print(line, end="")
 
     return 0
+
+
+# ------------
+# Header
+# ------------
+
+
+def print_header(srcdir):
+    src_path = find_notebook_root(Path(srcdir)) / NB_ROOT
+    toc = read_toc(src_path)
+    find_notebooks(src_path, toc, _print_header)
+
+
+def edit_header(
+    srcdir: Path,
+    path: Path,
+    new_title: str = None,
+    new_author: str = None,
+    new_maintainer: str = None,
+    new_updated: str = None,
+):
+    if not path.is_absolute():
+        src_path = find_notebook_root(Path(srcdir)) / NB_ROOT
+        if path.parts[0] == "notebooks":
+            path = Path("/".join(path.parts[1:]))
+            _log.warning(f"Relative notebook paths should start below 'notebooks' dir; "
+                         f"modified path: {path}")
+        full_path = src_path / path
+        if not full_path.exists():
+            _log.error(f"Path '{full_path}' ({src_path} + {path}) does not exist")
+            return
+        path = full_path
+    if path.is_file() and path.name.endswith(".ipynb"):
+        _log.info(f"Modifying notebook header at: {path}")
+        with path.open("r", encoding="utf-8") as f:
+            nb = json.load(f)
+            cells = nb[NB_CELLS]
+            header_index = _get_header_cell(cells)
+            if header_index < 0:
+                _log.error(f"No header found for {path}")
+            else:
+                header = cells[header_index]
+                # find title (useful later regardless if we're changing it)
+                title_index = _get_cell_title(header)
+                # replace title if new one is given
+                if title_index >= 0 and new_title is not None:
+                    header[header_index] = f"# {new_title}\n"
+                # find/replace metadata
+                meta_dict = {}
+                if new_author:
+                    meta_dict["Author"] = new_author
+                if new_maintainer:
+                    meta_dict["Maintainer"] = new_maintainer
+                if new_updated:
+                    meta_dict["Updated"] = new_updated
+                if meta_dict:
+                    _change_header_meta(header, title_index, meta_dict)
+
+            _log.info(f"Writing modified header to: {path}")
+            with path.open("w", encoding="utf-8") as f:
+                json_dump(nb, f)
+    else:
+        if not path.is_file():
+            reason = "Not a file"
+        elif not path.name.endswith(".ipynb"):
+            reason = "Does not end with .ipynb"
+        else:
+            reason = "???"
+        _log.warning(f"Skip non-notebook at '{path}': {reason}")
+
+## -- utility functions for header manipulation --
+
+
+def _print_header(path):
+    with path.open("r", encoding="utf-8") as f:
+        try:
+            nb = json.load(f)
+        except json.JSONDecodeError as e:
+            _log.error(f"Invalid JSON in '{path}': {e}")
+            raise
+        cells = nb[NB_CELLS]
+        header = cells[_get_header_cell(cells)]
+        if header is None:
+            title = "-none-"
+        else:
+            title = header["source"][_get_cell_title(header)].strip()
+            meta = _get_header_meta(header)
+        if not meta:
+            meta_str = "  <no metadata>"
+        else:
+            meta_str = "\n".join([f"  - {k}: {meta[k]}" for k in sorted(meta.keys())])
+        print(f"{path}\n  {title}\n{meta_str}")
+        print()
+
+
+def _get_header_cell(cells) -> int:
+    # check in first .. up to 5 .. cells
+    result = -1
+    for i in range(min(len(cells), 5)):
+        cell = cells[i]
+        if cell["cell_type"] == "markdown":
+            title = _get_cell_title(cell)
+            if title is not None:
+                result = i
+                break
+    return result
+
+
+def _get_cell_title(cell) -> int:
+    src, result = cell["source"], -1
+    for i, line in enumerate(src):
+        if line.startswith("#"):
+            result = i
+            break
+    return result
+
+
+def _get_header_meta(cell) -> dict:
+    src, result = cell["source"], {}
+    for line in src:
+        m = re.match(r"(\w+)\s*:\s*(.*)", line.strip())
+        if m:
+            result[m.group(1)] = m.group(2).strip()
+    return result
+
+
+def _change_header_meta(cell, title_index, meta):
+    src = cell["source"]
+    # replace values
+    replaced = set()  # remember which ones we found/replaced
+    repl_index = -1
+    for i, line in enumerate(src):
+        line = line.strip()
+        m = re.match(r"([A-Z]\w+)\s*:\s*([A-Z].*)", line)
+        if m:
+            name, value = m.group(1), m.group(2).strip()
+            replaced.add(name)
+            repl_index = i
+            if name in meta:
+                src[i] = f"{name}: {meta[name]}  \n"  # 2 spaces for markdown <br/>
+    # add any metadata, not found and replaced, after last replaced item or title
+    not_present = set(meta.keys()) - replaced
+    for name in not_present:
+        insert_after = repl_index if repl_index >= 0 else title_index
+        src.insert(insert_after + 1, f"{name}: {meta[name]}  \n")
+        # make sure line before ends in newline
+        if not src[insert_after].endswith("\n"):
+            src[insert_after] += "  \n"
+    # clean up any trailing newlines or other whitespace on last line
+    src[-1] = src[-1].rstrip()
 
 
 # -------------
@@ -540,15 +722,44 @@ class Commands:
         return cls._run("view jupyterbook", view_docs, srcdir=args.dir)
 
     @classmethod
+    def hdr(cls, args):
+        action = "Edit" if args.edit else "Print"
+        cls.heading(f"{action} notebook headers")
+        if args.edit:
+            nbpath = Path(args.path)
+            return cls._run(
+                f"{action} notebooks",
+                edit_header,
+                srcdir=args.dir,
+                path=nbpath,
+                new_title=args.title,
+                new_author=args.author,
+                new_maintainer=args.maintainer,
+                new_updated=args.updated,
+            )
+        else:
+            return cls._run(f"{action} notebooks", print_header, srcdir=args.dir)
+
+    @classmethod
     def clean(cls, args):
-        if args.ids:
+        if args.all_files:
+            cls.heading("Remove all generated notebooks")
+            result = cls._run(
+                "remove generated notebooks", clean, srcdir=args.dir, all_files=True
+            )
+        elif args.ids:
             cls.heading("Remove ids in generated notebooks")
-            result = cls._run("remove output cells", clean, srcdir=args.dir, ids=True,
-                              outputs=False)
+            result = cls._run(
+                "remove output cells", clean, srcdir=args.dir, ids=True, outputs=False
+            )
         else:
             cls.heading("Remove output cells in generated notebooks")
-            result = cls._run("remove output cells", clean, srcdir=args.dir,
-                              ids=False, outputs=True)
+            result = cls._run(
+                "remove output cells", clean, srcdir=args.dir, ids=False, outputs=True
+            )
+        if result == 0 and not args.keep_build:
+            result = cls._run("remove notebook build dir", remove_build, srcdir=args.dir)
+
         return result
 
     @classmethod
@@ -557,22 +768,27 @@ class Commands:
         return cls._run("format notebook code", black, srcdir=args.dir)
 
     @classmethod
-    def gui(cls, args):
+    def serve(cls, args):
         from idaes_examples import browse
 
-        cls.heading(f"Load notebooks into GUI")
-        nb_dir = browse.find_notebook_dir().parent
+        nb_dir = browse.find_notebook_dir()
         cls._run(f"pre-process notebooks", preprocess, srcdir=nb_dir)
         browse.set_log_level(_log.getEffectiveLevel())
-        nb = browse.Notebooks()
-        if args.console:
-            for val in nb._sorted_values:
-                pth = Path(val.path).relative_to(Path.cwd())
-                print(f"{val.type}{' '*(10 - len(val.type))} {val.title} -> {pth}")
-            status = 0
-        else:
-            status = browse.gui(nb, use_lab=args.lab, stop_notebooks_on_quit=args.stop)
-        return status
+
+        def _run_jupyter_server():
+            try:
+                ret = subprocess.run(
+                    [
+                        "jupyter",
+                        "notebook",
+                        str(nb_dir),
+                        "-y",  # answer 'yes' to skip confirmation prompts
+                    ],
+                )
+            except KeyboardInterrupt:
+                return
+
+        return cls._run(f"starting Jupyter server in {nb_dir}", _run_jupyter_server)
 
     @classmethod
     def where(cls, args):
@@ -607,9 +823,10 @@ class Commands:
             )
             return -2
         except Exception as err:
-            _log.error(f"During '{name}': {err}")
-            _log.error(traceback.format_exc())
+            _log.critical(f"During '{name}': {err}")
+            _log.info(traceback.format_exc())
             return -1
+        return 0
 
     @staticmethod
     def heading(message):
@@ -640,9 +857,10 @@ def main():
         ("conf", "Modify Jupyterbook configuration"),
         ("build", "Build Jupyterbook"),
         ("view", "View Jupyterbook"),
+        ("hdr", "View or edit headers"),
         ("clean", "Clean generated files"),
         ("black", "Format code in notebooks with Black"),
-        ("gui", "Graphical notebook browser"),
+        ("serve", "Start local Jupyter server to browse and run notebooks"),
         ("skipped", "List notebooks tagged to skip some pre-processing"),
         ("where", "Print example notebook directory path"),
         ("new", "Terminal-based UI for starting a new notebook"),
@@ -673,9 +891,13 @@ def main():
         default=False,
     )
     subp["clean"].add_argument(
-        "--ids",
-        help="Remove cell ids (not outputs)",
-        action="store_true"
+        "--ids", help="Remove cell ids (not outputs)", action="store_true"
+    )
+    subp["clean"].add_argument(
+        "--all-files", help="Remove all generated files", action="store_true"
+    )
+    subp["clean"].add_argument(
+        "--keep-build", help="Do not remove build dir", action="store_true"
     )
     subp["conf"].add_argument(
         "--execute",
@@ -703,24 +925,16 @@ def main():
     subp["conf"].add_argument(
         "--sphinx", action="store_true", help="Run JB command to update Sphinx conf.py"
     )
-    subp["gui"].add_argument("--console", "-c", action="store_true", dest="console")
-    subp["gui"].add_argument(
-        "--stderr",
-        "-e",
-        action="store_true",
-        default=False,
-        dest="log_console",
-        help=(
-            "Print logs to the console "
-            "(stderr) instead of redirecting "
-            "them to a file in ~/.idaes/logs"
-        ),
+    subp["hdr"].add_argument("--path", help="Path to notebook for `--edit`")
+    subp["hdr"].add_argument(
+        "--edit", help="Edit mode (default is print)", action="store_true"
     )
-    subp["gui"].add_argument(
-        "--lab", help="Use Jupyter Lab instead of Jupyter Notebook", action="store_true"
+    subp["hdr"].add_argument("--title", help="New title, for `--edit` mode")
+    subp["hdr"].add_argument("--author", help="New author, for `--edit` mode")
+    subp["hdr"].add_argument("--maintainer", help="New maintainer, for `--edit` mode")
+    subp["hdr"].add_argument(
+        "--updated", help="Last updated date (use YYYY-MM-DD), for `--edit` mode"
     )
-    subp["gui"].add_argument(
-        "--stop", help="Stop notebooks on GUI quit", action="store_true")
     subp["new"].add_argument(
         "-g",
         "--git",

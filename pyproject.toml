@@ -10,7 +10,7 @@ build-backend = "setuptools.build_meta"
 name = "idaes-examples"
 description = "IDAES Process Systems Engineering Examples"
 readme = "README.md"
-version = "2.3.dev0"
+version = "2.5.dev0"
 license = {text="BSD"}
 requires-python = ">=3.8"
 authors = [
@@ -48,16 +48,10 @@ dependencies = [
 keywords = ["IDAES", "energy systems", "chemical engineering", "process modeling"]
 
 [project.optional-dependencies]
-gui = [
-    # For the small embedded GUI
-    "PySimpleGUI~=4.60.4",
-    "tkhtmlview==0.1.1.post5",
-    "Markdown~=3.4.1",
-]
 omlt = [
     # For Keras/OMLT
     "omlt",
-    "tensorflow",
+    'tensorflow<2.16.1 ; python_version < "3.12"',
 ]
 idaes = [
     "idaes-pse",  # installing IDAES (from release) is opt-in
@@ -68,11 +62,11 @@ testing = [
     # pytest reporting
     "pytest-reportlog ~= 0.1.2",
     "nbclient",
-    "nbmake",
+    "nbmake == 1.5.*",
 ]
 # dependencies for building documentation
 docs = [
-    "jupyter-book ~= 0.13.1",
+    "jupyter-book ~= 0.15.0",
     # "jupyter-cache ~= 0.4.3",
     "jupyter-cache",
     # the older version of nbmake goes with the older
@@ -81,12 +75,13 @@ docs = [
     "nbclient",
     "nbformat",
     # markdown in Sphinx
-    "myst-nb ~= 0.13.2",
-    "myst-parser ~= 0.15.2",
+    # we don't specify these as we assume jupyter-book will install compatible versions
+    # "myst-nb ~= 0.17.1",
+    # "myst-parser ~= 0.18.0",
 ]
 # For developers
 dev = [
-    "idaes-examples[gui,testing,docs]",
+    "idaes-examples[testing,docs]",
     # For jupyter notebook testing
     "black[jupyter] ~= 22.8.0",
     # For adding copyright headers (see addheader.yml and the readme)
@@ -148,3 +143,35 @@ markers = [
     "needs_solver"
 ]
 testpaths = "idaes_examples"
+
+[tool.typos.files]
+extend-exclude = [
+    "*.svg",
+    "*.json",
+    "*.css",
+    "*.yml",
+]
+
+[tool.typos.default.extend-words]
+# Ignore IDAES
+IDAES = "IDAES"
+# Ignore HDA, assumes it's on purpose and not a typo of "had"
+HDA = "HDA" 
+# Ignore Attemp - assume it is abbreviating attemperator
+Attemp = "Attemp"
+# Ignore equil, assumes it's on purpose and not a typo of "equal"
+equil = "equil"
+# Atomic elements
+Nd = "Nd"
+Ba = "Ba" # ba is also used in block names in RSOFC-SOEC example
+# Numpy
+arange = "arange"
+[tool.typos.default]
+extend-ignore-re = [
+    # Jupyter notebooks: ignore hexadecimal values in "id" cell metadata field
+    '"id": "[0-9a-f]+",',
+    # ser is used as a variable name for pd.Series, so we exclude it when followed by a dot
+    # as of 2024-04-25, the false positive are all due to warnings in the output of certain notebooks
+    # which should be resolved regardless (see IDAES/examples#108)
+    "ser[.].*",
+]

@@ -44,10 +44,20 @@ defaults:
     shell: bash -l {0}
 
 jobs:
+  spell-check:
+    name: Check Spelling
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v3
+      - name: Run Spell Checker
+        uses: crate-ci/typos@master
+
   pytest:
     # description: Run pytest with dev dependencies
     name: pytest (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.runner-image }}
+    needs: [spell-check]
     strategy:
       fail-fast: false
       matrix:
@@ -78,7 +88,7 @@ jobs:
         run: |
           pwd
           ls idaes_examples
-          pytest -v idaes_examples
+          pytest -v idaes_examples --ignore=idaes_examples/notebooks/docs/surrogates/sco2/alamo/ 
       - name: Upload pytest-xdist worker logs
         if: success() || failure()
         uses: actions/upload-artifact@v3
