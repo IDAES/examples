@@ -16,54 +16,51 @@ Author: Chinedu Okoli
 """
 
 import pytest
-
-from pyomo.environ import (ConcreteModel,
-                           Var)
-
+from pyomo.environ import ConcreteModel, Var
 from idaes.core import FlowsheetBlock
-
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.testing import initialization_tester
+from idaes.core.solvers import get_solver
 
-from idaes.core.util.testing import (get_default_solver,
-                                     initialization_tester)
-
-from idaes_examples.mod.incidence_demo.cce2023.structural_singularity.idaes_1_7_gas_solid_contactors.properties.methane_iron_OC_reduction. \
+from idaes_examples.mod.diagnostics.gas_solid_contactors.properties.methane_iron_OC_reduction. \
     gas_phase_thermo import GasPhaseThermoParameterBlock
-from idaes_examples.mod.incidence_demo.cce2023.structural_singularity.idaes_1_7_gas_solid_contactors.properties.methane_iron_OC_reduction. \
+from idaes_examples.mod.diagnostics.gas_solid_contactors.properties.methane_iron_OC_reduction. \
     solid_phase_thermo import SolidPhaseThermoParameterBlock
-from idaes_examples.mod.incidence_demo.cce2023.structural_singularity.idaes_1_7_gas_solid_contactors.properties.methane_iron_OC_reduction. \
+from idaes_examples.mod.diagnostics.gas_solid_contactors.properties.methane_iron_OC_reduction. \
     hetero_reactions import HeteroReactionParameterBlock
 
 
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 
 # -----------------------------------------------------------------------------
 @pytest.fixture(scope="class")
 def rxn_prop():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     # Set up thermo props and reaction props
     m.fs.solid_properties = SolidPhaseThermoParameterBlock()
     m.fs.solid_state_block = m.fs.solid_properties.build_state_block(
-        default={"parameters": m.fs.solid_properties,
-                 "defined_state": True})
+        parameters=m.fs.solid_properties, defined_state=True
+    )
 
     m.fs.gas_properties = GasPhaseThermoParameterBlock()
     m.fs.gas_state_block = m.fs.gas_properties.build_state_block(
-        default={"parameters": m.fs.gas_properties,
-                 "defined_state": True})
+        parameters=m.fs.gas_properties, defined_state=True
+    )
 
     m.fs.reactions = HeteroReactionParameterBlock(
-                default={"solid_property_package": m.fs.solid_properties,
-                         "gas_property_package": m.fs.gas_properties})
+        solid_property_package=m.fs.solid_properties,
+        gas_property_package=m.fs.gas_properties,
+    )
     m.fs.unit = m.fs.reactions.reaction_block_class(
-            default={"parameters": m.fs.reactions,
-                     "solid_state_block": m.fs.solid_state_block,
-                     "gas_state_block": m.fs.gas_state_block,
-                     "has_equilibrium": False})
+        parameters=m.fs.reactions,
+        solid_state_block=m.fs.solid_state_block,
+        gas_state_block=m.fs.gas_state_block,
+        has_equilibrium=False,
+    )
 
     # Fix required variables to make reaction model square
     # (gas mixture and component densities,

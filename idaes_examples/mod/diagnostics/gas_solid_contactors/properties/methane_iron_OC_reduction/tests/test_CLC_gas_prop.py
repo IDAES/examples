@@ -16,34 +16,29 @@ Author: Chinedu Okoli
 """
 
 import pytest
-
 from pyomo.environ import (ConcreteModel, Var)
-
 from idaes.core import FlowsheetBlock
-
 from idaes.core.util.model_statistics import degrees_of_freedom
-
-from idaes.core.util.testing import (get_default_solver,
-                                     initialization_tester)
-
-from idaes_examples.mod.incidence_demo.cce2023.structural_singularity.idaes_1_7_gas_solid_contactors.properties.methane_iron_OC_reduction. \
+from idaes.core.util.testing import initialization_tester
+from idaes.core.solvers import get_solver
+from idaes_examples.mod.diagnostics.gas_solid_contactors.properties.methane_iron_OC_reduction. \
     gas_phase_thermo import GasPhaseThermoParameterBlock
 
 # Get default solver for testing
-solver = get_default_solver()
+solver = get_solver()
 
 
 # -----------------------------------------------------------------------------
 @pytest.fixture(scope="class")
 def gas_prop():
     m = ConcreteModel()
-    m.fs = FlowsheetBlock(default={"dynamic": False})
+    m.fs = FlowsheetBlock(dynamic=False)
 
     # gas properties and state inlet block
     m.fs.properties = GasPhaseThermoParameterBlock()
     m.fs.unit = m.fs.properties.build_state_block(
-        default={"parameters": m.fs.properties,
-                 "defined_state": True})
+        parameters=m.fs.properties, defined_state=True
+    )
 
     m.fs.unit.flow_mol.fix(1)
     m.fs.unit.temperature.fix(450)
