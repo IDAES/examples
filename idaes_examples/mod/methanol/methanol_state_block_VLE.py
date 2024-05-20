@@ -40,7 +40,7 @@ from idaes.core.util.initialization import (fix_state_vars,
                                             solve_indexed_blocks)
 from idaes.core.util.exceptions import ConfigurationError
 
-# Some more inforation about this module
+# Some more information about this module
 __author__ = "Jaffer Ghouse", "Brandon Paul"
 __version__ = "0.0.1"
 
@@ -65,7 +65,7 @@ class _IdealStateBlock(StateBlock):
             state_args : Dictionary with initial guesses for the state vars
                          chosen. Note that if this method is triggered
                          through the control volume, and if initial guesses
-                         were not provied at the unit model level, the
+                         were not provided at the unit model level, the
                          control volume passes the inlet values as initial
                          guess.The keys for the state_args dictionary are:
 
@@ -79,7 +79,7 @@ class _IdealStateBlock(StateBlock):
 
                      * 0 = no output (default)
                      * 1 = return solver state for each step in routine
-                     * 2 = include solver output infomation (tee=True)
+                     * 2 = include solver output information (tee=True)
 
             optarg : solver options dictionary object (default=None)
             solver : str indicating which solver to use during
@@ -190,7 +190,7 @@ class _IdealStateBlock(StateBlock):
 
     def release_state(blk, flags, outlvl=0):
         '''
-        Method to relase state variables fixed during initialization.
+        Method to release state variables fixed during initialization.
 
         Keyword Arguments:
             flags : dict containing information of which state variables

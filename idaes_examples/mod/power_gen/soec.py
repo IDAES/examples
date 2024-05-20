@@ -1111,19 +1111,19 @@ class SoecFlowsheetData(FlowsheetBlockData):
             display_units=pyo.units.MW,
         )
         tag_group["total_electric_power"] = iutil.ModelTag(
-            doc="Total electric power for SOEC and auxilaries",
+            doc="Total electric power for SOEC and auxiliaries",
             expr=self.total_electric_power[0],
             format_string="{:.3f}",
             display_units=pyo.units.MW,
         )
         tag_group["bop_power"] = iutil.ModelTag(
-            doc="Total electric power for SOEC and auxilaries",
+            doc="Total electric power for SOEC and auxiliaries",
             expr=self.total_electric_power[0] - self.soec_ac_power[0],
             format_string="{:.3f}",
             display_units=pyo.units.MW,
         )
         tag_group["total_electric_power_per_h2"] = iutil.ModelTag(
-            doc="Total electric power for SOEC and auxilaries per H2 produced",
+            doc="Total electric power for SOEC and auxiliaries per H2 produced",
             expr=self.total_electric_power_per_h2[0],
             format_string="{:.3f}",
             display_units=pyo.units.kWh / pyo.units.kg,

@@ -85,11 +85,11 @@ class GasTurbineFlowsheetData(FlowsheetBlockData):
         self.cmb_species = cmb_species
         self.flue_species = flue_species
         self.rxns = rxns
-        # Here three differnt type of property blocks are used, so that we can
+        # Here three different type of property blocks are used, so that we can
         # avoid components with zero flow, which can cause problems with
         # certain property calculations (entropy for example). Three types of
         # gas streams are Air, combstion mixture, and flue gas.  Fortunately
-        # natural gas has some air compoents in it so the combustion property
+        # natural gas has some air components in it so the combustion property
         # parameters can be used for natural gas and natural gas mixed with air.
         self.prop_water = iapws95.Iapws95ParameterBlock()
         self.air_prop_params = GenericParameterBlock(
@@ -122,7 +122,7 @@ class GasTurbineFlowsheetData(FlowsheetBlockData):
             property_package=self.flue_prop_params,
         )
         self.vsv = um.Valve(
-            doc="Valve to approximatly variable inlet guide vanes",
+            doc="Valve to approximately variable inlet guide vanes",
             valve_function_callback=um.ValveFunctionType.linear,
             property_package=self.air_prop_params,
         )
@@ -323,7 +323,7 @@ class GasTurbineFlowsheetData(FlowsheetBlockData):
             )
 
     def _add_constraints(self):
-        """Add addtional flowsheet constraints and expressions"""
+        """Add additional flowsheet constraints and expressions"""
         self.cmbout_o2_mol_frac = pyo.Var(
             self.time, initialize=0.1157, doc="Combustor outlet O2 mole fraction."
         )
@@ -373,7 +373,7 @@ class GasTurbineFlowsheetData(FlowsheetBlockData):
                 + self.gts3.control_volume.work[t]
             )
 
-        # Add a varable and constraint for gross power.  This allows fixing power
+        # Add a variable and constraint for gross power.  This allows fixing power
         # for simulations where a specific power output is desired.
         self.gt_power = pyo.Var(self.time, units=pyo.units.W)
 
@@ -919,7 +919,7 @@ class GasTurbineFlowsheetData(FlowsheetBlockData):
         propagate_state(self.g02b)
         self.gts1.ratioP[0] = 0.7
         self.gts1.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
-        # blade cooling air valve01, and calculate a flow coefficent
+        # blade cooling air valve01, and calculate a flow coefficient
         propagate_state(self.air05)
         self.valve01.Cv = 2
         self.valve01.Cv.unfix()
@@ -942,7 +942,7 @@ class GasTurbineFlowsheetData(FlowsheetBlockData):
         propagate_state(self.g04)
         self.gts2.ratioP[0] = 0.7
         self.gts2.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
-        # blade cooling air valve02, and calculate a flow coefficent
+        # blade cooling air valve02, and calculate a flow coefficient
         propagate_state(self.air07)
         self.valve02.Cv = 2
         self.valve02.Cv.unfix()
@@ -965,7 +965,7 @@ class GasTurbineFlowsheetData(FlowsheetBlockData):
         propagate_state(self.g06)
         self.gts3.ratioP[0] = 0.7
         self.gts3.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
-        # blade cooling air valve03, and calculate a flow coefficent
+        # blade cooling air valve03, and calculate a flow coefficient
         propagate_state(self.air09)
         self.valve03.Cv = 2
         self.valve03.Cv.unfix()
@@ -997,17 +997,17 @@ class GasTurbineFlowsheetData(FlowsheetBlockData):
         self.valve01.control_volume.properties_in[0].flow_mol.unfix()
         self.valve02.control_volume.properties_in[0].flow_mol.unfix()
         self.valve03.control_volume.properties_in[0].flow_mol.unfix()
-        # deltaP will be whatever is needed to satisfy the power requirment
+        # deltaP will be whatever is needed to satisfy the power requirement
         self.vsv.deltaP.unfix()
         # The compressor efficiency is a little high since it doesn't include
         # throttling in the valve use to approximate VSV.
         self.cmp1.efficiency_isentropic.fix(0.92)
         self.cmp1.ratioP.fix(17.5)  # lowering this ratio, just means less pressure
-        # drop in the VSV valve, decresing throttle loss
+        # drop in the VSV valve, decreasing throttle loss
         # Exhaust pressure will be a bit over ATM due to HRSG. This will come from
         # HRSG model when coupled to form NGCC model
         self.exhaust_1.pressure.fix(1.1e5)
-        # Don't know how much blade cooling air is needed for off desing case, but
+        # Don't know how much blade cooling air is needed for off design case, but
         # full load flows were based on WVU model.  For now just leave valves at
         # fixed opening.
         self.valve01.valve_opening.fix()

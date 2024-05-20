@@ -58,7 +58,7 @@ def build_SOFC_ROM(m):
     n_outputs = 48
     n_samples = 13424
 
-    # create indecies for vars and params
+    # create indices for vars and params
     input_index = list(range(n_inputs))
     input_plus_index = list(range(n_inputs + 1))
     output_index = list(range(n_outputs))

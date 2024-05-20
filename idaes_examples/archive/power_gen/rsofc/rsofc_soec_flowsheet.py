@@ -202,7 +202,7 @@ def add_asu(fs):
     fs.intercooler_s2.outlet.temperature.fix(310.93)  # K (100 F)
     fs.intercooler_s2.deltaP.fix(-3447)  # Pa (-0.5 psi)
 
-    # air seperation unit
+    # air separation unit
     fs.ASU.split_fraction[0, "O2_outlet", "CO2"].fix(1e-10)
     fs.ASU.split_fraction[0, "O2_outlet", "H2O"].fix(1e-10)
     fs.ASU.split_fraction[0, "O2_outlet", "N2"].fix(0.0005)
@@ -401,7 +401,7 @@ def add_aux_boiler_steam(fs):
     )  # enthalpy outlet
     fs.bhx2.outlet.enth_mol.fix(
         h_bhx2
-    )  # K (100 F) # unfix after initalize and spec Q from cmb
+    )  # K (100 F) # unfix after initialize and spec Q from cmb
 
     fs.bhx1.overall_heat_transfer_coefficient.fix(100)
     fs.bhx1.delta_temperature_out.fix(10)  # fix DT for pinch side
@@ -1407,7 +1407,7 @@ def set_guess(fs):
         fs.preheat_split.inlet, F=7765, T=700, P=1.04e5, comp=comp_guess, fix=True
     )
 
-    # Set guess for temp, pressure and mole frac conditions to initalize soec
+    # Set guess for temp, pressure and mole frac conditions to initialize soec
     fs.soec_stack.fuel_inlet.flow_mol[0].fix(5600)
     fs.soec_stack.fuel_inlet.temperature[0].fix(1023.15)
     fs.soec_stack.fuel_inlet.pressure[0].fix(1.01325e5)
