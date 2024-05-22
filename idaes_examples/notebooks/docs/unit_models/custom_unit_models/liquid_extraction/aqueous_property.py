@@ -112,7 +112,7 @@ class AqPhaseData(PhysicalParameterBlock):
         )
 
 
-class _StateBlock(StateBlock):
+class _AqueousStateBlock(StateBlock):
     """
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
@@ -122,7 +122,7 @@ class _StateBlock(StateBlock):
         fix_state_vars(self)
 
 
-@declare_process_block_class("AqPhaseStateBlock", block_class=_StateBlock)
+@declare_process_block_class("AqPhaseStateBlock", block_class=_AqueousStateBlock)
 class AqPhaseStateBlockData(StateBlockData):
     """
     An example property package for ideal gas properties with Gibbs energy

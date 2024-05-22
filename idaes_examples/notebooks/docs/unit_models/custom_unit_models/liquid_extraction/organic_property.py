@@ -121,7 +121,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
         )
 
 
-class _StateBlock(StateBlock):
+class _OrganicStateBlock(StateBlock):
     """
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
@@ -131,7 +131,7 @@ class _StateBlock(StateBlock):
         fix_state_vars(self)
     
 
-@declare_process_block_class("OrgPhaseStateBlock", block_class=_StateBlock)
+@declare_process_block_class("OrgPhaseStateBlock", block_class=_OrganicStateBlock)
 class LiqPhaseStateBlockData(StateBlockData):
     """
     An example property package for Organic phase for liquid liquid extraction

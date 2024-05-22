@@ -27,8 +27,8 @@ from idaes.core.initialization.block_triangularization import (
 )
 from idaes.core import FlowsheetBlock
 from idaes_examples.notebooks.docs.unit_models.custom_unit_models.liquid_extraction.organic_property import OrgPhase
-from aqueous_property import AqPhase
-from liquid_liquid_extractor import LiqExtraction
+from idaes_examples.notebooks.docs.unit_models.custom_unit_models.liquid_extraction.aqueous_property import AqPhase
+from idaes_examples.notebooks.docs.unit_models.custom_unit_models.liquid_extraction.liquid_liquid_extractor import LiqExtraction
 
 
 def build_model(m):
