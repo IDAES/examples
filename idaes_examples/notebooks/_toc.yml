@@ -1,10 +1,10 @@
 format: jb-book
 parts:
-# - caption: Tutorials
-#   chapters:
-#   - file: docs/tut/index
-#     sections:
-#     - file: docs/tut/introduction_short_doc
+- caption: Tutorials
+  chapters:
+  - file: docs/tut/index
+    sections:
+    - file: docs/tut/introduction_short_doc
 #     - file: docs/tut/introduction_doc
 #   - file: docs/tut/core/index
 #     sections:
@@ -13,11 +13,11 @@ parts:
 #   - file: docs/tut/ui/index
 #     sections:
 #     - file: docs/tut/ui/visualizer_tutorial_doc
-# - caption: Common Workflows
-#   chapters:
-#   - file: docs/diagnostics/index
-#     sections:
-#     - file: docs/diagnostics/diagnostics_toolbox_doc
+- caption: Common Workflows
+  chapters:
+  - file: docs/diagnostics/index
+    sections:
+    - file: docs/diagnostics/diagnostics_toolbox_doc
 #     - file: docs/diagnostics/degeneracy_hunter_doc
 #   - file: docs/param_est/index
 #     sections:
@@ -27,18 +27,18 @@ parts:
 #     sections:
 #     - file: docs/dae/petsc_chem_doc
 #     - file: docs/dae/petsc_pid_doc
-# - caption: Flowsheets
-#   chapters:
-#   - file: docs/flowsheets/hda_flowsheet_with_costing_doc
+- caption: Flowsheets
+  chapters:
+  - file: docs/flowsheets/hda_flowsheet_with_costing_doc
 #   - file: docs/flowsheets/hda_flowsheet_with_distillation_doc
 #   - file: docs/flowsheets/methanol_synthesis_doc
 #   - file: docs/flowsheets/temperature_swing_adsorption/temperature_swing_adsorption_doc
 # #  - file: docs/flowsheets/CO2_adsorption_desorption/CO2_Adsorption_Desorption_1DFixedBed_doc
-# - caption: Unit Models
-#   chapters:
-#   - file: docs/unit_models/operations/index
-#     sections:
-#     - file: docs/unit_models/operations/compressor_doc
+- caption: Unit Models
+  chapters:
+  - file: docs/unit_models/operations/index
+    sections:
+    - file: docs/unit_models/operations/compressor_doc
 #     - file: docs/unit_models/operations/heater_doc
 #     - file: docs/unit_models/operations/heat_exchanger_0d_doc
 #     - file: docs/unit_models/operations/mixer_doc
@@ -56,21 +56,21 @@ parts:
 #     sections:
 #     - file: docs/unit_models/custom_unit_models/custom_compressor_doc
 #     - file: docs/unit_models/custom_unit_models/custom_heater_doc
-# - caption: Property packages
-#   chapters:
-#   - file: docs/properties/index
-#     sections:
-#     - file: docs/properties/dictionary_txy_diagrams_doc
-#     - file: docs/properties/parameter_estimation_pr_doc
+- caption: Property packages
+  chapters:
+  - file: docs/properties/index
+    sections:
+    - file: docs/properties/dictionary_txy_diagrams_doc
+    - file: docs/properties/parameter_estimation_pr_doc
 #   - file: docs/properties/custom/index
 #     sections:
 #     - file: docs/properties/custom/custom_physical_property_packages_doc
 #     - file: docs/properties/custom/custom_reaction_property_packages_doc
-# - caption: Surrogate models
-#   chapters:
-#   - file: docs/surrogates/index
-#     sections:
-#     - file: docs/surrogates/best_practices_optimization_doc
+- caption: Surrogate models
+  chapters:
+  - file: docs/surrogates/index
+    sections:
+    - file: docs/surrogates/best_practices_optimization_doc
 #   - file: docs/surrogates/pysmo/index
 #     sections:
 #     - file: docs/surrogates/pysmo/pysmo_basics_doc
