@@ -89,7 +89,7 @@ class HrsgFlowsheetData(FlowsheetBlockData):
 
     def _add_unit_models(self):
         """Add process unit models"""
-        # short refernce to property parameter blocks
+        # short reference to property parameter blocks
         prop_water = self.prop_water
         prop_gas = self.prop_gas
 
@@ -121,7 +121,7 @@ class HrsgFlowsheetData(FlowsheetBlockData):
             property_package_args={'has_phase_equilibrium':False}
         )
         self.drum_lp = HelmPhaseSeparator(
-            doc="Phase seperator for LP evaporator (parital evaporator)",
+            doc="Phase separator for LP evaporator (partial evaporator)",
             property_package=prop_water,
             property_package_args={'has_phase_equilibrium':False}
         )

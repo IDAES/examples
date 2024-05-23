@@ -105,6 +105,9 @@ parts:
   - file: docs/power_gen/ngcc/index
     sections:
     - file: docs/power_gen/ngcc/ngcc_doc
+  - file: docs/power_gen/solid_oxide_cell/index
+    sections:
+    - file: docs/power_gen/solid_oxide_cell/soc_pid_control_doc
   # -----------------------------
   #  active (not documented)
   # -----------------------------

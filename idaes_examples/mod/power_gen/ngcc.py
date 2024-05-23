@@ -221,7 +221,7 @@ class NgccFlowsheetData(FlowsheetBlockData):
         self.cap_specific_reboiler_duty = pyo.Var(
             initialize=2.7e6, units=pyo.units.J / pyo.units.kg
         )
-        self.cap_addtional_co2 = pyo.Var(
+        self.cap_additional_co2 = pyo.Var(
             self.config.time, initialize=0.0, units=pyo.units.kg / pyo.units.s
         )
         self.cap_specific_compression_power = pyo.Var(
@@ -349,7 +349,7 @@ class NgccFlowsheetData(FlowsheetBlockData):
                     * 0.04401
                     * pyo.units.kg
                     / pyo.units.mol
-                    + b.cap_addtional_co2[t]
+                    + b.cap_additional_co2[t]
                 )
                 + b.cap_additional_reboiler_duty[t]
             )
@@ -431,7 +431,7 @@ class NgccFlowsheetData(FlowsheetBlockData):
             # here suffix=False avoids loading scaling factors
             iutil.from_json(self, fname=load_from, wts=iutil.StoreSpec(suffix=False))
         else:
-            self.cap_addtional_co2.fix()
+            self.cap_additional_co2.fix()
             self.cap_fraction.fix()
             self.cap_specific_reboiler_duty.fix()
             self.cap_specific_compression_power.fix()
@@ -495,7 +495,7 @@ class NgccFlowsheetData(FlowsheetBlockData):
             self.st.steam_turbine.inlet_split.inlet.unfix()
             solver_obj.solve(self, tee=True)
 
-            init_log.info(f"Fix flow coefficent and free throttle")
+            init_log.info(f"Fix flow coefficient and free throttle")
             self.st.steam_turbine.throttle_valve[1].pressure_flow_equation.deactivate()
             self.st.steam_turbine.outlet_stage.flow_coeff.fix()
             solver_obj.solve(self, tee=True)
