@@ -5,109 +5,109 @@ parts:
   - file: docs/tut/index
     sections:
     - file: docs/tut/introduction_short_doc
-#     - file: docs/tut/introduction_doc
-#   - file: docs/tut/core/index
-#     sections:
-#     - file: docs/tut/core/flash_unit_doc
-#     - file: docs/tut/core/hda_flowsheet_doc
-#   - file: docs/tut/ui/index
-#     sections:
-#     - file: docs/tut/ui/visualizer_tutorial_doc
+    - file: docs/tut/introduction_doc
+  - file: docs/tut/core/index
+    sections:
+    - file: docs/tut/core/flash_unit_doc
+    - file: docs/tut/core/hda_flowsheet_doc
+  - file: docs/tut/ui/index
+    sections:
+    - file: docs/tut/ui/visualizer_tutorial_doc
 - caption: Common Workflows
   chapters:
   - file: docs/diagnostics/index
     sections:
     - file: docs/diagnostics/diagnostics_toolbox_doc
-#     - file: docs/diagnostics/degeneracy_hunter_doc
-#   - file: docs/param_est/index
-#     sections:
-#     - file: docs/param_est/parameter_estimation_nrtl_using_state_block_doc
-#     - file: docs/param_est/parameter_estimation_nrtl_using_unit_model_doc
-#   - file: docs/dae/index
-#     sections:
-#     - file: docs/dae/petsc_chem_doc
-#     - file: docs/dae/petsc_pid_doc
+    - file: docs/diagnostics/degeneracy_hunter_doc
+  - file: docs/param_est/index
+    sections:
+    - file: docs/param_est/parameter_estimation_nrtl_using_state_block_doc
+    - file: docs/param_est/parameter_estimation_nrtl_using_unit_model_doc
+  - file: docs/dae/index
+    sections:
+    - file: docs/dae/petsc_chem_doc
+    - file: docs/dae/petsc_pid_doc
 - caption: Flowsheets
   chapters:
   - file: docs/flowsheets/hda_flowsheet_with_costing_doc
-#   - file: docs/flowsheets/hda_flowsheet_with_distillation_doc
-#   - file: docs/flowsheets/methanol_synthesis_doc
-#   - file: docs/flowsheets/temperature_swing_adsorption/temperature_swing_adsorption_doc
-# #  - file: docs/flowsheets/CO2_adsorption_desorption/CO2_Adsorption_Desorption_1DFixedBed_doc
+  - file: docs/flowsheets/hda_flowsheet_with_distillation_doc
+  - file: docs/flowsheets/methanol_synthesis_doc
+  - file: docs/flowsheets/temperature_swing_adsorption/temperature_swing_adsorption_doc
+#  - file: docs/flowsheets/CO2_adsorption_desorption/CO2_Adsorption_Desorption_1DFixedBed_doc
 - caption: Unit Models
   chapters:
   - file: docs/unit_models/operations/index
     sections:
     - file: docs/unit_models/operations/compressor_doc
-#     - file: docs/unit_models/operations/heater_doc
-#     - file: docs/unit_models/operations/heat_exchanger_0d_doc
-#     - file: docs/unit_models/operations/mixer_doc
-#     - file: docs/unit_models/operations/pump_doc
-#     - file: docs/unit_models/operations/skeleton_unit_doc
-#     - file: docs/unit_models/operations/turbine_doc
-#   - file: docs/unit_models/reactors/index
-#     sections:
-#     - file: docs/unit_models/reactors/cstr_doc
-#     - file: docs/unit_models/reactors/equilibrium_reactor_doc
-#     - file: docs/unit_models/reactors/gibbs_reactor_doc
-#     - file: docs/unit_models/reactors/plug_flow_reactor_doc
-#     - file: docs/unit_models/reactors/stoichiometric_reactor_doc
-#   - file: docs/unit_models/custom_unit_models/index
-#     sections:
-#     - file: docs/unit_models/custom_unit_models/custom_compressor_doc
-#     - file: docs/unit_models/custom_unit_models/custom_heater_doc
+    - file: docs/unit_models/operations/heater_doc
+    - file: docs/unit_models/operations/heat_exchanger_0d_doc
+    - file: docs/unit_models/operations/mixer_doc
+    - file: docs/unit_models/operations/pump_doc
+    - file: docs/unit_models/operations/skeleton_unit_doc
+    - file: docs/unit_models/operations/turbine_doc
+  - file: docs/unit_models/reactors/index
+    sections:
+    - file: docs/unit_models/reactors/cstr_doc
+    - file: docs/unit_models/reactors/equilibrium_reactor_doc
+    - file: docs/unit_models/reactors/gibbs_reactor_doc
+    - file: docs/unit_models/reactors/plug_flow_reactor_doc
+    - file: docs/unit_models/reactors/stoichiometric_reactor_doc
+  - file: docs/unit_models/custom_unit_models/index
+    sections:
+    - file: docs/unit_models/custom_unit_models/custom_compressor_doc
+    - file: docs/unit_models/custom_unit_models/custom_heater_doc
 - caption: Property packages
   chapters:
   - file: docs/properties/index
     sections:
     - file: docs/properties/dictionary_txy_diagrams_doc
     - file: docs/properties/parameter_estimation_pr_doc
-#   - file: docs/properties/custom/index
-#     sections:
-#     - file: docs/properties/custom/custom_physical_property_packages_doc
-#     - file: docs/properties/custom/custom_reaction_property_packages_doc
+  - file: docs/properties/custom/index
+    sections:
+    - file: docs/properties/custom/custom_physical_property_packages_doc
+    - file: docs/properties/custom/custom_reaction_property_packages_doc
 - caption: Surrogate models
   chapters:
   - file: docs/surrogates/index
     sections:
     - file: docs/surrogates/best_practices_optimization_doc
-#   - file: docs/surrogates/pysmo/index
-#     sections:
-#     - file: docs/surrogates/pysmo/pysmo_basics_doc
-#     - file: docs/surrogates/pysmo/pysmo_flowsheet_optimization_doc
-#   - file: docs/surrogates/alamo/index
-#     sections:
-#     - file: docs/surrogates/alamo/alamo_flowsheet_optimization_doc
-#   - file: docs/surrogates/omlt/index
-#     sections:
-#     - file: docs/surrogates/omlt/keras_flowsheet_optimization_doc
-#   - file: docs/surrogates/sco2/alamo/index
-#     sections:
-#     - file: docs/surrogates/sco2/alamo/alamo_training_doc
-#     - file: docs/surrogates/sco2/alamo/surrogate_embedding_doc
-#     - file: docs/surrogates/sco2/alamo/flowsheet_optimization_doc
-#   - file: docs/surrogates/sco2/omlt/index
-#     sections:
-#     - file: docs/surrogates/sco2/omlt/keras_training_doc
-#     - file: docs/surrogates/sco2/omlt/surrogate_embedding_doc
-#     - file: docs/surrogates/sco2/omlt/flowsheet_optimization_doc
-#   - file: docs/surrogates/sco2/pysmo/index
-#     sections:
-#     - file: docs/surrogates/sco2/pysmo/pysmo_training_doc
-#     - file: docs/surrogates/sco2/pysmo/surrogate_embedding_doc
-#     - file: docs/surrogates/sco2/pysmo/flowsheet_optimization_doc
+  - file: docs/surrogates/pysmo/index
+    sections:
+    - file: docs/surrogates/pysmo/pysmo_basics_doc
+    - file: docs/surrogates/pysmo/pysmo_flowsheet_optimization_doc
+  - file: docs/surrogates/alamo/index
+    sections:
+    - file: docs/surrogates/alamo/alamo_flowsheet_optimization_doc
+  - file: docs/surrogates/omlt/index
+    sections:
+    - file: docs/surrogates/omlt/keras_flowsheet_optimization_doc
+  - file: docs/surrogates/sco2/alamo/index
+    sections:
+    - file: docs/surrogates/sco2/alamo/alamo_training_doc
+    - file: docs/surrogates/sco2/alamo/surrogate_embedding_doc
+    - file: docs/surrogates/sco2/alamo/flowsheet_optimization_doc
+  - file: docs/surrogates/sco2/omlt/index
+    sections:
+    - file: docs/surrogates/sco2/omlt/keras_training_doc
+    - file: docs/surrogates/sco2/omlt/surrogate_embedding_doc
+    - file: docs/surrogates/sco2/omlt/flowsheet_optimization_doc
+  - file: docs/surrogates/sco2/pysmo/index
+    sections:
+    - file: docs/surrogates/sco2/pysmo/pysmo_training_doc
+    - file: docs/surrogates/sco2/pysmo/surrogate_embedding_doc
+    - file: docs/surrogates/sco2/pysmo/flowsheet_optimization_doc
 - caption: Power generation
-  # chapters:
-  # - file: docs/power_gen/supercritical/index
-  #   sections:
-  #   - file: docs/power_gen/supercritical/supercritical_power_plant_doc
-  #   - file: docs/power_gen/supercritical/supercritical_steam_cycle_doc
+  chapters:
+  - file: docs/power_gen/supercritical/index
+    sections:
+    - file: docs/power_gen/supercritical/supercritical_power_plant_doc
+    - file: docs/power_gen/supercritical/supercritical_steam_cycle_doc
   - file: docs/power_gen/ngcc/index
     sections:
     - file: docs/power_gen/ngcc/ngcc_doc
-  # - file: docs/power_gen/solid_oxide_cell/index
-  #   sections:
-  #   - file: docs/power_gen/solid_oxide_cell/soc_pid_control_doc
+  - file: docs/power_gen/solid_oxide_cell/index
+    sections:
+    - file: docs/power_gen/solid_oxide_cell/soc_pid_control_doc
   # -----------------------------
   #  active (not documented)
   # -----------------------------
