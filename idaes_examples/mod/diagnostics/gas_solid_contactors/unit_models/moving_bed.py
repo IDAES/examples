@@ -455,7 +455,7 @@ see reaction package for documentation.}"""))
         self.add_outlet_port(name="solid_outlet", block=self.solid_phase)
 
     # =========================================================================
-        """ Add performace equation method"""
+        """ Add performance equation method"""
         self._apply_transformation()
         self._make_performance()
 
@@ -560,7 +560,7 @@ see reaction package for documentation.}"""))
         # Add performance equations
 
         # ---------------------------------------------------------------------
-        # Geometry contraints
+        # Geometry constraints
 
         # Bed area
         @self.Constraint(doc="Bed area")
@@ -593,7 +593,7 @@ see reaction package for documentation.}"""))
             return (b.solid_phase.length == b.bed_height)
 
         # ---------------------------------------------------------------------
-        # Hydrodynamic contraints
+        # Hydrodynamic constraints
 
         # Gas superficial velocity
         @self.Constraint(self.flowsheet().config.time,
@@ -657,7 +657,7 @@ see reaction package for documentation.}"""))
                     "the pressure drop correlation. Please contact the IDAES"
                     " developers with this bug.".format(self.name))
         # ---------------------------------------------------------------------
-        # Reaction contraints
+        # Reaction constraints
 
         # Build homogeneous reaction constraints
         if gas_phase.reaction_package is not None:
@@ -809,7 +809,7 @@ see reaction package for documentation.}"""))
                          property package) (default = {}).
             outlvl : sets output level of initialisation routine
             optarg : solver options dictionary object (default={'tol': 1e-6})
-            solver : str indicating whcih solver to use during
+            solver : str indicating which solver to use during
                      initialization (default = 'ipopt')
 
         Returns:
@@ -830,7 +830,7 @@ see reaction package for documentation.}"""))
         solid_phase = blk.config.solid_phase_config
 
         # Keep all unit model geometry constraints, derivative_var constraints,
-        # and property block constraints active. Additionaly, in control
+        # and property block constraints active. Additionally, in control
         # volumes - keep conservation linking constraints and
         # holdup calculation (for dynamic flowsheets) constraints active
 
@@ -1581,7 +1581,7 @@ class BidirectionalMBData(MBRData):
         self.add_outlet_port(name="solid_outlet", block=self.solid_phase)
 
     # =========================================================================
-        """ Add performace equation method"""
+        """ Add performance equation method"""
         self._apply_transformation()
         self._make_performance()
 

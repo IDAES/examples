@@ -124,7 +124,7 @@ def main():
 
     # Before calling report_structural_issues, we'll effectively disable Pyomo
     # logging messages. This is not recommended in general, but we do it here
-    # to supress unit inconsistency errors that otherwise flood our screen.
+    # to suppress unit inconsistency errors that otherwise flood our screen.
     # This model has unit inconsistency errors as it was created in IDAES 1.7,
     # before we enforced that models use units.
     logging.getLogger("pyomo").setLevel(logging.CRITICAL)
@@ -149,7 +149,7 @@ def main():
         dt.report_structural_issues()
         dt.display_underconstrained_set()
         dt.display_overconstrained_set()
-    # The overconstrained system decomposes into smaller indepedent blocks, which
+    # The overconstrained system decomposes into smaller independent blocks, which
     # are easier to debug.
 
     # After some thought, we decide we need to make particle porosity a variable,
@@ -201,7 +201,7 @@ def main():
     # Let's check the structural diagnostics again.
     dt = DiagnosticsToolbox(model2)
     dt.report_structural_issues()
-    # Lood good!
+    # Looks good!
 
     # Now let's try to solve
     free_degrees_of_freedom(model2)
