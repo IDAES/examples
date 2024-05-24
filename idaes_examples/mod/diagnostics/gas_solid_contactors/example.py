@@ -240,8 +240,8 @@ def create_square_model_with_new_variable_and_constraint():
 def create_corrected_square_model():
     """Create the model after correcting the singularity"""
     model = create_square_model_with_new_variable_and_constraint()
-    model.fs.MB.solid_super_vel[0].pprint()
     model.fs.MB.density_flowrate_constraint[:, 1.0].deactivate()
+    model.fs.MB.particle_porosity[:, 1.0].fix()
     return model
 
 
