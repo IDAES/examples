@@ -45,6 +45,20 @@ def attempt_solve(model):
     return res
 
 
+def fix_degrees_of_freedom(model):
+    model.fs.MB.gas_phase.properties[:, 0].flow_mol.fix()
+    model.fs.MB.solid_phase.properties[:, 1].flow_mass.fix()
+    model.piecewise_constant_constraints.deactivate()
+
+
+def free_degrees_of_freedom(model):
+    model.fs.MB.gas_phase.properties[:, 0].flow_mol.unfix()
+    model.fs.MB.gas_phase.properties[0, 0].flow_mol.fix()
+    model.fs.MB.solid_phase.properties[:, 1].flow_mass.unfix()
+    model.fs.MB.solid_phase.properties[0, 1].flow_mass.fix()
+    model.piecewise_constant_constraints.activate()
+
+
 def main():
     model = make_model()
     # Before trying to solve the model, let's make sure it conforms to our
@@ -55,9 +69,7 @@ def main():
     attempt_solve(model)
 
     # Let's run the diagnostics toolbox on the model and see what it has to say
-    model.fs.MB.gas_phase.properties[:, 0].flow_mol.fix()
-    model.fs.MB.solid_phase.properties[:, 1].flow_mass.fix()
-    model.piecewise_constant_constraints.deactivate()
+    fix_degrees_of_freedom(model)
     dt = DiagnosticsToolbox(model)
 
     # Before calling report_structural_issues, we'll effectively disable Pyomo
