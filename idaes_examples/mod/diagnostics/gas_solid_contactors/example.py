@@ -127,9 +127,7 @@ def main():
     # to supress unit inconsistency errors that otherwise flood our screen.
     # This model has unit inconsistency errors as it was created in IDAES 1.7,
     # before we enforced that models use units.
-    logger = logging.getLogger("pyomo")
-    orig_level = logger.level
-    logger.setLevel(logging.CRITICAL)
+    logging.getLogger("pyomo").setLevel(logging.CRITICAL)
 
     # Now we can finally see what the diagnostics toolbox has to say
     dt.report_structural_issues()
