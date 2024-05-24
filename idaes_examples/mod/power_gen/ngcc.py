@@ -418,8 +418,10 @@ class NgccFlowsheetData(FlowsheetBlockData):
         outlvl=idaeslog.NOTSET,
         solver=None,
         optarg=None,
-        load_from="ngcc_init.json.gz",
-        save_to="ngcc_init.json.gz",
+        # load_from="ngcc_init.json.gz",
+        # save_to="ngcc_init.json.gz",
+        load_from=None,
+        save_to=None,
     ):
 
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="flowsheet")

@@ -344,8 +344,10 @@ class SteamTurbineFlowsheetData(FlowsheetBlockData):
         outlvl=idaeslog.NOTSET,
         solver=None,
         optarg=None,
-        load_from="steam_turbine_init.json.gz",
-        save_to="steam_turbine_init.json.gz",
+        # load_from="steam_turbine_init.json.gz",
+        # save_to="steam_turbine_init.json.gz",
+        load_from=None,
+        save_to=None,
     ):
         """Initialize the steam turbine flowsheet
 

@@ -1078,8 +1078,10 @@ class HrsgFlowsheetData(FlowsheetBlockData):
         outlvl=idaeslog.NOTSET,
         solver=None,
         optarg=None,
-        load_from="hrsg_init.json.gz",
-        save_to="hrsg_init.json.gz",
+        # load_from="hrsg_init.json.gz",
+        # save_to="hrsg_init.json.gz",
+        load_from=None,
+        save_to=None,
     ):
         """Initialize the HRSG flowsheet
 
