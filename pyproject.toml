@@ -143,3 +143,35 @@ markers = [
     "needs_solver"
 ]
 testpaths = "idaes_examples"
+
+[tool.typos.files]
+extend-exclude = [
+    "*.svg",
+    "*.json",
+    "*.css",
+    "*.yml",
+]
+
+[tool.typos.default.extend-words]
+# Ignore IDAES
+IDAES = "IDAES"
+# Ignore HDA, assumes it's on purpose and not a typo of "had"
+HDA = "HDA" 
+# Ignore Attemp - assume it is abbreviating attemperator
+Attemp = "Attemp"
+# Ignore equil, assumes it's on purpose and not a typo of "equal"
+equil = "equil"
+# Atomic elements
+Nd = "Nd"
+Ba = "Ba" # ba is also used in block names in RSOFC-SOEC example
+# Numpy
+arange = "arange"
+[tool.typos.default]
+extend-ignore-re = [
+    # Jupyter notebooks: ignore hexadecimal values in "id" cell metadata field
+    '"id": "[0-9a-f]+",',
+    # ser is used as a variable name for pd.Series, so we exclude it when followed by a dot
+    # as of 2024-04-25, the false positive are all due to warnings in the output of certain notebooks
+    # which should be resolved regardless (see IDAES/examples#108)
+    "ser[.].*",
+]

@@ -22,7 +22,7 @@ sofc_rom_parameters folder contains the weights and biases of the trained DNN.
 The inputs include:
     - current density, A/m2
     - fuel inlet temperature, C
-    - air inlet temeprature, C
+    - air inlet temperature, C
     - air recirculation fraction
     - fuel oxygen to carbon ratio (OTC)
     - fuel utilization fraction
@@ -166,11 +166,11 @@ class SofcRomData(UnitModelBlockData):
 
         def norm_input_rule(b, i):
             return b.norm_input[i] == (b.input[i] - b.mean_X[i])/b.std_X[i]
-        self.norm_input_constrant = Constraint(self.X_set, rule=norm_input_rule)
+        self.norm_input_constraint = Constraint(self.X_set, rule=norm_input_rule)
 
         def output_rule(b, i):
             return b.output[i] == b.norm_output[i]*b.std_Y[i] + b.mean_Y[i]
-        self.output_constrant = Constraint(self.Y_set, rule=output_rule)
+        self.output_constraint = Constraint(self.Y_set, rule=output_rule)
 
         # this loop creates parameter and variables
         for lr in range(layers):
@@ -363,7 +363,7 @@ class SofcRomData(UnitModelBlockData):
             )
         init_log.info_high("Initialization Step 1 Complete.")
 
-        # return variables to origional state
+        # return variables to original state
         if unfix_vars:
             for var in vars_to_unfix:
                 var.unfix()
