@@ -37,7 +37,7 @@ Clone the repository from GitHub, set up your Python environment as you usually 
 
 ```shell
 # to create a conda environment first:
-# conda create -n idaes-examples python=3.10; conda activate idaes-examples
+# conda create --yes --name idaes-examples python=3.10 && conda activate idaes-examples
 pip install -r requirements-dev.txt
 ```
 
@@ -84,13 +84,15 @@ Which one you run depends in which directory you run tests.
 
 If your current directory is the root of the repository:
 
-1. `pytest .`: Runs **Python test modules**, matching the usual patterns (e.g., `*_test.py`).
+1. `pytest .`: Runs **Python test modules**, matching the usual patterns (e.g., `test_*.py`).
 2. `pytest idaes_examples`: Runs **Jupyter notebook tests.** Due to the presence of a special `conftest.py` file in this directory, Jupyter Notebooks will be preprocessed and then all test notebooks (their filename ending in `_test.ipynb`) will be executed.
 
-### Integration tests
+The `-v` or `--verbose` flag can be added to any pytest command so that more information is displayed while the test suite runs.
 
-Run integration tests from the top-level (root) directory of the repository.
-In the root directory, tests are configured by `pyproject.toml`; see the *tool.pytest.ini_options* section.
+### Testing the notebooks
+
+To run all registered notebooks, run the following command from the top-level (root) directory of the repository, specifying `idaes_examples` as an argument.
+The `pytest.ini` file and `conftest.py` files contained in `idaes_examples` will override the top-level pytest configuration defined in `pyproject.toml` under `[tool.pytest.ini_options]`.
 
 ```shell
 # from the root directory of the repository
@@ -101,8 +103,7 @@ pytest idaes_examples
 
 To test just one notebook, you need to use the name of the *test* notebook not the source.
 For example, to test the `compressor.ipynb` notebook (in the `unit_models/operations` subdirectory)
-you need to add `-c` and the path to the top-level *pyproject.toml*, which has the pytest configuration,
-then use the name of the test notebook:
+you need to use the name of the test notebook:
 
 ```shell
 pytest -v idaes_examples/notebooks/docs/unit_models/operations/compressor_test.ipynb
@@ -305,7 +306,8 @@ The output will be in `_dev/notebooks/_build/html`.
 In addition to per-cell tags, the preprocessor also can look at notebook-level metadata.
 This is currently used for only one purpose: to tell the preprocessor not to generate a 'test' notebook, and thereby to skip the given notebook in the tests.
 In order to make this happen, either manually edit the notebook source or use the Jupyter notebook "Edit -> Edit Notebook Metadata" menu item to add the following section to the notebook-level metadata:
-```
+
+```json
 "idaes": {
    "skip": ["test"]
 }
@@ -331,16 +333,19 @@ Instructions to package and distribute the examples as idaes-examples in PyPI.
 Based on the PyPA [packaging projects](https://packaging.python.org/en/latest/tutorials/packaging-projects/)  documentation.
 
 Install dependencies for packaging into your current (virtual) Python environment:
+
 ```shell
-pip install -e .[dev,jb,pkg]
+pip install -e .[dev,packaging]
 ```
 
 Edit the `pyproject.toml` file:
-  1. Ensure that you have commented out the line under `[project.optional-dependencies]`, in the `dev` section,
+
+1. Ensure that you have commented out the line under `[project.optional-dependencies]`, in the `dev` section,
      that reads `"idaes-pse @ git+https://github.com/IDAES/idaes-pse"`.
-  2. Set the release version.  You should increment the version for each new release.
+2. Set the release version.  You should increment the version for each new release.
 
 **Build** the distribution:
+
 ```shell
 > python -m build
 # Many lines of output later, you should see a message like:
@@ -354,6 +359,7 @@ To generate an API token, go to _Settings_ &rarr; _API Tokens_, and selecting _A
 You will paste this token in the commands below.
 
 **Upload** to [TestPyPI](https://packaging.python.org/en/latest/guides/using-testpypi/):
+
 ```shell
 > python -m twine upload --repository testpypi dist/*
 Uploading distributions to https://test.pypi.org/legacy/
@@ -362,17 +368,20 @@ Enter your password: {{paste token here}}
 ```
 
 Create a new virtual environment and install the package from test.pypi into it:
+
 ```shell
 pip install --extra-index-url https://test.pypi.org/simple/ idaes-examples
 ```
 
 If the installation succeeds, you should be able to serve the notebooks:
+
 ```shell
 idaesx serve
 ```
 
 If it all looks good, you can repeat the **Upload** step with the real [PyPI](pypi.org) 
 (you will need to get an account and token, just as for test.pypi.org, above):
+
 ```shell
 > python -m twine upload dist/*
 Uploading distributions to https://upload.pypi.org/legacy/
@@ -390,4 +399,4 @@ Enter your password: {{past token here}}
 
 ----
 Author: Dan Gunter  
-Last modified: 13 Mar 2023
+Last modified: 25 Apr 2024

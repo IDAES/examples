@@ -23,9 +23,6 @@ try:
 except:
     windll = None
 
-# third-party
-import markdown
-
 # package
 import idaes_examples
 from idaes_examples.util import (
