@@ -14,7 +14,7 @@
 """
 Liquid-Liquid Extractor model which includes aqueous and organic phase outlets.
 
-This is inspired from the anaerobic_digestor in watertap.
+This is inspired from the anaerobic_digester in watertap.
 
 Assumptions:
      * Steady-state only
@@ -290,8 +290,6 @@ class LiqExtractionData(UnitModelBlockData):
 
         if flow_basis == MaterialFlowBasis.mass:
             fb = "flow_mass"
-        elif flow_basis == MaterialFlowBasis.molar:
-            fb = "flow_mole"
         else:
             raise ConfigurationError(
                 f"{self.name} Liquid-Liquid Extractor only supports mass "

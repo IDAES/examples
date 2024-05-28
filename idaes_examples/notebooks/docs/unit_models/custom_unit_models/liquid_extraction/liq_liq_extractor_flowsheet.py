@@ -15,13 +15,7 @@
     The unit model uses two property packages for two liquid fluids
 '''
 import pyomo.environ as pyo
-import idaes.core
-import idaes.models.unit_models
 from idaes.core.solvers import get_solver
-import idaes.logger as idaeslog
-from pyomo.network import Arc
-from idaes.core.util.model_statistics import degrees_of_freedom
-from idaes.core.initialization import InitializationStatus
 from idaes.core.initialization.block_triangularization import (
     BlockTriangularizationInitializer,
 )

@@ -132,7 +132,7 @@ class _OrganicStateBlock(StateBlock):
     
 
 @declare_process_block_class("OrgPhaseStateBlock", block_class=_OrganicStateBlock)
-class LiqPhaseStateBlockData(StateBlockData):
+class OrgPhaseStateBlockData(StateBlockData):
     """
     An example property package for Organic phase for liquid liquid extraction
     """
