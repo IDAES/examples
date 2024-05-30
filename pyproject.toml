@@ -164,6 +164,7 @@ equil = "equil"
 # Atomic elements
 Nd = "Nd"
 Ba = "Ba" # ba is also used in block names in RSOFC-SOEC example
+
 # Numpy
 arange = "arange"
 [tool.typos.default]
@@ -174,4 +175,5 @@ extend-ignore-re = [
     # as of 2024-04-25, the false positive are all due to warnings in the output of certain notebooks
     # which should be resolved regardless (see IDAES/examples#108)
     "ser[.].*",
+    "KNO[2-3]" 
 ]
