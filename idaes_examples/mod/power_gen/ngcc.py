@@ -441,21 +441,23 @@ class NgccFlowsheetData(FlowsheetBlockData):
             self.fuel_lhv.fix()
             self.fuel_hhv.fix()
             self.gt.initialize(
-                load_from="gas_turbine_init.json.gz",
-                save_to="gas_turbine_init.json.gz",
+                # load_from="gas_turbine_init.json.gz",
+                # save_to="gas_turbine_init.json.gz",
+                load_from=None,
+                save_to=None
             )
             propagate_state(self.g08a)
             self.fg_translate.initialize()
             propagate_state(self.g08b, overwrite_fixed=True)
             self.hrsg.initialize(
-                load_from="hrsg_init.json.gz",
-                save_to="hrsg_init.json.gz",
+                load_from=None,
+                save_to=None
             )
             self.hrsg.sh_hp4.shell_inlet.unfix()
             propagate_state(self.t05a, overwrite_fixed=True)
             self.st.initialize(
-                load_from="steam_turbine_init.json.gz",
-                save_to="steam_turbine_init.json.gz",
+                load_from=None,
+                save_to=None
             )
 
             init_log.info(f"Open tears")
