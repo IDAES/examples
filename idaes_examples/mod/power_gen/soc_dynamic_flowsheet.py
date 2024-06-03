@@ -993,8 +993,6 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
         self.feed_heater.default_initializer(
             solver=solver, solver_options=optarg, output_level=outlvl
         ).initialize(model=self.feed_heater)
-        # self.sweep_heater.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
-        # self.feed_heater.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
         propagate_state(self.feed04)
         propagate_state(self.sweep04)
         
@@ -1034,7 +1032,6 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
         self.sweep_exchanger.default_initializer(
             solver=solver, solver_options=optarg, output_level=outlvl
         ).initialize(model=self.sweep_exchanger)
-        # self.sweep_exchanger.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
 
         propagate_state(self.ostrm04)
 
@@ -1045,14 +1042,12 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
         self.feed_medium_exchanger.default_initializer(
             solver=solver, solver_options=optarg, output_level=outlvl
         ).initialize(model=self.feed_medium_exchanger)
-        # self.feed_medium_exchanger.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
         
         propagate_state(self.feed01)
 
         self.feed_hot_exchanger.default_initializer(
             solver=solver, solver_options=optarg, output_level=outlvl
         ).initialize(model=self.feed_hot_exchanger)
-        # self.feed_hot_exchanger.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
         
         propagate_state(self.feed02)
         propagate_state(self.hstrmShortcut)
@@ -1232,7 +1227,7 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
             display_units=pyo.units.MW,
         )
         tag_group["total_electric_power"] = iutil.ModelTag(
-            doc="Total electric power for SOEC and auxilaries",
+            doc="Total electric power for SOEC and auxiliaries",
             expr=self.total_electric_power[t0],
             format_string="{:.3f}",
             display_units=pyo.units.MW,
@@ -1396,6 +1391,7 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
         set_indexed_variable_bounds(self.soc_module.potential_cell, [0.7, 1.4])
         set_indexed_variable_bounds(self.feed_heater.electric_heat_duty, (0, 2e6))
         set_indexed_variable_bounds(self.sweep_heater.electric_heat_duty, (0, 4e6))
+
         set_indexed_variable_bounds(self.soc_module.solid_oxide_cell.fuel_electrode.dtemperature_dz, (-750, 750))
         
         for t in self.time:
@@ -1413,12 +1409,6 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
             return b.fuel_electrode.temperature[t, 1, iz] <= 750 + 273.15
 
         scale_indexed_constraint(self.soc_module.solid_oxide_cell.temperature_upper_bound_eqn, 1e-2)
-
-        @self.soc_module.solid_oxide_cell.Constraint(self.time, self.soc_module.solid_oxide_cell.iznodes)
-        def temperature_lower_bound_eqn(b, t, iz):
-            return b.fuel_electrode.temperature[t, 1, iz] >= 600 + 273.15
-
-        scale_indexed_constraint(self.soc_module.solid_oxide_cell.temperature_lower_bound_eqn, 1e-2)
 
         delta_T_limit = 75
 

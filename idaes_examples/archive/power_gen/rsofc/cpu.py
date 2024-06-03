@@ -254,7 +254,7 @@ class CPUData(UnitModelBlockData):
             doc="Vent temperature [K]",
         )
 
-        # Pressue [Pa]
+        # Pressure [Pa]
         self.inlet_pressure = Var(
             self.flowsheet().config.time,
             initialize=17,
@@ -283,7 +283,7 @@ class CPUData(UnitModelBlockData):
     def add_material_balances(self):
         """ This section is for material balance constraints"""
 
-        # Sum of all componenet mole fractions in a stream equals 1
+        # Sum of all components mole fractions in a stream equals 1
         @self.Constraint(
             self.flowsheet().config.time,
             doc="PureCO2 stream: component mole flow equation",
@@ -640,7 +640,7 @@ class CPUData(UnitModelBlockData):
             outlvl : sets output level of initialisation routine
 
             optarg : solver options dictionary object (default={'tol': 1e-6})
-            solver : str indicating whcih solver to use during
+            solver : str indicating which solver to use during
                      initialization (default = 'ipopt')
 
         Returns:
