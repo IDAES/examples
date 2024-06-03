@@ -41,7 +41,7 @@ Clone the repository from GitHub, set up your Python environment as you usually 
 pip install -r requirements-dev.txt
 ```
 
-Note: if you have IDAES installed in your current environment, it will uninstall it and install the latest version from the main branch on Github. You can run `pip uninstall idaes` and reinstall it from your local repository if you need to test examples against a local branch of IDAES.
+Note: if you have IDAES installed in your current environment, it will uninstall it and install the latest version from the main branch on Github. You can run `pip uninstall idaes-pse` and reinstall it from your local repository if you need to test examples against a local branch of IDAES.
 
 The configuration of the installation is stored in `pyproject.toml`.
 
