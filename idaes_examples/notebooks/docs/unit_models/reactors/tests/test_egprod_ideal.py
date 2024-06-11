@@ -373,6 +373,9 @@ class TestPerrysProperties(object):
             else:
                 model.props[1].flow_mol_phase_comp[phase, comp].fix(1e-5)
 
+        # change lower bound for testing
+        model.props[1].temperature.setlb(150)
+
         model.props[1].temperature.fix(density_temperatures[component][test_point])
         model.props[1].pressure.fix(101325)
 
