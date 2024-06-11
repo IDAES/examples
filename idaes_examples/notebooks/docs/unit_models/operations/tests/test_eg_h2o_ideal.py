@@ -39,7 +39,7 @@ from idaes.models.properties.modular_properties.base.generic_property import (
 
 from idaes.models.properties.modular_properties.state_definitions import FpcTP
 
-from idaes_examples.notebooks.docs.unit_models.reactors.egprod_ideal import config_dict
+from idaes_examples.notebooks.docs.unit_models.operations.eg_h2o_ideal import config_dict
 
 from idaes.models.properties.tests.test_harness import PropertyTestHarness
 
@@ -77,18 +77,16 @@ class TestParamBlock(object):
         assert model.params.Liq.is_liquid_phase()
 
         assert isinstance(model.params.component_list, Set)
-        assert len(model.params.component_list) == 4
+        assert len(model.params.component_list) == 2
         for i in model.params.component_list:
-            assert i in ["ethylene_oxide", "water", "sulfuric_acid", "ethylene_glycol"]
+            assert i in ["water","ethylene_glycol"]
             assert isinstance(model.params.get_component(i), Component)
 
         assert isinstance(model.params._phase_component_set, Set)
-        assert len(model.params._phase_component_set) == 4
+        assert len(model.params._phase_component_set) == 2
         for i in model.params._phase_component_set:
             assert i in [
-                ("Liq", "ethylene_oxide"),
                 ("Liq", "water"),
-                ("Liq", "sulfuric_acid"),
                 ("Liq", "ethylene_glycol"),
             ]
 
@@ -107,17 +105,9 @@ class TestParamBlock(object):
         assert model.params.pressure_ref.value == 1e5
         assert model.params.temperature_ref.value == 298.15
 
-        assert model.params.ethylene_oxide.mw.value == 44.054e-3
-        assert model.params.ethylene_oxide.pressure_crit.value == 71.9e5
-        assert model.params.ethylene_oxide.temperature_crit.value == 469
-
         assert model.params.water.mw.value == 18.015e-3
         assert model.params.water.pressure_crit.value == 221.2e5
         assert model.params.water.temperature_crit.value == 647.3
-
-        assert model.params.sulfuric_acid.mw.value == 98.08e-3
-        assert model.params.sulfuric_acid.pressure_crit.value == 129.4262e5
-        assert model.params.sulfuric_acid.temperature_crit.value == 590.76
 
         assert model.params.ethylene_glycol.mw.value == 62.069e-3
         assert model.params.ethylene_glycol.pressure_crit.value == 77e5
@@ -137,9 +127,7 @@ class TestStateBlock(object):
         model.props[1].calculate_scaling_factors()
 
         # Fix state
-        model.props[1].flow_mol_phase_comp["Liq", "ethylene_oxide"].fix(100)
         model.props[1].flow_mol_phase_comp["Liq", "water"].fix(100)
-        model.props[1].flow_mol_phase_comp["Liq", "sulfuric_acid"].fix(100)
         model.props[1].flow_mol_phase_comp["Liq", "ethylene_glycol"].fix(100)
         model.props[1].temperature.fix(300)
         model.props[1].pressure.fix(101325)
@@ -150,17 +138,11 @@ class TestStateBlock(object):
     def test_build(self, model):
         # Check state variable values and bounds
         assert isinstance(model.props[1].flow_mol_phase_comp, Var)
-        assert value(model.props[1].flow_mol_phase_comp["Liq", "ethylene_oxide"]) == 100
         assert value(model.props[1].flow_mol_phase_comp["Liq", "water"]) == 100
-        assert value(model.props[1].flow_mol_phase_comp["Liq", "sulfuric_acid"]) == 100
         assert value(model.props[1].flow_mol_phase_comp["Liq", "ethylene_glycol"]) == 100
-        assert model.props[1].flow_mol_phase_comp["Liq", "ethylene_oxide"].ub == 1000
         assert model.props[1].flow_mol_phase_comp["Liq", "water"].ub == 1000
-        assert model.props[1].flow_mol_phase_comp["Liq", "sulfuric_acid"].ub == 1000
         assert model.props[1].flow_mol_phase_comp["Liq", "ethylene_glycol"].ub == 1000
-        assert model.props[1].flow_mol_phase_comp["Liq", "ethylene_oxide"].lb == 0
         assert model.props[1].flow_mol_phase_comp["Liq", "water"].lb == 0
-        assert model.props[1].flow_mol_phase_comp["Liq", "sulfuric_acid"].lb == 0
         assert model.props[1].flow_mol_phase_comp["Liq", "ethylene_glycol"].lb == 0
 
         assert isinstance(model.props[1].pressure, Var)
@@ -210,24 +192,16 @@ class TestStateBlock(object):
     @pytest.mark.unit
     def test_basic_scaling(self, model):
         model.props[1].scaling_factor.display()
-        assert len(model.props[1].scaling_factor) == 20
+        assert len(model.props[1].scaling_factor) == 12
         assert model.props[1].scaling_factor[model.props[1].flow_mol] == 1e-2
-        assert model.props[1].scaling_factor[model.props[1].flow_mol_comp["ethylene_oxide"]] == 1e-2
         assert model.props[1].scaling_factor[model.props[1].flow_mol_comp["water"]] == 1e-2
-        assert model.props[1].scaling_factor[model.props[1].flow_mol_comp["sulfuric_acid"]] == 1e-2
         assert model.props[1].scaling_factor[model.props[1].flow_mol_comp["ethylene_glycol"]] == 1e-2
         assert model.props[1].scaling_factor[model.props[1].flow_mol_phase["Liq"]] == 1e-2
-        assert model.props[1].scaling_factor[model.props[1].flow_mol_phase_comp["Liq", "ethylene_oxide"]] == 1e-2
         assert model.props[1].scaling_factor[model.props[1].flow_mol_phase_comp["Liq", "water"]] == 1e-2
-        assert model.props[1].scaling_factor[model.props[1].flow_mol_phase_comp["Liq", "sulfuric_acid"]] == 1e-2
         assert model.props[1].scaling_factor[model.props[1].flow_mol_phase_comp["Liq", "ethylene_glycol"]] == 1e-2
-        assert model.props[1].scaling_factor[model.props[1].mole_frac_comp["ethylene_oxide"]] == 1000
         assert model.props[1].scaling_factor[model.props[1].mole_frac_comp["water"]] == 1000
-        assert model.props[1].scaling_factor[model.props[1].mole_frac_comp["sulfuric_acid"]] == 1000
         assert model.props[1].scaling_factor[model.props[1].mole_frac_comp["ethylene_glycol"]] == 1000
-        assert model.props[1].scaling_factor[model.props[1].mole_frac_phase_comp["Liq", "ethylene_oxide"]] == 1000
         assert model.props[1].scaling_factor[model.props[1].mole_frac_phase_comp["Liq", "water"]] == 1000
-        assert model.props[1].scaling_factor[model.props[1].mole_frac_phase_comp["Liq", "sulfuric_acid"]] == 1000
         assert model.props[1].scaling_factor[model.props[1].mole_frac_phase_comp["Liq", "ethylene_glycol"]] == 1000
         assert model.props[1].scaling_factor[model.props[1].pressure] == 1e-5
         assert model.props[1].scaling_factor[model.props[1].temperature] == 1e-2
@@ -266,13 +240,7 @@ class TestStateBlock(object):
     def test_solution(self, model):
         # Check results
         assert model.props[1].flow_mol_phase_comp[
-            "Liq", "ethylene_oxide"
-        ].value == pytest.approx(100, abs=1e-4)
-        assert model.props[1].flow_mol_phase_comp[
             "Liq", "water"
-        ].value == pytest.approx(100, abs=1e-4)
-        assert model.props[1].flow_mol_phase_comp[
-            "Liq", "sulfuric_acid"
         ].value == pytest.approx(100, abs=1e-4)
         assert model.props[1].flow_mol_phase_comp[
             "Liq", "ethylene_glycol"
@@ -300,13 +268,13 @@ class TestPerrysProperties(object):
 
     @pytest.fixture(scope="class")
     def density_temperatures(self):
-        # ethylene oxide, water, ethylene glycol reference temperatures
+        # water, ethylene glycol reference temperatures
         # from Perry's Chemical Engineers' Handbook 7th Ed. 2-94 to 2-98
-        components = ["ethylene_oxide", "water", "ethylene_glycol"]
+        components = ["water", "ethylene_glycol"]
         temperatures = dict(
             zip(
                 components,
-                [[160.65, 469.15], [273.16, 333.15], [260.15, 719.7]]
+                [[273.16, 333.15], [260.15, 719.7]]
                 )
             )
 
@@ -314,13 +282,13 @@ class TestPerrysProperties(object):
 
     @pytest.fixture(scope="class")
     def densities(self):
-        # ethylene oxide, water, ethylene glycol densities from
+        # water, ethylene glycol densities from
         # Perry's Chemical Engineers' Handbook 7th Ed. 2-94 to 2-98
-        components = ["ethylene_oxide", "water", "ethylene_glycol"]
+        components = ["water", "ethylene_glycol"]
         densities = dict(
             zip(
                 components,
-                [[23.477, 7.055], [55.583, 54.703], [18.31, 5.234]]
+                [[55.583, 54.703], [18.31, 5.234]]
                 )
             )
 
@@ -328,13 +296,13 @@ class TestPerrysProperties(object):
 
     @pytest.fixture(scope="class")
     def heat_capacity_temperatures(self):
-        # ethylene oxide, water, ethylene glycol reference temperatures
+        # water, ethylene glycol reference temperatures
         # from Perry's Chemical Engineers' Handbook 7th Ed. 2-94 to 2-98
-        components = ["ethylene_oxide", "water", "ethylene_glycol"]
+        components = ["water", "ethylene_glycol"]
         temperatures = dict(
             zip(
                 components,
-                [[160.65, 283.85], [273.16, 533.15], [260.15, 493.15]]
+                [[273.16, 533.15], [260.15, 493.15]]
                 )
             )
 
@@ -342,19 +310,19 @@ class TestPerrysProperties(object):
 
     @pytest.fixture(scope="class")
     def heat_capacities(self):
-        # ethylene oxide, water, ethylene glycol densities from
+        # water, ethylene glycol densities from
         # Perry's Chemical Engineers' Handbook 7th Ed. 2-94 to 2-98
-        components = ["ethylene_oxide", "water", "ethylene_glycol"]
+        components = ["water", "ethylene_glycol"]
         densities = dict(
             zip(
                 components,
-                [[0.8303, 0.8693], [0.7615, 0.8939], [1.36661, 2.0598]]
+                [[0.7615, 0.8939], [1.36661, 2.0598]]
                 )
             )
 
         return densities
 
-    @pytest.mark.parametrize("component", ["ethylene_oxide", "water", "ethylene_glycol"])
+    @pytest.mark.parametrize("component", ["water", "ethylene_glycol"])
     @pytest.mark.parametrize("test_point", [0, 1])
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
@@ -394,7 +362,7 @@ class TestPerrysProperties(object):
                 )
             ) == pytest.approx(densities[component][test_point], rel=1e-4)
 
-    @pytest.mark.parametrize("component", ["ethylene_oxide", "water", "ethylene_glycol"])
+    @pytest.mark.parametrize("component", ["water", "ethylene_glycol"])
     @pytest.mark.parametrize("test_point", [0, 1])
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
@@ -422,7 +390,6 @@ class TestPerrysProperties(object):
         assert check_optimal_termination(results)
 
         # Check results
-        print(dir(model.props[1]))
         assert value(
             pyunits.convert(
                 model.props[1].cp_mol,
