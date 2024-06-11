@@ -139,6 +139,6 @@ config_dict = {
     "state_bounds": {"flow_mol_phase_comp": (0, 100, 1000,
                                              pyunits.mol/pyunits.s),
                      "temperature": (273.15, 298.15, 450, pyunits.K),
-                     "pressure": (1e3, 1e5, 1e6, pyunits.Pa)},
+                     "pressure": (5e4, 1e5, 1e6, pyunits.Pa)},
     "pressure_ref": (1e5, pyunits.Pa),
     "temperature_ref": (298.15, pyunits.K)}

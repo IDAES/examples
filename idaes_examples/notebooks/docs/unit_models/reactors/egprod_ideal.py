@@ -142,7 +142,7 @@ config_dict = {
                  "pressure_crit": (129.4262e5, pyunits.Pa),  # [4] 5/20/2024
                  "temperature_crit": (590.76, pyunits.K),  # [4] 5/202/24
                  "dens_mol_liq_comp_coeff": {
-                     'eqn_type': 2, # [5] pg. 2-113 regressed from 100% H2So4 density data
+                     'eqn_type': 2, # [5] pg. 2-113 regressed from 100% H2SO4 density data
                      '1': (23.669, pyunits.kmol/pyunits.m**3),
                      '2': (-2.5307E-2, pyunits.kmol/pyunits.m**3/pyunits.K),
                      '3': (3.3523E-4, pyunits.kmol/pyunits.m**3/pyunits.K**2),
@@ -224,6 +224,6 @@ config_dict = {
     "state_bounds": {"flow_mol_phase_comp": (0, 100, 1000,
                                              pyunits.mol/pyunits.s),
                      "temperature": (273.15, 298.15, 450, pyunits.K),
-                     "pressure": (1e3, 1e5, 1e6, pyunits.Pa)},
+                     "pressure": (5e4, 1e5, 1e6, pyunits.Pa)},
     "pressure_ref": (1e5, pyunits.Pa),
     "temperature_ref": (298.15, pyunits.K)}
