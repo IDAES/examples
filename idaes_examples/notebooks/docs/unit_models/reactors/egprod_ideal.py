@@ -60,6 +60,7 @@ config_dict = {
              "elemental_composition": {"C": 2, "H": 4, "O": 1},
              "dens_mol_liq_comp": Perrys,
              "enth_mol_liq_comp": Perrys,
+             "cp_mol_liq_comp": Perrys,
              "enth_mol_ig_comp": RPP4,
              "pressure_sat_comp": RPP4,
              "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
@@ -97,6 +98,7 @@ config_dict = {
              "elemental_composition": {"H": 2, "O": 1},
              "dens_mol_liq_comp": Perrys,
              "enth_mol_liq_comp": Perrys,
+             "cp_mol_liq_comp": Perrys,
              "enth_mol_ig_comp": RPP4,
              "pressure_sat_comp": RPP4,
              "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
@@ -134,6 +136,7 @@ config_dict = {
              "elemental_composition": {"H": 2, "S": 1, "O": 4},
              "dens_mol_liq_comp": Perrys,  # fitted to this equation form
              "enth_mol_liq_comp": Perrys,  # fitted to this equation form
+             "cp_mol_liq_comp": Perrys,
              "enth_mol_ig_comp": NIST,
              "pressure_sat_comp": RPP4,  # fitted to this equation form
              "phase_equilibrium_form": {("Vap", "Liq"): fugacity},
@@ -175,6 +178,7 @@ config_dict = {
              "elemental_composition": {"C": 2, "H": 6, "O": 2},
              "dens_mol_liq_comp": Perrys,
              "enth_mol_liq_comp": Perrys,
+             "cp_mol_liq_comp": Perrys,
              "enth_mol_ig_comp": RPP4,
              "pressure_sat_comp": RPP4,
              "phase_equilibrium_form": {("Vap", "Liq"): fugacity},

@@ -329,7 +329,7 @@ class TestPerrysProperties(object):
     @pytest.fixture(scope="class")
     def heat_capacity_temperatures(self):
         # ethylene oxide, water, ethylene glycol reference temperatures
-        # from Perry's Chemical Engineers' Handbook 7th Ed. 2-94 to 2-98
+        # from Perry's Chemical Engineers' Handbook 7th Ed. 2-170 to 2-174
         components = ["ethylene_oxide", "water", "ethylene_glycol"]
         temperatures = dict(
             zip(
@@ -342,13 +342,13 @@ class TestPerrysProperties(object):
 
     @pytest.fixture(scope="class")
     def heat_capacities(self):
-        # ethylene oxide, water, ethylene glycol densities from
-        # Perry's Chemical Engineers' Handbook 7th Ed. 2-94 to 2-98
+        # ethylene oxide, water, ethylene glycol heat capacities from
+        # Perry's Chemical Engineers' Handbook 7th Ed. 2-170 to 2-174
         components = ["ethylene_oxide", "water", "ethylene_glycol"]
         densities = dict(
             zip(
                 components,
-                [[0.8303, 0.8693], [0.7615, 0.8939], [1.36661, 2.0598]]
+                [[0.8303e5, 0.8693e5], [0.7615e5, 0.8939e5], [1.36661e5, 2.0598e5]]
                 )
             )
 

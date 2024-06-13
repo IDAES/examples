@@ -92,7 +92,7 @@ class TestParamBlock(object):
             {
                 "flow_mol_phase_comp": (0, 100, 1000, pyunits.mol / pyunits.s),
                 "temperature": (273.15, 298.15, 450, pyunits.K),
-                "pressure": (5e4, 1e5, 1e6, pyunits.Pa),
+                "pressure": (1e3, 1e5, 1e6, pyunits.Pa),
             },
             item_callback=as_quantity,
         )
@@ -144,7 +144,7 @@ class TestStateBlock(object):
         assert isinstance(model.props[1].pressure, Var)
         assert value(model.props[1].pressure) == 101325
         assert model.props[1].pressure.ub == 1e6
-        assert model.props[1].pressure.lb == 5e4
+        assert model.props[1].pressure.lb == 1e3
 
         assert isinstance(model.props[1].temperature, Var)
         assert value(model.props[1].temperature) == 300
@@ -296,7 +296,7 @@ class TestPerrysProperties(object):
     @pytest.fixture(scope="class")
     def heat_capacity_temperatures(self):
         # water, ethylene glycol reference temperatures
-        # from Perry's Chemical Engineers' Handbook 7th Ed. 2-94 to 2-98
+        # from Perry's Chemical Engineers' Handbook 7th Ed. 2-170 to 2-174
         components = ["water", "ethylene_glycol"]
         temperatures = dict(
             zip(
@@ -310,12 +310,12 @@ class TestPerrysProperties(object):
     @pytest.fixture(scope="class")
     def heat_capacities(self):
         # water, ethylene glycol densities from
-        # Perry's Chemical Engineers' Handbook 7th Ed. 2-94 to 2-98
+        # Perry's Chemical Engineers' Handbook 7th Ed. 2-170 to 2-174
         components = ["water", "ethylene_glycol"]
         densities = dict(
             zip(
                 components,
-                [[0.7615, 0.8939], [1.36661, 2.0598]]
+                [[0.7615e5, 0.8939e5], [1.36661e5, 2.0598e5]]
                 )
             )
 
