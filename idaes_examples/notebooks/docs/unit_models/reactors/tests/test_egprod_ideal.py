@@ -15,14 +15,14 @@ Author: Brandon Paul
 """
 import pytest
 from pyomo.environ import (
-    check_optimal_termination,
+    assert_optimal_termination,
     ConcreteModel,
     Set,
     value,
     Var,
     units as pyunits,
+    as_quantity
 )
-from pyomo.util.check_units import assert_units_consistent
 from pyomo.common.unittest import assertStructuredAlmostEqual
 
 from idaes.core import Component
@@ -43,17 +43,12 @@ from idaes_examples.notebooks.docs.unit_models.reactors.egprod_ideal import conf
 
 from idaes.models.properties.tests.test_harness import PropertyTestHarness
 
+from idaes.core.util.model_diagnostics import DiagnosticsToolbox
+
 
 # -----------------------------------------------------------------------------
 # Get default solver for testing
 solver = get_solver()
-
-
-def _as_quantity(x):
-    unit = pyunits.get_units(x)
-    if unit is None:
-        unit = pyunits.dimensionless
-    return value(x) * unit._get_pint_unit()
 
 
 class TestEGProdIdeal(PropertyTestHarness):
@@ -101,29 +96,30 @@ class TestParamBlock(object):
                 "temperature": (273.15, 298.15, 450, pyunits.K),
                 "pressure": (5e4, 1e5, 1e6, pyunits.Pa),
             },
-            item_callback=_as_quantity,
+            item_callback=as_quantity,
         )
 
-        assert model.params.pressure_ref.value == 1e5
-        assert model.params.temperature_ref.value == 298.15
+        assert value(model.params.pressure_ref) == 1e5
+        assert value(model.params.temperature_ref) == 298.15
 
-        assert model.params.ethylene_oxide.mw.value == 44.054e-3
-        assert model.params.ethylene_oxide.pressure_crit.value == 71.9e5
-        assert model.params.ethylene_oxide.temperature_crit.value == 469
+        assert value(model.params.ethylene_oxide.mw) == 44.054e-3
+        assert value(model.params.ethylene_oxide.pressure_crit) == 71.9e5
+        assert value(model.params.ethylene_oxide.temperature_crit) == 469
 
-        assert model.params.water.mw.value == 18.015e-3
-        assert model.params.water.pressure_crit.value == 221.2e5
-        assert model.params.water.temperature_crit.value == 647.3
+        assert value(model.params.water.mw) == 18.015e-3
+        assert value(model.params.water.pressure_crit) == 221.2e5
+        assert value(model.params.water.temperature_crit) == 647.3
 
-        assert model.params.sulfuric_acid.mw.value == 98.08e-3
-        assert model.params.sulfuric_acid.pressure_crit.value == 129.4262e5
-        assert model.params.sulfuric_acid.temperature_crit.value == 590.76
+        assert value(model.params.sulfuric_acid.mw) == 98.08e-3
+        assert value(model.params.sulfuric_acid.pressure_crit) == 129.4262e5
+        assert value(model.params.sulfuric_acid.temperature_crit) == 590.76
 
-        assert model.params.ethylene_glycol.mw.value == 62.069e-3
-        assert model.params.ethylene_glycol.pressure_crit.value == 77e5
-        assert model.params.ethylene_glycol.temperature_crit.value == 645
+        assert value(model.params.ethylene_glycol.mw) == 62.069e-3
+        assert value(model.params.ethylene_glycol.pressure_crit) == 77e5
+        assert value(model.params.ethylene_glycol.temperature_crit) == 645
 
-        assert_units_consistent(model)
+        dt = DiagnosticsToolbox(model)
+        dt.assert_no_structural_warnings()
 
 
 class TestStateBlock(object):
@@ -173,8 +169,6 @@ class TestStateBlock(object):
         assert model.props[1].temperature.ub == 450
         assert model.props[1].temperature.lb == 273.15
 
-        assert_units_consistent(model)
-
     @pytest.mark.unit
     def test_define_state_vars(self, model):
         sv = model.props[1].define_state_vars()
@@ -204,12 +198,12 @@ class TestStateBlock(object):
             ]
 
     @pytest.mark.unit
-    def test_dof(self, model):
-        assert degrees_of_freedom(model.props[1]) == 0
+    def test_structural_diagnostics(self, model):
+        dt = DiagnosticsToolbox(model)
+        dt.assert_no_structural_warnings()
 
     @pytest.mark.unit
     def test_basic_scaling(self, model):
-        model.props[1].scaling_factor.display()
         assert len(model.props[1].scaling_factor) == 20
         assert model.props[1].scaling_factor[model.props[1].flow_mol] == 1e-2
         assert model.props[1].scaling_factor[model.props[1].flow_mol_comp["ethylene_oxide"]] == 1e-2
@@ -259,24 +253,29 @@ class TestStateBlock(object):
         results = solver.solve(model)
 
         # Check for optimal solution
-        assert check_optimal_termination(results)
+        assert_optimal_termination(results)
+
+    @pytest.mark.unit
+    def test_numerical_diagnostics(self, model):
+        dt = DiagnosticsToolbox(model)
+        dt.assert_no_numerical_warnings()
 
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
     def test_solution(self, model):
         # Check results
-        assert model.props[1].flow_mol_phase_comp[
+        assert value(model.props[1].flow_mol_phase_comp[
             "Liq", "ethylene_oxide"
-        ].value == pytest.approx(100, abs=1e-4)
-        assert model.props[1].flow_mol_phase_comp[
+        ]) == pytest.approx(100, abs=1e-4)
+        assert value(model.props[1].flow_mol_phase_comp[
             "Liq", "water"
-        ].value == pytest.approx(100, abs=1e-4)
-        assert model.props[1].flow_mol_phase_comp[
+        ]) == pytest.approx(100, abs=1e-4)
+        assert value(model.props[1].flow_mol_phase_comp[
             "Liq", "sulfuric_acid"
-        ].value == pytest.approx(100, abs=1e-4)
-        assert model.props[1].flow_mol_phase_comp[
+        ]) == pytest.approx(100, abs=1e-4)
+        assert value(model.props[1].flow_mol_phase_comp[
             "Liq", "ethylene_glycol"
-        ].value == pytest.approx(100, abs=1e-4)
+        ]) == pytest.approx(100, abs=1e-4)
 
         assert value(
             model.props[1].temperature
@@ -287,6 +286,7 @@ class TestStateBlock(object):
 
 
 class TestPerrysProperties(object):
+    
     @pytest.fixture(scope="class")
     def model(self):
         model = ConcreteModel()
@@ -382,11 +382,9 @@ class TestPerrysProperties(object):
         results = solver.solve(model)
 
         # Check for optimal solution
-        assert check_optimal_termination(results)
+        assert_optimal_termination(results)
 
         # Check results
-        print("component: ", component)
-        print("test_point: ", test_point)
         assert value(
             pyunits.convert(
                 model.props[1].dens_mol,
@@ -419,10 +417,9 @@ class TestPerrysProperties(object):
         results = solver.solve(model)
 
         # Check for optimal solution
-        assert check_optimal_termination(results)
+        assert_optimal_termination(results)
 
         # Check results
-        print(dir(model.props[1]))
         assert value(
             pyunits.convert(
                 model.props[1].cp_mol,
