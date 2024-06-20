@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 
 import pyomo.environ as pyo
-from pyomo.common.config import ConfigValue, Bool
+from pyomo.common.config import ConfigValue, Bool, ListOf
 from pyomo.network import Arc
 from pyomo.common.fileutils import this_file_dir
 
@@ -39,6 +39,16 @@ def scale_indexed_constraint(con, sf):
 def set_indexed_variable_bounds(var, bounds):
     for subvar in var.values():
         subvar.bounds = bounds
+
+# def finite_difference_weights(z, x, m):
+#     """
+#     z: point at which derivative is evaluated (doesn't have to be element of x)
+#     x: points which we're using to approximate z
+#     m: highest derivative order sought
+#     """
+#     nd = len(x)
+#     c = np.zeros((nd, m))
+#     c[0,0] = 1
 
 @declare_process_block_class("SocStandaloneFlowsheet")
 class SocStandaloneFlowsheetData(FlowsheetBlockData):
@@ -76,6 +86,16 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
                 **True** - Make interconnect,
                 **False** - do not make interconnect.}""",
                     ),
+    )
+    CONFIG.declare(
+        "soc_zfaces",
+        ConfigValue(
+            default=[0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], 
+            domain=ListOf(float),
+            description="List containing coordinates of control volume faces "
+            "in z direction. Coordinates must start with zero, be strictly "
+            "increasing, and end with one",
+        )
     )
     CONFIG.declare(
         "quasi_steady_state",
@@ -290,7 +310,7 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
 
 
     def _add_units(self):
-        zfaces = np.linspace(0, 1, 11).tolist()
+        zfaces = self.config.soc_zfaces
         xfaces_electrode = [0.0, 1.0]
         xfaces_electrolyte = [0.0, 1.0]
 
@@ -664,19 +684,30 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
         self.stack_sweep_inlet_temperature = pyo.Var(self.time, initialize=1000, units=pyo.units.K)
         self.stack_core_temperature = pyo.Var(self.time, initialize=1000, units=pyo.units.K)
 
+        z0 = self.soc_module.solid_oxide_cell.iznodes.first()
+        zend = self.soc_module.solid_oxide_cell.iznodes.last()
         @self.Constraint(self.time)
         def stack_fuel_inlet_temperature_eqn(b, t):
-            return b.stack_fuel_inlet_temperature[t] == b.soc_module.solid_oxide_cell.interconnect.temperature[t, 1, 1]
+            return b.stack_fuel_inlet_temperature[t] == b.soc_module.solid_oxide_cell.interconnect.temperature[t, 1, z0]
         @self.Constraint(self.time)
         def stack_sweep_inlet_temperature_eqn(b, t):
-            return b.stack_sweep_inlet_temperature[t] == b.soc_module.solid_oxide_cell.interconnect.temperature[t, 1, 10]
+            return b.stack_sweep_inlet_temperature[t] == b.soc_module.solid_oxide_cell.interconnect.temperature[t, 1, zend]
 
         @self.Constraint(self.time)
         def stack_core_temperature_eqn(b, t):
-            return b.stack_core_temperature[t] == (
-                b.soc_module.solid_oxide_cell.interconnect.temperature[t, 1, 5]
-                + b.soc_module.solid_oxide_cell.interconnect.temperature[t, 1, 6]
-            ) / 2
+            iznodes = self.soc_module.solid_oxide_cell.iznodes
+            if len(iznodes) % 2 == 0:
+                zlo = len(iznodes) / 2
+                zhi = len(iznodes) / 2 + 1
+                return b.stack_core_temperature[t] == (
+                    b.soc_module.solid_oxide_cell.interconnect.temperature[t, 1, zlo]
+                    + b.soc_module.solid_oxide_cell.interconnect.temperature[t, 1, zhi]
+                ) / 2
+            else:
+                zmid = pyo.ceil(len(iznodes)/2)
+                return b.stack_core_temperature[t] == (
+                    b.soc_module.solid_oxide_cell.interconnect.temperature[t, 1, zmid]
+                )
 
 
 
@@ -1314,28 +1345,52 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
 
     def _make_temperature_gradient_terms(self):
         soec = self.soc_module.solid_oxide_cell
-        dz = soec.zfaces.at(2) - soec.zfaces.at(1)
-        # Going to assume that the zfaces are evenly spaced
-        for iz in soec.iznodes:
-            assert abs(soec.zfaces.at(iz + 1) - soec.zfaces.at(iz) - dz) < 1e-8
-        dz = dz * soec.length_z
+        # dz = soec.zfaces.at(2) - soec.zfaces.at(1)
+        # # Going to assume that the zfaces are evenly spaced
+        # for iz in soec.iznodes:
+        #     assert abs(soec.zfaces.at(iz + 1) - soec.zfaces.at(iz) - dz) < 1e-8
+        # dz = dz * soec.length_z
         def finite_difference(expr, t, ix, iz):
             # Since this is mostly for reference, no need to worry about upwinding or whatever
             if iz == soec.iznodes.first():
+                z0 = soec.znodes.at(iz) * soec.length_z
+                z1 = soec.znodes.at(iz+1) * soec.length_z
+                z2 = soec.znodes.at(iz+2) * soec.length_z
+                weights = [
+                    1 / (z0 - z1) + 1 / (z0 - z2),
+                    (z0 - z2) / ((z1 - z0) * (z1 - z2)),
+                    (z0 - z1) / ((z2 - z0)*(z2 - z1))
+                ]
                 if ix is None:
-                    return (-1.5 * expr[t, iz] + 2 * expr[t, iz + 1] - 0.5 * expr[t, iz + 2]) / dz
+                    return sum(weights[i] * expr[t, iz + i] for i in range(3))
                 else:
-                    return (-1.5 * expr[t, ix, iz] + 2 * expr[t, ix, iz + 1] - 0.5 * expr[t, ix, iz + 2]) / dz
+                    return sum(weights[i] * expr[t, ix, iz + i] for i in range(3))
             elif iz == soec.iznodes.last():
+                z0 = soec.znodes.at(iz-2) * soec.length_z
+                z1 = soec.znodes.at(iz-1) * soec.length_z
+                z2 = soec.znodes.at(iz) * soec.length_z
+                weights = [
+                    (z2 - z1)/((z0 - z1) * (z0 - z2)),
+                    (z2 - z0)/((z1 - z0) * (z1 - z2)),
+                    1 / (z2 - z0) + 1 / (z2 - z1)
+                ]
                 if ix is None:
-                    return (1.5 * expr[t, iz] - 2 * expr[t, iz - 1] + 0.5 * expr[t, iz - 2]) / dz
+                    return sum(weights[i] * expr[t, iz + i - 2] for i in range(3))
                 else:
-                    return (1.5 * expr[t, ix, iz] - 2 * expr[t, ix, iz - 1] + 0.5 * expr[t, ix, iz - 2]) / dz
+                    return sum(weights[i] * expr[t, ix, iz + i - 2] for i in range(3))
             else:
+                z0 = soec.znodes.at(iz-1) * soec.length_z
+                z1 = soec.znodes.at(iz) * soec.length_z
+                z2 = soec.znodes.at(iz+1) * soec.length_z
+                weights = [
+                    (z1 - z2) / ((z0 - z1) * (z0 - z2)),
+                    1 / (z1 - z2) + 1 / (z1 - z0),
+                    (z1 - z0) / ((z2 - z0) * (z2 - z1)),
+                ]
                 if ix is None:
-                    return (0.5 * expr[t, iz + 1] - 0.5 * expr[t, iz - 1]) / dz
+                    return sum(weights[i] * expr[t, iz + i - 1] for i in range(3))
                 else:
-                    return (0.5 * expr[t, ix, iz + 1] - 0.5 * expr[t, ix, iz - 1]) / dz
+                    return sum(weights[i] * expr[t, ix, iz + i - 1] for i in range(3))
 
         soec.dtemperature_z_dz = pyo.Var(self.time, soec.iznodes, initialize=0, units=pyo.units.K / pyo.units.m)
         @soec.Constraint(self.time, soec.iznodes)
@@ -1392,7 +1447,7 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
         set_indexed_variable_bounds(self.feed_heater.electric_heat_duty, (0, 2e6))
         set_indexed_variable_bounds(self.sweep_heater.electric_heat_duty, (0, 4e6))
 
-        set_indexed_variable_bounds(self.soc_module.solid_oxide_cell.fuel_electrode.dtemperature_dz, (-750, 750))
+        # set_indexed_variable_bounds(self.soc_module.solid_oxide_cell.fuel_electrode.dtemperature_dz, (-750, 750))
         
         for t in self.time:
             self.feed_recycle_split.split_fraction[t, "recycle"].bounds = (1e-4, 1)
@@ -1412,25 +1467,27 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
 
         delta_T_limit = 75
 
+        z0 = self.soc_module.solid_oxide_cell.iznodes.first()
+        zend = self.soc_module.solid_oxide_cell.iznodes.last()
         @self.Constraint(self.time)
         def thermal_gradient_eqn_1(b, t):
-            return (b.soc_module.solid_oxide_cell.fuel_electrode.temperature[t, 1, 1]
-                    - b.soc_module.solid_oxide_cell.fuel_electrode.temperature[t, 1, 10]) <= delta_T_limit
+            return (b.soc_module.solid_oxide_cell.fuel_electrode.temperature[t, 1, z0]
+                    - b.soc_module.solid_oxide_cell.fuel_electrode.temperature[t, 1, zend]) <= delta_T_limit
 
         @self.Constraint(self.time)
         def thermal_gradient_eqn_2(b, t):
-            return (b.soc_module.solid_oxide_cell.fuel_electrode.temperature[t, 1, 10]
-                    - b.soc_module.solid_oxide_cell.fuel_electrode.temperature[t, 1, 1]) <= delta_T_limit
+            return (b.soc_module.solid_oxide_cell.fuel_electrode.temperature[t, 1, zend]
+                    - b.soc_module.solid_oxide_cell.fuel_electrode.temperature[t, 1, z0]) <= delta_T_limit
 
         @self.Constraint(self.time)
         def thermal_gradient_eqn_3(b, t):
-            return (b.soc_module.solid_oxide_cell.fuel_electrode.temperature[t, 1, 1]
-                    - b.soc_module.solid_oxide_cell.fuel_electrode.temperature[t, 1, 10]) >= -delta_T_limit
+            return (b.soc_module.solid_oxide_cell.fuel_electrode.temperature[t, 1, z0]
+                    - b.soc_module.solid_oxide_cell.fuel_electrode.temperature[t, 1, zend]) >= -delta_T_limit
 
         @self.Constraint(self.time)
         def thermal_gradient_eqn_4(b, t):
-            return (b.soc_module.solid_oxide_cell.fuel_electrode.temperature[t, 1, 10]
-                    - b.soc_module.solid_oxide_cell.fuel_electrode.temperature[t, 1, 1]) >= -delta_T_limit
+            return (b.soc_module.solid_oxide_cell.fuel_electrode.temperature[t, 1, zend]
+                    - b.soc_module.solid_oxide_cell.fuel_electrode.temperature[t, 1, z0]) >= -delta_T_limit
 
         iscale.constraint_scaling_transform(self.thermal_gradient_eqn_1[t0], 1e-2)
         iscale.constraint_scaling_transform(self.thermal_gradient_eqn_2[t0], 1e-2)
