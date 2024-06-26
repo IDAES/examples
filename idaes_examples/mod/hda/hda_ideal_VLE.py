@@ -162,7 +162,7 @@ class HDAParameterData(PhysicalParameterBlock):
         self.pressure_crit = Param(
             self.component_list,
             within=NonNegativeReals,
-            mutable=False,
+            mutable=True,
             units=pyunits.Pa,
             initialize=extract_data(pressure_crit_data),
             doc='Critical pressure')
@@ -178,7 +178,7 @@ class HDAParameterData(PhysicalParameterBlock):
         self.temperature_crit = Param(
             self.component_list,
             within=NonNegativeReals,
-            mutable=False,
+            mutable=True,
             units=pyunits.K,
             initialize=extract_data(temperature_crit_data),
             doc='Critical temperature')
@@ -191,7 +191,7 @@ class HDAParameterData(PhysicalParameterBlock):
                         'methane': 16.043e-3}
 
         self.mw_comp = Param(self.component_list,
-                             mutable=False,
+                             mutable=True,
                              units=pyunits.kg/pyunits.mol,
                              initialize=extract_data(mw_comp_data),
                              doc="molecular weight")
@@ -218,7 +218,7 @@ class HDAParameterData(PhysicalParameterBlock):
 
         self.dens_liq_param_1 = Param(
             self.component_list,
-            mutable=False,
+            mutable=True,
             initialize={c: v for (c, j), v in dens_liq_data.items() if j == '1'},
             doc="Parameter 1 to compute liquid densities",
             units=pyunits.kmol*pyunits.m**-3
@@ -226,7 +226,7 @@ class HDAParameterData(PhysicalParameterBlock):
 
         self.dens_liq_param_2 = Param(
             self.component_list,
-            mutable=False,
+            mutable=True,
             initialize={c: v for (c, j), v in dens_liq_data.items() if j == '2'},
             doc="Parameter 2 to compute liquid densities",
             units=pyunits.dimensionless
@@ -234,7 +234,7 @@ class HDAParameterData(PhysicalParameterBlock):
 
         self.dens_liq_param_3 = Param(
             self.component_list,
-            mutable=False,
+            mutable=True,
             initialize={c: v for (c, j), v in dens_liq_data.items() if j == '3'},
             doc="Parameter 3 to compute liquid densities",
             units=pyunits.K
@@ -242,7 +242,7 @@ class HDAParameterData(PhysicalParameterBlock):
 
         self.dens_liq_param_4 = Param(
             self.component_list,
-            mutable=False,
+            mutable=True,
             initialize={c: v for (c, j), v in dens_liq_data.items() if j == '4'},
             doc="Parameter 4 to compute liquid densities",
             units=pyunits.dimensionless
@@ -258,7 +258,7 @@ class HDAParameterData(PhysicalParameterBlock):
 
         self.temperature_boil = Param(
                 self.component_list,
-                mutable=False,
+                mutable=True,
                 units=pyunits.K,
                 initialize=extract_data(bp_data),
                 doc="Pure component boiling points at standard pressure")
@@ -312,7 +312,7 @@ class HDAParameterData(PhysicalParameterBlock):
         self.cp_ig_1 = Param(
             self.phase_list,
             self.component_list,
-            mutable=False,
+            mutable=True,
             initialize={(p, c): v for (p, c, j), v in cp_ig_data.items() if j == '1'},
             doc="Parameter 1 to compute Cp_comp",
             units=pyunits.J/pyunits.mol/pyunits.K
@@ -321,7 +321,7 @@ class HDAParameterData(PhysicalParameterBlock):
         self.cp_ig_2 = Param(
             self.phase_list,
             self.component_list,
-            mutable=False,
+            mutable=True,
             initialize={(p, c): v for (p, c, j), v in cp_ig_data.items() if j == '2'},
             doc="Parameter 2 to compute Cp_comp",
             units=pyunits.J/pyunits.mol/pyunits.K**2
@@ -330,7 +330,7 @@ class HDAParameterData(PhysicalParameterBlock):
         self.cp_ig_3 = Param(
             self.phase_list,
             self.component_list,
-            mutable=False,
+            mutable=True,
             initialize={(p, c): v for (p, c, j), v in cp_ig_data.items() if j == '3'},
             doc="Parameter 3 to compute Cp_comp",
             units=pyunits.J/pyunits.mol/pyunits.K**3
@@ -339,7 +339,7 @@ class HDAParameterData(PhysicalParameterBlock):
         self.cp_ig_4 = Param(
             self.phase_list,
             self.component_list,
-            mutable=False,
+            mutable=True,
             initialize={(p, c): v for (p, c, j), v in cp_ig_data.items() if j == '4'},
             doc="Parameter 4 to compute Cp_comp",
             units=pyunits.J/pyunits.mol/pyunits.K**4
@@ -348,7 +348,7 @@ class HDAParameterData(PhysicalParameterBlock):
         self.cp_ig_5 = Param(
             self.phase_list,
             self.component_list,
-            mutable=False,
+            mutable=True,
             initialize={(p, c): v for (p, c, j), v in cp_ig_data.items() if j == '5'},
             doc="Parameter 5 to compute Cp_comp",
             units=pyunits.J/pyunits.mol/pyunits.K**5
@@ -373,7 +373,7 @@ class HDAParameterData(PhysicalParameterBlock):
 
         self.pressure_sat_coeff_A = Param(
             self.component_list,
-            mutable=False,
+            mutable=True,
             initialize={c: v for (c, j), v in pressure_sat_coeff_data.items() if j == 'A'},
             doc="Parameter A to compute saturated pressure",
             units=pyunits.dimensionless
@@ -381,7 +381,7 @@ class HDAParameterData(PhysicalParameterBlock):
 
         self.pressure_sat_coeff_B = Param(
             self.component_list,
-            mutable=False,
+            mutable=True,
             initialize={c: v for (c, j), v in pressure_sat_coeff_data.items() if j == 'B'},
             doc="Parameter B to compute saturated pressure",
             units=pyunits.K
@@ -389,7 +389,7 @@ class HDAParameterData(PhysicalParameterBlock):
 
         self.pressure_sat_coeff_C = Param(
             self.component_list,
-            mutable=False,
+            mutable=True,
             initialize={c: v for (c, j), v in pressure_sat_coeff_data.items() if j == 'C'},
             doc="Parameter C to compute saturated pressure",
             units=pyunits.K
@@ -403,15 +403,14 @@ class HDAParameterData(PhysicalParameterBlock):
                   'methane': 0}
 
         self.dh_vap = Param(self.component_list,
-                            mutable=False,
+                            mutable=True,
                             units=pyunits.J/pyunits.mol,
                             initialize=extract_data(dh_vap),
                             doc="heat of vaporization")
 
         # Set default scaling factors
         self.set_default_scaling("flow_mol", 1e3)
-        self.set_default_scaling("flow_mol_phase_comp", 1e8, index="Liq")
-        self.set_default_scaling("flow_mol_phase_comp", 1e3, index="Vap")
+        self.set_default_scaling("flow_mol_phase_comp", 1e3)
         self.set_default_scaling("flow_mol_phase", 1e3)
         self.set_default_scaling("material_flow_terms", 1e3)
         self.set_default_scaling("enthalpy_flow_terms", 1e-2)
@@ -420,7 +419,7 @@ class HDAParameterData(PhysicalParameterBlock):
         self.set_default_scaling("temperature_dew", 1e-2)
         self.set_default_scaling("temperature_bubble", 1e-2)
         self.set_default_scaling("pressure", 1e-5)
-        self.set_default_scaling("pressure_sat", 1e-6)
+        self.set_default_scaling("pressure_sat", 1e-5)
         self.set_default_scaling("pressure_dew", 1e-5)
         self.set_default_scaling("pressure_bubble", 1e-5)
         self.set_default_scaling("mole_frac_phase_comp", 1e1)
