@@ -45,6 +45,10 @@ from idaes.models.properties.tests.test_harness import PropertyTestHarness
 
 from idaes.core.util.model_diagnostics import DiagnosticsToolbox
 
+from idaes.core import VaporPhase
+
+from idaes.models.properties.modular_properties.eos.ideal import Ideal
+
 import copy
 
 
@@ -463,3 +467,223 @@ class TestPerrysProperties(object):
                         ),
                     rel=1e-1  # using 1e-1 tol to check against trapezoid rule estimation of integral
                     )
+
+
+class TestRPP4Properties(object):
+    @pytest.fixture(scope="class")
+    def heat_capacity_temperatures(self):
+        # water, ethylene glycol reference temperatures
+        # from NIST Chemistry WebBook, https://webbook.nist.gov/chemistry/
+        components = ["water", "ethylene_glycol"]
+        temperatures = dict(
+            zip(
+                components,
+                [[545, 632], [500, 600]]
+                )
+            )
+
+        return temperatures
+
+    @pytest.fixture(scope="class")
+    def heat_capacities(self):
+        # water, ethylene glycol heat capacities from
+        # from NIST Chemistry WebBook, https://webbook.nist.gov/chemistry/
+        components = ["water", "ethylene_glycol"]
+        heat_capacities = dict(
+            zip(
+                components,
+                [[35.70, 36.69], [113.64, 125.65]]
+                )
+            )
+
+        return heat_capacities
+
+    @pytest.fixture(scope="class")
+    def heat_capacity_reference(self):
+        # water, ethylene glycol heat capacities from
+        # NIST Chemistry WebBook, https://webbook.nist.gov/chemistry/
+        components = ["water", "ethylene_glycol"]
+        heat_capacities = dict(
+            zip(
+                components,
+                [35.22, 97.99]
+                )
+            )
+
+        return heat_capacities
+
+    @pytest.fixture(scope="class")
+    def heat_capacity_reference_temperatures(self):
+        # water, ethylene glycol reference temperatures
+        # from NIST Chemistry WebBook, https://webbook.nist.gov/chemistry/
+        components = ["water", "ethylene_glycol"]
+        temperatures = dict(
+            zip(
+                components,
+                [500, 400]
+                )
+            )
+
+        return temperatures
+
+    @pytest.fixture(scope="class")
+    def saturation_pressure_temperatures(self):
+        # water, ethylene glycol reference temperatures
+        # from NIST Chemistry WebBook, https://webbook.nist.gov/chemistry/
+        components = ["water", "ethylene_glycol"]
+        temperatures = dict(
+            zip(
+                components,
+                [[300.25, 350.16], [375.125, 450.125]]
+                )
+            )
+
+        return temperatures
+
+    @pytest.fixture(scope="class")
+    def saturation_pressures(self):
+        # ethylene glycol saturation pressures from
+        # from NIST Chemistry WebBook, https://webbook.nist.gov/chemistry/
+        components = ["water", "ethylene_glycol"]
+        densities = dict(
+            zip(
+                components,
+                [[0.03591e5, 0.4194e5], [0.02343e5, 0.5315e5]]
+                )
+            )
+
+        return densities
+
+    @pytest.mark.parametrize("component", ["water", "ethylene_glycol"])
+    @pytest.mark.parametrize("test_point", [0, 1])
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_vapor_heat_capacities_enthalpy(
+            self,
+            component,
+            test_point,
+            heat_capacity_temperatures,
+            heat_capacities,
+            heat_capacity_reference,
+            heat_capacity_reference_temperatures
+            ):
+
+        config_dict_component_only = copy.deepcopy(config_dict)
+        for key in config_dict["components"].keys():
+            if key == component:
+                pass
+            else:
+                config_dict_component_only["components"].pop(key)
+
+        config_dict_component_only["phases"] = {
+            'Vap': {
+                "type": VaporPhase,
+                "equation_of_state": Ideal
+                }
+            }
+
+        model = ConcreteModel()
+
+        model.params = GenericParameterBlock(**config_dict_component_only)
+
+        model.props = model.params.build_state_block([1], defined_state=True)
+
+        model.props[1].calculate_scaling_factors()
+
+        # Fix state
+        model.props[1].flow_mol_phase_comp["Vap", component].fix(100)
+
+        model.props[1].pressure.fix(101325)
+
+        # calculate reference point
+
+        model.props[1].temperature.fix(heat_capacity_reference_temperatures[component])
+
+        results = solver.solve(model)
+
+        enth_mol_ref = value(model.props[1].enth_mol) * pyunits.get_units(model.props[1].enth_mol)
+        temp_ref = heat_capacity_reference_temperatures[component] * pyunits.K
+        cp_mol_ref = heat_capacity_reference[component] * 1e-3 * pyunits.J/pyunits.mol/pyunits.K
+
+        # calculate test point
+
+        model.props[1].temperature.fix(heat_capacity_temperatures[component][test_point])
+
+        results = solver.solve(model)
+
+        enth_mol_test = value(model.props[1].enth_mol) * pyunits.get_units(model.props[1].enth_mol)
+        temp_test = heat_capacity_temperatures[component][test_point] * pyunits.K
+        cp_mol_test = heat_capacities[component][test_point] * 1e-3 * pyunits.J/pyunits.mol/pyunits.K
+
+        # Check for optimal solution
+        assert_optimal_termination(results)
+
+        # Check results
+
+        assert value(
+            pyunits.convert(
+                enth_mol_test,
+                to_units=pyunits.J/pyunits.mol
+                )
+            ) == pytest.approx(
+                    value(
+                        pyunits.convert(
+                            0.5 *(cp_mol_test + cp_mol_ref) * (temp_test - temp_ref)
+                            + enth_mol_ref,
+                            to_units=pyunits.J/pyunits.mol
+                            )
+                        ),
+                    rel=1.15e-1  # using 1.15e-1 tol to check against trapezoid rule estimation of integral
+                    # all values match within 1e-1, except ethylene glycol test point 0
+                    )
+
+    @pytest.mark.parametrize("component", ["water", "ethylene_glycol"])
+    @pytest.mark.parametrize("test_point", [0, 1])
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_saturation_pressures(
+            self,
+            component,
+            test_point,
+            saturation_pressure_temperatures,
+            saturation_pressures
+            ):
+
+        config_dict_component_only = copy.deepcopy(config_dict)
+        for key in config_dict["components"].keys():
+            if key == component:
+                pass
+            else:
+                config_dict_component_only["components"].pop(key)
+
+        config_dict_component_only["phases"] = {
+            'Vap': {
+                "type": VaporPhase,
+                "equation_of_state": Ideal
+                }
+            }
+
+        model = ConcreteModel()
+
+        model.params = GenericParameterBlock(**config_dict_component_only)
+
+        model.props = model.params.build_state_block([1], defined_state=True)
+
+        model.props[1].calculate_scaling_factors()
+        
+        # Fix state
+        model.props[1].flow_mol_phase_comp["Vap", component].fix(100)
+
+        model.props[1].temperature.fix(saturation_pressure_temperatures[component][test_point])
+        model.props[1].pressure.fix(101325)
+
+        results = solver.solve(model)
+
+        # Check for optimal solution
+        assert_optimal_termination(results)
+
+        # Check results
+        print(value(model.props[1].pressure_sat_comp[component]))
+        assert value(
+            model.props[1].pressure_sat_comp[component]
+            ) == pytest.approx(saturation_pressures[component][test_point], rel=1e-4)
