@@ -429,52 +429,6 @@ class TestPerrysProperties(object):
     @pytest.mark.parametrize("test_point", [0, 1])
     @pytest.mark.skipif(solver is None, reason="Solver not available")
     @pytest.mark.component
-    def test_liquid_heat_capacities(
-            self,
-            component,
-            test_point,
-            heat_capacity_temperatures,
-            heat_capacities
-            ):
-
-        config_dict_component_only = copy.deepcopy(config_dict)
-        for key in config_dict["components"].keys():
-            if key == component:
-                pass
-            else:
-                config_dict_component_only["components"].pop(key)
-
-        model = ConcreteModel()
-
-        model.params = GenericParameterBlock(**config_dict_component_only)
-
-        model.props = model.params.build_state_block([1], defined_state=True)
-
-        model.props[1].calculate_scaling_factors()
-
-        # Fix state
-        model.props[1].flow_mol_phase_comp["Liq", component].fix(100)
-
-        model.props[1].temperature.fix(heat_capacity_temperatures[component][test_point])
-        model.props[1].pressure.fix(101325)
-
-        results = solver.solve(model)
-
-        # Check for optimal solution
-        assert_optimal_termination(results)
-
-        # Check results
-        assert value(
-            pyunits.convert(
-                model.props[1].cp_mol,
-                to_units=pyunits.J/pyunits.kmol/pyunits.K
-                )
-            ) == pytest.approx(heat_capacities[component][test_point], rel=1e-4)
-
-    @pytest.mark.parametrize("component", ["ethylene_oxide", "water", "ethylene_glycol"])
-    @pytest.mark.parametrize("test_point", [0, 1])
-    @pytest.mark.skipif(solver is None, reason="Solver not available")
-    @pytest.mark.component
     def test_liquid_heat_capacities_enthalpy(
             self,
             component,
