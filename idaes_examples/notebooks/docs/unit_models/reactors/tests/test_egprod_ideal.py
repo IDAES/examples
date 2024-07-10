@@ -45,6 +45,10 @@ from idaes.models.properties.tests.test_harness import PropertyTestHarness
 
 from idaes.core.util.model_diagnostics import DiagnosticsToolbox
 
+from idaes.core import VaporPhase
+
+from idaes.models.properties.modular_properties.eos.ideal import Ideal
+
 import copy
 
 
@@ -400,11 +404,7 @@ class TestPerrysProperties(object):
         model.props[1].calculate_scaling_factors()
         
         # Fix state
-        for phase, comp in model.props[1].flow_mol_phase_comp.keys():
-            if comp == component:
-                model.props[1].flow_mol_phase_comp[phase, comp].fix(100)
-            else:
-                model.props[1].flow_mol_phase_comp[phase, comp].fix(1e-5)
+        model.props[1].flow_mol_phase_comp["Liq", component].fix(100)
 
         # change lower bound for testing
         model.props[1].temperature.setlb(150)
@@ -453,11 +453,7 @@ class TestPerrysProperties(object):
         model.props[1].calculate_scaling_factors()
 
         # Fix state
-        for phase, comp in model.props[1].flow_mol_phase_comp.keys():
-            if comp == component:
-                model.props[1].flow_mol_phase_comp[phase, comp].fix(100)
-            else:
-                model.props[1].flow_mol_phase_comp[phase, comp].fix(1e-5)
+        model.props[1].flow_mol_phase_comp["Liq", component].fix(100)
 
         model.props[1].temperature.fix(heat_capacity_temperatures[component][test_point])
         model.props[1].pressure.fix(101325)
@@ -505,11 +501,7 @@ class TestPerrysProperties(object):
         model.props[1].calculate_scaling_factors()
 
         # Fix state
-        for phase, comp in model.props[1].flow_mol_phase_comp.keys():
-            if comp == component:
-                model.props[1].flow_mol_phase_comp[phase, comp].fix(100)
-            else:
-                model.props[1].flow_mol_phase_comp[phase, comp].fix(1e-5)
+        model.props[1].flow_mol_phase_comp["Liq", component].fix(100)
 
         model.props[1].pressure.fix(101325)
 
