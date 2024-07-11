@@ -207,10 +207,14 @@ config_dict = {
                      -460.0e3, pyunits.J/pyunits.mol),  # [3] updated 5/10/24
                  "enth_mol_form_vap_comp_ref": (
                      -394.4e3, pyunits.J/pyunits.mol),  # [3] updated 5/10/24
-                 "pressure_sat_comp_coeff": {'A': (13.6299, None),  # [1] pg. 678
-                                             'B': (6022.18, None),
-                                             'C': (-28.25, None),
-                                             'D': (0, None)}}}},
+                 # [1] pg. 678 pressure sat coef values for alternative equation form
+                 # ln Pvp = A - B/(T + C) with A = 13.6299, B = 6022.18, C = -28.25
+                 # reformulated for generic property supported form
+                 # ln Pvp = [(1 - x)^-1 * (A*x + B*x^1.5 + C*x^3 + D*x^6)] * Pc where x = 1 - T/Tc
+                 "pressure_sat_comp_coeff": {'A': (-16.4022, None),
+                                             'B': (10.0100, None),
+                                             'C': (-6.5216, None),
+                                             'D': (-11.1182, None)}}}},
 
     # Specifying phases
     "phases":  {'Liq': {"type": LiquidPhase,

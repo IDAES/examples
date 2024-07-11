@@ -534,7 +534,7 @@ class TestRPP4Properties(object):
         temperatures = dict(
             zip(
                 components,
-                [[300.25, 350.16], [375.125, 450.125]]
+                [[300.25, 350.16], [387, 473]]
                 )
             )
 
@@ -548,7 +548,7 @@ class TestRPP4Properties(object):
         pressures = dict(
             zip(
                 components,
-                [[0.03591e5, 0.4194e5], [0.02343e5, 0.5315e5]]
+                [[0.03591e5, 0.4194e5], [0.04257e5, 1.0934e5]]
                 )
             )
 
@@ -686,4 +686,4 @@ class TestRPP4Properties(object):
         print(value(model.props[1].pressure_sat_comp[component]))
         assert value(
             model.props[1].pressure_sat_comp[component]
-            ) == pytest.approx(saturation_pressures[component][test_point], rel=1e-4)
+            ) == pytest.approx(saturation_pressures[component][test_point], rel=1.5e-2) # match within 1.5%
