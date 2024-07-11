@@ -19,6 +19,7 @@ parts:
     sections:
     - file: docs/diagnostics/diagnostics_toolbox_doc
     - file: docs/diagnostics/degeneracy_hunter_doc
+    - file: docs/diagnostics/structural_singularity_doc
   - file: docs/param_est/index
     sections:
     - file: docs/param_est/parameter_estimation_nrtl_using_state_block_doc
@@ -56,6 +57,7 @@ parts:
     sections:
     - file: docs/unit_models/custom_unit_models/custom_compressor_doc
     - file: docs/unit_models/custom_unit_models/custom_heater_doc
+    - file: docs/unit_models/custom_unit_models/creating_unit_model_doc
 - caption: Property packages
   chapters:
   - file: docs/properties/index
