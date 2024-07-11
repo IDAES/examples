@@ -819,7 +819,7 @@ def scale_flowsheet(m):
 
     # some specific variable scaling
 
-    # heat exchanger areas and overall heat transfer coefficiencts
+    # heat exchanger areas and overall heat transfer coefficients
     iscale.set_scaling_factor(m.fs.anode_hx.area, 1e-4)
     iscale.set_scaling_factor(m.fs.anode_hx.overall_heat_transfer_coefficient, 1e2)
     iscale.set_scaling_factor(m.fs.cathode_hx.area, 1e-4)
