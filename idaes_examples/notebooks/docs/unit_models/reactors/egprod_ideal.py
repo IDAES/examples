@@ -145,11 +145,11 @@ config_dict = {
                  "pressure_crit": (129.4262e5, pyunits.Pa),  # [4] 5/20/2024
                  "temperature_crit": (590.76, pyunits.K),  # [4] 5/202/24
                  "dens_mol_liq_comp_coeff": {
-                     'eqn_type': 2, # [5] pg. 2-113 regressed from 100% H2SO4 density data
+                     'eqn_type': 2, # [5] pg. 15-41 regressed from 100% H2SO4 density data
                      '1': (23.669, pyunits.kmol/pyunits.m**3),
                      '2': (-2.5307E-2, pyunits.kmol/pyunits.m**3/pyunits.K),
-                     '3': (3.3523E-4, pyunits.kmol/pyunits.m**3/pyunits.K**2),
-                     '4': (-1.8538E-7, pyunits.kmol/pyunits.m**3/pyunits.K**3)},
+                     '3': (3.3523E-5, pyunits.kmol/pyunits.m**3/pyunits.K**2),
+                     '4': (-1.8538E-8, pyunits.kmol/pyunits.m**3/pyunits.K**3)},
                  "cp_mol_ig_comp_coeff": {  # [3] valid on 298-1200 K, updated 5/10/2024
                      'A': (47.28924, pyunits.J/pyunits.mol/pyunits.K),
                      'B': (190.3314, pyunits.J/pyunits.mol/pyunits.K/pyunits.kK),

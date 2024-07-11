@@ -545,14 +545,14 @@ class TestRPP4Properties(object):
         # ethylene glycol saturation pressures from
         # from NIST Chemistry WebBook, https://webbook.nist.gov/chemistry/
         components = ["water", "ethylene_glycol"]
-        densities = dict(
+        pressures = dict(
             zip(
                 components,
                 [[0.03591e5, 0.4194e5], [0.02343e5, 0.5315e5]]
                 )
             )
 
-        return densities
+        return pressures
 
     @pytest.mark.parametrize("component", ["water", "ethylene_glycol"])
     @pytest.mark.parametrize("test_point", [0, 1])

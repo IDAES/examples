@@ -45,6 +45,8 @@ from idaes.models.properties.tests.test_harness import PropertyTestHarness
 
 from idaes.core.util.model_diagnostics import DiagnosticsToolbox
 
+from idaes.core.util.constants import Constants as const
+
 from idaes.core import VaporPhase
 
 from idaes.models.properties.modular_properties.eos.ideal import Ideal
@@ -577,14 +579,14 @@ class TestRPP4Properties(object):
         # ethylene oxide, water, ethylene glycol saturation pressures from
         # from NIST Chemistry WebBook, https://webbook.nist.gov/chemistry/
         components = ["ethylene_oxide", "water", "ethylene_glycol"]
-        densities = dict(
+        pressures = dict(
             zip(
                 components,
                 [[0.2189e5, 1.8604e5], [0.03591e5, 0.4194e5], [0.02343e5, 0.5315e5]]
                 )
             )
 
-        return densities
+        return pressures
 
     @pytest.mark.parametrize("component", ["ethylene_oxide", "water", "ethylene_glycol"])
     @pytest.mark.parametrize("test_point", [0, 1])
@@ -719,4 +721,298 @@ class TestRPP4Properties(object):
         assert value(
             model.props[1].pressure_sat_comp[component]
             ) == pytest.approx(saturation_pressures[component][test_point], rel=1e-4)
-                
+
+
+class TestSulfuricAcidProperties(object):
+    # sulfuric acid liquid density data from
+    # CRC Handbook of Chemistry and Physics, 97th Ed., W.M. Haynes pg. 15-41
+    @pytest.mark.parametrize(
+        "temperature_density_data",
+        [
+            [273.15, 1.8517],  # K, g/mL
+            [283.15, 1.8409],
+            [288.15, 1.8357],
+            [293.15, 1.8305],
+            [298.15, 1.8255],
+            [303.15, 1.8205],
+            [313.15, 1.8107],
+            [323.15, 1.8013],
+            [333.15, 1.7922],
+            
+            ]
+        )
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_liquid_densities(
+            self,
+            temperature_density_data
+            ):
+
+        config_dict_component_only = copy.deepcopy(config_dict)
+        for key in config_dict["components"].keys():
+            if key == "sulfuric_acid":
+                pass
+            else:
+                config_dict_component_only["components"].pop(key)
+
+        model = ConcreteModel()
+
+        model.params = GenericParameterBlock(**config_dict_component_only)
+
+        model.props = model.params.build_state_block([1], defined_state=True)
+
+        model.props[1].calculate_scaling_factors()
+        
+        # Fix state
+        model.props[1].flow_mol_phase_comp["Liq", "sulfuric_acid"].fix(100)
+
+        # change lower bound for testing
+        model.props[1].temperature.setlb(150)
+
+        model.props[1].temperature.fix(temperature_density_data[0])
+        model.props[1].pressure.fix(101325)
+
+        results = solver.solve(model)
+
+        # Check for optimal solution
+        assert_optimal_termination(results)
+
+        # Check results
+        assert value(
+            pyunits.convert(
+                model.props[1].dens_mol * model.props[1].params.sulfuric_acid.mw,
+                to_units=pyunits.g/pyunits.mL
+                )
+            ) == pytest.approx(temperature_density_data[1], rel=1e-4)
+
+    # sulfuric acid liquid heat capacity data from
+    # Journal of Physical and Chemical Reference Data 20, 1157 (1991); https:// doi.org/10.1063/1.555899
+    @pytest.mark.parametrize(
+        "temperature_liquid_heat_capacity_data",
+        [
+            [250, 15.1606],  # K, Cp/R
+            [287.93, 16.4195],
+            [293.14, 16.4653],
+            [298.15, 16.6818],
+            [300, 16.7319],
+            [305.35, 16.8788],
+            [350, 17.8491],
+            ]
+        )
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_liquid_heat_capacities_enthalpy(
+            self,
+            temperature_liquid_heat_capacity_data
+            ):
+
+        config_dict_component_only = copy.deepcopy(config_dict)
+        for key in config_dict["components"].keys():
+            if key == "sulfuric_acid":
+                pass
+            else:
+                config_dict_component_only["components"].pop(key)
+
+        model = ConcreteModel()
+
+        model.params = GenericParameterBlock(**config_dict_component_only)
+
+        model.props = model.params.build_state_block([1], defined_state=True)
+
+        model.props[1].calculate_scaling_factors()
+
+        # Fix state
+        model.props[1].flow_mol_phase_comp["Liq", "sulfuric_acid"].fix(100)
+
+        model.props[1].pressure.fix(101325)
+
+        # calculate reference point
+
+        model.props[1].temperature.fix(200)
+
+        results = solver.solve(model)
+
+        enth_mol_ref = value(model.props[1].enth_mol) * pyunits.get_units(model.props[1].enth_mol)
+        temp_ref = 200 * pyunits.K
+        cp_mol_ref = 13.1352 * const.gas_constant
+
+        # calculate test point
+
+        model.props[1].temperature.fix(temperature_liquid_heat_capacity_data[0])
+
+        results = solver.solve(model)
+
+        enth_mol_test = value(model.props[1].enth_mol) * pyunits.get_units(model.props[1].enth_mol)
+        temp_test = temperature_liquid_heat_capacity_data[0] * pyunits.K
+        cp_mol_test = temperature_liquid_heat_capacity_data[1] * const.gas_constant
+
+        # Check for optimal solution
+        assert_optimal_termination(results)
+
+        # Check results
+
+        assert value(
+            pyunits.convert(
+                enth_mol_test,
+                to_units=pyunits.J/pyunits.mol
+                )
+            ) == pytest.approx(
+                    value(
+                        pyunits.convert(
+                            0.5 *(cp_mol_test + cp_mol_ref) * (temp_test - temp_ref)
+                            + enth_mol_ref,
+                            to_units=pyunits.J/pyunits.mol
+                            )
+                        ),
+                    rel=1e-1  # using 1e-1 tol to check against trapezoid rule estimation of integral
+                    )
+
+    # sulfuric acid vapor heat capacity data from
+    # NIST Chemistry WebBook, https://webbook.nist.gov/chemistry/
+    @pytest.mark.parametrize(
+        "temperature_vapor_heat_capacity_data",
+        [
+            [300, 84.02],  # K, J/mol-K
+            [400, 97.90],
+            [500, 107.9],
+            [600, 115.6],
+            [700, 121.5],
+            [800, 126.1],
+            [900, 129.7],
+            [1000, 132.6],
+            [1100, 135.2],
+            [1200, 137.2],
+            ]
+        )
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_vapor_heat_capacities_enthalpy(
+            self,
+            temperature_vapor_heat_capacity_data
+            ):
+
+        config_dict_component_only = copy.deepcopy(config_dict)
+        for key in config_dict["components"].keys():
+            if key == "sulfuric_acid":
+                pass
+            else:
+                config_dict_component_only["components"].pop(key)
+
+        config_dict_component_only["phases"] = {
+            'Vap': {
+                "type": VaporPhase,
+                "equation_of_state": Ideal
+                }
+            }
+
+        model = ConcreteModel()
+
+        model.params = GenericParameterBlock(**config_dict_component_only)
+
+        model.props = model.params.build_state_block([1], defined_state=True)
+
+        model.props[1].calculate_scaling_factors()
+
+        # Fix state
+        model.props[1].flow_mol_phase_comp["Vap", "sulfuric_acid"].fix(100)
+
+        model.props[1].pressure.fix(101325)
+
+        # calculate reference point
+
+        model.props[1].temperature.fix(298)
+
+        results = solver.solve(model)
+
+        enth_mol_ref = value(model.props[1].enth_mol) * pyunits.get_units(model.props[1].enth_mol)
+        temp_ref = 298 * pyunits.K
+        cp_mol_ref = 83.68 * pyunits.J/pyunits.mol/pyunits.K
+
+        # calculate test point
+
+        model.props[1].temperature.fix(temperature_vapor_heat_capacity_data[0])
+
+        results = solver.solve(model)
+
+        enth_mol_test = value(model.props[1].enth_mol) * pyunits.get_units(model.props[1].enth_mol)
+        temp_test = temperature_vapor_heat_capacity_data[0] * pyunits.K
+        cp_mol_test = temperature_vapor_heat_capacity_data[1] * pyunits.J/pyunits.mol/pyunits.K
+
+        # Check for optimal solution
+        assert_optimal_termination(results)
+
+        # Check results
+
+        assert value(
+            pyunits.convert(
+                enth_mol_test,
+                to_units=pyunits.J/pyunits.mol
+                )
+            ) == pytest.approx(
+                    value(
+                        pyunits.convert(
+                            0.5 *(cp_mol_test + cp_mol_ref) * (temp_test - temp_ref)
+                            + enth_mol_ref,
+                            to_units=pyunits.J/pyunits.mol
+                            )
+                        ),
+                    rel=1e-1  # using 1e-1 tol to check against trapezoid rule estimation of integral
+                    )
+
+    # sulfuric acid saturation pressure data from
+    # CRC Handbook of Chemistry and Physics, 97th Ed., W.M. Haynes pg. 6-122
+    @pytest.mark.parametrize(
+        "temperature_saturation_pressure_data",
+        [
+            [295.3722222, 1],  # K, Pa
+            [312.5944444, 10],
+            [333.15, 100],
+            [359.2611111, 1000],
+            [393.15, 10000],
+            [438.7055556, 100000],
+            ]
+        )
+    @pytest.mark.skipif(solver is None, reason="Solver not available")
+    @pytest.mark.component
+    def test_saturation_pressures(
+            self,
+            temperature_saturation_pressure_data
+            ):
+
+        config_dict_component_only = copy.deepcopy(config_dict)
+        for key in config_dict["components"].keys():
+            if key == "sulfuric_acid":
+                pass
+            else:
+                config_dict_component_only["components"].pop(key)
+
+        config_dict_component_only["phases"] = {
+            'Vap': {
+                "type": VaporPhase,
+                "equation_of_state": Ideal
+                }
+            }
+
+        model = ConcreteModel()
+
+        model.params = GenericParameterBlock(**config_dict_component_only)
+
+        model.props = model.params.build_state_block([1], defined_state=True)
+
+        model.props[1].calculate_scaling_factors()
+        
+        # Fix state
+        model.props[1].flow_mol_phase_comp["Vap", "sulfuric_acid"].fix(100)
+
+        model.props[1].temperature.fix(temperature_saturation_pressure_data[0])
+        model.props[1].pressure.fix(101325)
+
+        results = solver.solve(model)
+
+        # Check for optimal solution
+        assert_optimal_termination(results)
+
+        # Check results
+        assert value(
+            model.props[1].pressure_sat_comp["sulfuric_acid"]
+            ) == pytest.approx(temperature_saturation_pressure_data[1], rel=1.5e-2) # match within 1.5%
