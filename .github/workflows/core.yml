@@ -84,7 +84,10 @@ jobs:
         uses: ./.github/actions/install
         with:
           install-target: -r requirements-dev.txt
-      - name: Run pytest
+      - name: Run pytest .
+        run: |
+          pytest -v .
+      - name: Run pytest idaes_examples
         run: |
           pwd
           ls idaes_examples
