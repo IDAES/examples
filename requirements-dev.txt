@@ -1,3 +1,5 @@
 --editable .[dev,omlt]
 
-idaes-pse @ git+https://github.com/IDAES/idaes-pse@main
+# idaes-pse @ git+https://github.com/IDAES/idaes-pse@main
+# FIXME: revert back to IDAES/idaes-pse@main before merging
+idaes-pse @ git+https://github.com/IDAES/idaes-pse@refs/pull/1401/merge
