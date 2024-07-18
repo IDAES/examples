@@ -51,7 +51,7 @@ keywords = ["IDAES", "energy systems", "chemical engineering", "process modeling
 omlt = [
     # For Keras/OMLT
     "omlt",
-    'tensorflow<2.16.1 ; python_version < "3.12"',
+    'tensorflow >= 2.16.1 ; python_version < "3.12"',
 ]
 idaes = [
     "idaes-pse",  # installing IDAES (from release) is opt-in
