@@ -352,11 +352,11 @@ class SteamTurbineFlowsheetData(FlowsheetBlockData):
         """Initialize the steam turbine flowsheet
 
         Args:
-            outlvl: Logging level for initializtion
-            solver (str): solver to user for initializtion
+            outlvl: Logging level for initialization
+            solver (str): solver to user for initialization
             optarg (dict): solver options
             load_from (str): if file exists and is not None, load initialization
-            save_to (str): save initializtion
+            save_to (str): save initialization
 
         Returns:
             None
@@ -376,7 +376,7 @@ class SteamTurbineFlowsheetData(FlowsheetBlockData):
                 )
                 return
 
-        # This initializtion will use the inlet stage pressure ratios to
+        # This initialization will use the inlet stage pressure ratios to
         # calculate flow coefficients for the inlet stages and the steam flow to
         # calculate the flow coefficient for the outlet stage.
         # fix the IP and LP inlets since they are disconnected

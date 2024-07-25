@@ -803,7 +803,7 @@ def scale_flowsheet(m):
     if hasattr(m.fs, "reformer"):
         iscale.set_scaling_factor(m.fs.reformer.lagrange_mult, 1e-4)
 
-        # heat exchanger areas and overall heat transfer coefficiencts
+        # heat exchanger areas and overall heat transfer coefficients
         iscale.set_scaling_factor(m.fs.reformer_recuperator.area, 1e-3)
         iscale.set_scaling_factor(m.fs.reformer_recuperator.overall_heat_transfer_coefficient, 1e-1)
 
@@ -830,7 +830,7 @@ def scale_flowsheet(m):
         iscale.set_scaling_factor(m.fs.anode.lagrange_mult, 1e-4)
         iscale.set_scaling_factor(m.fs.prereformer.lagrange_mult, 1e-4)
 
-        # heat exchanger areas and overall heat transfer coefficiencts
+        # heat exchanger areas and overall heat transfer coefficients
         iscale.set_scaling_factor(m.fs.anode_hx.area, 1e-4)
         iscale.set_scaling_factor(m.fs.anode_hx.overall_heat_transfer_coefficient, 1e-1)
         iscale.set_scaling_factor(m.fs.cathode_hx.area, 1e-4)

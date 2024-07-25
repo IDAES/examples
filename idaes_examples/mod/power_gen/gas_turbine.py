@@ -860,11 +860,11 @@ class GasTurbineFlowsheetData(FlowsheetBlockData):
         """Initialize the gas turbine flowsheet
 
         Args:
-            outlvl: Logging level for initializtion
-            solver (str): solver to user for initializtion
+            outlvl: Logging level for initialization
+            solver (str): solver to user for initialization
             optarg (dict): solver options
             load_from (str): if file exists and is not None, load initialization
-            save_to (str): save initializtion
+            save_to (str): save initialization
 
         Returns:
             None
