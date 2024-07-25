@@ -852,10 +852,8 @@ class GasTurbineFlowsheetData(FlowsheetBlockData):
         outlvl=idaeslog.NOTSET,
         solver=None,
         optarg=None,
-        # load_from="gas_turbine_init.json.gz",
-        # save_to="gas_turbine_init.json.gz",
-        load_from=None,
-        save_to=None,
+        load_from="gas_turbine_init.json.gz",
+        save_to="gas_turbine_init.json.gz",
     ):
         """Initialize the gas turbine flowsheet
 
