@@ -15,14 +15,12 @@ Example ideal parameter block for the VLE calucations for a
 Benzene-Toluene-o-Xylene system.
 """
 
-# Import Python libraries
-import logging
 
 # Import Pyomo libraries
 from pyomo.environ import Constraint, Expression, log, NonNegativeReals,\
     Var, Set, Param, sqrt, log10, units as pyunits
-from pyomo.opt import TerminationCondition
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
+from pyomo.common.config import ConfigValue
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
@@ -37,11 +35,10 @@ from idaes.core import (declare_process_block_class,
                         VaporPhase)
 from idaes.core.util.constants import Constants as const
 from idaes.core.util.initialization import (fix_state_vars,
-                                            revert_state_vars,
                                             solve_indexed_blocks)
+from idaes.core.initialization import InitializerBase
 from idaes.core.util.misc import add_object_reference
-from idaes.core.util.model_statistics import degrees_of_freedom, \
-                                             number_unfixed_variables
+from idaes.core.util.model_statistics import number_unfixed_variables
 from idaes.core.util.misc import extract_data
 from idaes.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
@@ -49,6 +46,66 @@ import idaes.logger as idaeslog
 
 # Set up logger
 _log = idaeslog.getLogger(__name__)
+
+class HDAInitializer(InitializerBase):
+    '''
+        Initializer for HDA Property package.
+
+    '''
+    CONFIG = InitializerBase.CONFIG()
+    CONFIG.declare('solver',ConfigValue(default=None,domain=str,description='Initialization solver'))
+    CONFIG.declare('solver_options', ConfigValue(default=None,description='Initialization solver options'))
+    def initialization_routine(self, blk):
+        init_log = idaeslog.getInitLogger(blk.name, self.config.output_level, tag="properties")
+        solve_log = idaeslog.getSolveLogger(blk.name,self.config.output_level, tag="properties")
+
+        # Set solver
+        solver = get_solver(self.config.solver, self.config.solver_options)
+
+        # ---------------------------------------------------------------------
+        # If present, initialize bubble and dew point calculations
+        for k in blk.keys():
+            if hasattr(blk[k], "eq_temperature_dew"):
+                calculate_variable_from_constraint(blk[k].temperature_dew,
+                                                   blk[k].eq_temperature_dew)
+
+            if hasattr(blk[k], "eq_pressure_dew"):
+                calculate_variable_from_constraint(blk[k].pressure_dew,
+                                                   blk[k].eq_pressure_dew)
+
+        init_log.info_high("Initialization Step 1 - Dew and bubble points "
+                      "calculation completed.")
+
+        # ---------------------------------------------------------------------
+        # If flash, initialize T1 and Teq
+        for k in blk.keys():
+            if (blk[k].config.has_phase_equilibrium and
+                    not blk[k].config.defined_state):
+                blk[k]._t1.value = max(blk[k].temperature.value,
+                                       blk[k].temperature_bubble.value)
+                blk[k]._teq.value = min(blk[k]._t1.value,
+                                        blk[k].temperature_dew.value)
+
+        init_log.info_high("Initialization Step 2 - Equilibrium temperature "
+                           " calculation completed.")
+
+        # ---------------------------------------------------------------------
+        # Initialize flow rates and compositions
+        free_vars = 0
+        for k in blk.keys():
+            free_vars += number_unfixed_variables(blk[k])
+        if free_vars > 0:
+            try:
+                with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
+                    res = solve_indexed_blocks(solver, [blk], tee=slc.tee)
+            except:
+                res = None
+        else:
+            res = None
+
+        init_log.info("Initialization Complete")
+
+        return res
 
 
 @declare_process_block_class("HDAParameterBlock")
@@ -105,7 +162,7 @@ class HDAParameterData(PhysicalParameterBlock):
         self.pressure_crit = Param(
             self.component_list,
             within=NonNegativeReals,
-            mutable=False,
+            mutable=True,
             units=pyunits.Pa,
             initialize=extract_data(pressure_crit_data),
             doc='Critical pressure')
@@ -121,7 +178,7 @@ class HDAParameterData(PhysicalParameterBlock):
         self.temperature_crit = Param(
             self.component_list,
             within=NonNegativeReals,
-            mutable=False,
+            mutable=True,
             units=pyunits.K,
             initialize=extract_data(temperature_crit_data),
             doc='Critical temperature')
@@ -134,7 +191,7 @@ class HDAParameterData(PhysicalParameterBlock):
                         'methane': 16.043e-3}
 
         self.mw_comp = Param(self.component_list,
-                             mutable=False,
+                             mutable=True,
                              units=pyunits.kg/pyunits.mol,
                              initialize=extract_data(mw_comp_data),
                              doc="molecular weight")
@@ -161,7 +218,7 @@ class HDAParameterData(PhysicalParameterBlock):
 
         self.dens_liq_param_1 = Param(
             self.component_list,
-            mutable=False,
+            mutable=True,
             initialize={c: v for (c, j), v in dens_liq_data.items() if j == '1'},
             doc="Parameter 1 to compute liquid densities",
             units=pyunits.kmol*pyunits.m**-3
@@ -169,7 +226,7 @@ class HDAParameterData(PhysicalParameterBlock):
 
         self.dens_liq_param_2 = Param(
             self.component_list,
-            mutable=False,
+            mutable=True,
             initialize={c: v for (c, j), v in dens_liq_data.items() if j == '2'},
             doc="Parameter 2 to compute liquid densities",
             units=pyunits.dimensionless
@@ -177,7 +234,7 @@ class HDAParameterData(PhysicalParameterBlock):
 
         self.dens_liq_param_3 = Param(
             self.component_list,
-            mutable=False,
+            mutable=True,
             initialize={c: v for (c, j), v in dens_liq_data.items() if j == '3'},
             doc="Parameter 3 to compute liquid densities",
             units=pyunits.K
@@ -185,7 +242,7 @@ class HDAParameterData(PhysicalParameterBlock):
 
         self.dens_liq_param_4 = Param(
             self.component_list,
-            mutable=False,
+            mutable=True,
             initialize={c: v for (c, j), v in dens_liq_data.items() if j == '4'},
             doc="Parameter 4 to compute liquid densities",
             units=pyunits.dimensionless
@@ -201,7 +258,7 @@ class HDAParameterData(PhysicalParameterBlock):
 
         self.temperature_boil = Param(
                 self.component_list,
-                mutable=False,
+                mutable=True,
                 units=pyunits.K,
                 initialize=extract_data(bp_data),
                 doc="Pure component boiling points at standard pressure")
@@ -255,7 +312,7 @@ class HDAParameterData(PhysicalParameterBlock):
         self.cp_ig_1 = Param(
             self.phase_list,
             self.component_list,
-            mutable=False,
+            mutable=True,
             initialize={(p, c): v for (p, c, j), v in cp_ig_data.items() if j == '1'},
             doc="Parameter 1 to compute Cp_comp",
             units=pyunits.J/pyunits.mol/pyunits.K
@@ -264,7 +321,7 @@ class HDAParameterData(PhysicalParameterBlock):
         self.cp_ig_2 = Param(
             self.phase_list,
             self.component_list,
-            mutable=False,
+            mutable=True,
             initialize={(p, c): v for (p, c, j), v in cp_ig_data.items() if j == '2'},
             doc="Parameter 2 to compute Cp_comp",
             units=pyunits.J/pyunits.mol/pyunits.K**2
@@ -273,7 +330,7 @@ class HDAParameterData(PhysicalParameterBlock):
         self.cp_ig_3 = Param(
             self.phase_list,
             self.component_list,
-            mutable=False,
+            mutable=True,
             initialize={(p, c): v for (p, c, j), v in cp_ig_data.items() if j == '3'},
             doc="Parameter 3 to compute Cp_comp",
             units=pyunits.J/pyunits.mol/pyunits.K**3
@@ -282,7 +339,7 @@ class HDAParameterData(PhysicalParameterBlock):
         self.cp_ig_4 = Param(
             self.phase_list,
             self.component_list,
-            mutable=False,
+            mutable=True,
             initialize={(p, c): v for (p, c, j), v in cp_ig_data.items() if j == '4'},
             doc="Parameter 4 to compute Cp_comp",
             units=pyunits.J/pyunits.mol/pyunits.K**4
@@ -291,7 +348,7 @@ class HDAParameterData(PhysicalParameterBlock):
         self.cp_ig_5 = Param(
             self.phase_list,
             self.component_list,
-            mutable=False,
+            mutable=True,
             initialize={(p, c): v for (p, c, j), v in cp_ig_data.items() if j == '5'},
             doc="Parameter 5 to compute Cp_comp",
             units=pyunits.J/pyunits.mol/pyunits.K**5
@@ -316,7 +373,7 @@ class HDAParameterData(PhysicalParameterBlock):
 
         self.pressure_sat_coeff_A = Param(
             self.component_list,
-            mutable=False,
+            mutable=True,
             initialize={c: v for (c, j), v in pressure_sat_coeff_data.items() if j == 'A'},
             doc="Parameter A to compute saturated pressure",
             units=pyunits.dimensionless
@@ -324,7 +381,7 @@ class HDAParameterData(PhysicalParameterBlock):
 
         self.pressure_sat_coeff_B = Param(
             self.component_list,
-            mutable=False,
+            mutable=True,
             initialize={c: v for (c, j), v in pressure_sat_coeff_data.items() if j == 'B'},
             doc="Parameter B to compute saturated pressure",
             units=pyunits.K
@@ -332,7 +389,7 @@ class HDAParameterData(PhysicalParameterBlock):
 
         self.pressure_sat_coeff_C = Param(
             self.component_list,
-            mutable=False,
+            mutable=True,
             initialize={c: v for (c, j), v in pressure_sat_coeff_data.items() if j == 'C'},
             doc="Parameter C to compute saturated pressure",
             units=pyunits.K
@@ -346,7 +403,7 @@ class HDAParameterData(PhysicalParameterBlock):
                   'methane': 0}
 
         self.dh_vap = Param(self.component_list,
-                            mutable=False,
+                            mutable=True,
                             units=pyunits.J/pyunits.mol,
                             initialize=extract_data(dh_vap),
                             doc="heat of vaporization")
@@ -423,155 +480,25 @@ class _IdealStateBlock(StateBlock):
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
     """
+    
+    default_initializer = HDAInitializer
 
-    def initialize(blk, state_args={}, state_vars_fixed=False,
-                   hold_state=False, outlvl=idaeslog.NOTSET,
-                   solver=None, optarg=None):
+    def fix_initialization_states(blk):
         """
-        Initialization routine for property package.
-        Keyword Arguments:
-            state_args : Dictionary with initial guesses for the state vars
-                         chosen. Note that if this method is triggered
-                         through the control volume, and if initial guesses
-                         were not provided at the unit model level, the
-                         control volume passes the inlet values as initial
-                         guess.The keys for the state_args dictionary are:
+        Fixes state variables for state blocks.
 
-                         flow_mol_phase_comp : value at which to initialize
-                                               phase component flows
-                         pressure : value at which to initialize pressure
-                         temperature : value at which to initialize temperature
-            outlvl : sets output level of initialization routine
-                     * 0 = no output (default)
-                     * 1 = return solver state for each step in routine
-                     * 2 = include solver output information (tee=True)
-            optarg : solver options dictionary object (default=None)
-            state_vars_fixed: Flag to denote if state vars have already been
-                              fixed.
-                              - True - states have already been fixed by the
-                                       control volume 1D. Control volume 0D
-                                       does not fix the state vars, so will
-                                       be False if this state block is used
-                                       with 0D blocks.
-                             - False - states have not been fixed. The state
-                                       block will deal with fixing/unfixing.
-            solver : str indicating which solver to use during
-                     initialization (default = 'ipopt')
-            hold_state : flag indicating whether the initialization routine
-                         should unfix any state variables fixed during
-                         initialization (default=False).
-                         - True - states variables are not unfixed, and
-                                 a dict of returned containing flags for
-                                 which states were fixed during
-                                 initialization.
-                        - False - state variables are unfixed after
-                                 initialization by calling the
-                                 release_state method
         Returns:
-            If hold_states is True, returns a dict containing flags for
-            which states were fixed during initialization.
+            None
         """
 
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
-        solve_log = idaeslog.getSolveLogger(blk.name, outlvl, tag="properties")
-
-        # Fix state variables if not already fixed
-        if state_vars_fixed is False:
-            flags = fix_state_vars(blk, state_args)
-
-        else:
-            # Check when the state vars are fixed already result in dof 0
-            for k in blk.keys():
-                if degrees_of_freedom(blk[k]) != 0:
-                    raise Exception("State vars fixed but degrees of freedom "
-                                    "for state block is not zero during "
-                                    "initialization.")
-        # Set solver
-        opt = get_solver(solver, optarg)
-
-        # ---------------------------------------------------------------------
-        # If present, initialize bubble and dew point calculations
-        for k in blk.keys():
-            if hasattr(blk[k], "eq_temperature_dew"):
-                calculate_variable_from_constraint(blk[k].temperature_dew,
-                                                   blk[k].eq_temperature_dew)
-
-            if hasattr(blk[k], "eq_pressure_dew"):
-                calculate_variable_from_constraint(blk[k].pressure_dew,
-                                                   blk[k].eq_pressure_dew)
-
-        init_log.info_high("Initialization Step 1 - Dew and bubble points "
-                      "calculation completed.")
-
-        # ---------------------------------------------------------------------
-        # If flash, initialize T1 and Teq
-        for k in blk.keys():
-            if (blk[k].config.has_phase_equilibrium and
-                    not blk[k].config.defined_state):
-                blk[k]._t1.value = max(blk[k].temperature.value,
-                                       blk[k].temperature_bubble.value)
-                blk[k]._teq.value = min(blk[k]._t1.value,
-                                        blk[k].temperature_dew.value)
-
-        init_log.info_high("Initialization Step 2 - Equilibrium temperature "
-                           " calculation completed.")
-
-        # ---------------------------------------------------------------------
-        # Initialize flow rates and compositions
-        # TODO : This will need to be generalised more when we move to a
-        # modular implementation
-        for k in blk.keys():
-            # Deactivate equilibrium constraints, as state is fixed
-            if hasattr(blk[k], 'equilibrium_constraint'):
-                blk[k].equilibrium_constraint.deactivate()
-
-        free_vars = 0
-        for k in blk.keys():
-            free_vars += number_unfixed_variables(blk[k])
-        if free_vars > 0:
-            try:
-                with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
-                    res = solve_indexed_blocks(opt, [blk], tee=slc.tee)
-            except:
-                res = None
-        else:
-            res = None
-
-        for k in blk.keys():
-            # Reactivate equilibrium constraints
-            if hasattr(blk[k], 'equilibrium_constraint'):
-                blk[k].equilibrium_constraint.activate()
-
-        # ---------------------------------------------------------------------
-        # Return state to initial conditions
-        if state_vars_fixed is False:
-            if hold_state is True:
-                return flags
-            else:
-                blk.release_state(flags)
-
-        init_log.info("Initialization Complete")
-
-    def release_state(blk, flags, outlvl=0):
-        '''
-        Method to release state variables fixed during initialization.
-        Keyword Arguments:
-            flags : dict containing information of which state variables
-                    were fixed during initialization, and should now be
-                    unfixed. This dict is returned by initialize if
-                    hold_state=True.
-            outlvl : sets output level of of logging
-        '''
-        init_log = idaeslog.getInitLogger(blk.name, outlvl, tag="properties")
-        if flags is None:
-            init_log.debug("No flags passed to release_state().")
-            return
-
-        # Unfix state variables
-        revert_state_vars(blk, flags)
-
-        init_log.info_high("State Released.")
-
+        # Fix state variables
+        fix_state_vars(blk)
+        
+        # Also need to deactivate sum of mole fraction constraint
+        for k in blk.values():
+            if not k.config.defined_state:
+                k.equilibrium_constraint.deactivate()
+            
 
 @declare_process_block_class("IdealStateBlock",
                              block_class=_IdealStateBlock)
@@ -580,8 +507,8 @@ class IdealStateBlockData(StateBlockData):
 
     def build(self):
         """Callable method for Block construction."""
-        super(IdealStateBlockData, self).build()
-
+        super().build()
+        
         # Add state variables
         self.flow_mol_phase_comp = Var(
                 self._params.phase_list,
