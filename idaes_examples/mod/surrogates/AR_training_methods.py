@@ -224,7 +224,7 @@ def train_load_surrogates(retrain=False) -> Set[SurrType]:
 
     # Train surrogates using Keras
 
-    if os.path.exists('keras_surrogate/') and retrain is False:
+    if os.path.exists('keras_surrogate/keras_model.keras') and retrain is False:
         # surrogates folder already exists, skip training
         # we will load the object into the flowsheet later
         pass
@@ -263,7 +263,7 @@ def train_load_surrogates(retrain=False) -> Set[SurrType]:
         # Train surrogate (calls optimizer on neural network and solves
         # for weights)
         model.compile(loss=loss, optimizer=optimizer, metrics=metrics)
-        mcp_save = tf.keras.callbacks.ModelCheckpoint('.mdl_wts.hdf5',
+        mcp_save = tf.keras.callbacks.ModelCheckpoint('.mdl_wts.keras',
                                                       save_best_only=True,
                                                       monitor='val_loss',
                                                       mode='min')
@@ -281,7 +281,7 @@ def train_load_surrogates(retrain=False) -> Set[SurrType]:
                                          input_bounds=input_bounds,
                                          input_scaler=input_scaler,
                                          output_scaler=output_scaler)
-        keras_surrogate.save_to_folder('keras_surrogate')
+        keras_surrogate.save_to_folder(keras_folder_name="keras_surrogate", keras_model_name="keras_model")
 
     trained_surr.add(SurrType.KERAS)
 
