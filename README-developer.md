@@ -2,34 +2,16 @@
 
 This file provides details needed by developers to properly create and add new example notebooks to this repository.
 
-**Table of Contents**
-* Installation
-* Add a new example
-* File layout
-* Running tests
-* Building documentation
-* Preprocessing
-* Copyright headers
-* Notebook names
-* How to create an example
-  * Jupyter Notebook file extensions
-  * Jupyter Notebook header
-  * Jupyter Notebook cell tags
-  * Jupyter notebook metadata
-* Packaging
+**Contents:**
 
-**Quickstart**, skip to sections:
 * [Installation](#installation)
-* [Running tests &rarr; Integration tests](#integration-tests)
-* [Building documentation](#building-documentation)
-
-
-**Quickstart**, skip to sections:
-* [Installation](#installation)
-* [Add a new example](#add-a-new-example)
-* [Running tests &rarr; Integration tests](#integration-tests)
-* [Building documentation](#building-documentation)
-
+* [How to add a new notebook example](#how-to-add-a-new-notebook-example)
+* [File layout](#file-layout)
+* [Running tests](#running-tests)
+* [Building and preprocessing](#building-and-preprocessing)
+* [Notebook names](#notebook-names)
+* [Copyright headers](#copyright-headers)
+* [Packaging for PyPI](#packaging-for-pypi)
 
 ## Installation
 
@@ -45,20 +27,28 @@ Note: if you have IDAES installed in your current environment, it will uninstall
 
 The configuration of the installation is stored in `pyproject.toml`.
 
-## Add a new example
+## How to add a new notebook example
 
-Note: Below, `notebooks/*` refers to the directory `idaes_examples/notebooks`.
+Examples are currently all [Jupyter](https://jupyter.org) Notebooks. This section goes through the main steps to creating a new notebook example. For more details about naming and layout, see the reference sections on [File layout](#file-layout) and [Notebook names](#notebook-names), below. In particular, it is recommended to read the section on [Jupyter Notebook cell tags](#jupyter-notebook-cell-tags), found under the Notebook names section; these are used for testing, to handle the "solution" cells in a tutorial, etc.
 
-If you want to add an example in an **existing section** of `notebooks/docs`, you can run
-`idaesx new` to get a guided terminal-based UI that will create a skeleton of the
-new notebook and add it to the table of contents, and also add all the variations of the notebook (see [Notebook Names](#notebook-names)) and, if git is enabled and found, add and commit them to git. 
-Then you just need to edit your notebook.
+First, pick the directory in which to add the notebook. See the [standards][standards] to figure out the parent directory for the notebook -- usually, it's *notebooks/docs*. The examples are organized into sections. This affects how the notebook will appear in the overall navigation of the documentation when it is published.
 
-If you need to create a **new section** in `notebooks/docs` or `notebooks/held`:
-- add the appropriate subdirectory, e.g. `notebooks/docs/fantastic`
-- add a section into `notebooks/_toc.yml`, imitating an existing entry
-- create and populate a `notebooks/docs/fantastic/index.md` file
-- now you can add your notebook(s) manually, e.g. `notebooks/docs/fantastic/my_notebook.ipynb`, or use the `idaesx new` command
+Next, you need to choose whether to put your new notebook in an existing section or to create a new section. 
+
+- Use existing section: Simply navigate there before the next step. 
+
+- Create a new section: in `notebooks/docs` or `notebooks/held`, create a new subdirectory. The directory name *should* be in lowercase with underscores between words. Also create and populate an *index.md* file, e.g.,  `notebooks/docs/fantastic/index.md` file. This should describe the section and notebooks in it.
+
+Next, choose to use the *idaesx new* command to create a new blank notebook or to copy/edit an existing notebook yourself. In either case, the notebook filename should be in lowercase with underscores. For example: *my_notebook*.
+
+- If you are adding your notebook using the `idaesx new` command, you need to just pick a section and name for the notebook. The script will modify the `notebooks/_toc.yml` and create a blank notebook to get started.
+- If you are adding your notebook manually, copy or create the notebook file, e.g., `notebooks/docs/fantastic/my_notebook.ipynb`. Make sure you add the *.ipynb* extension. You also need to add a "file" entry in `notebooks/_toc.yml` , as a new item in the list under the appropriate section, with "_doc" appended to the name and without the extension, e.g. `- file: docs/fantastic/my_notebook_doc`. 
+
+If the new notebook needs any data files or images, add these in the same directory as the notebook. Remember to add these to Git as well.
+
+If your new notebook needs additional Python modules, these should be put under the `mod/` directory in an appropriate place, usually a directory name that matches the notebook's subdirectory under `docs/`. For example, our notebook in `notebooks/docs/fantastic/my_notebook.ipynb` could have an additional module  `mod/fantastic/util.py`, which will be imported: `from idaes_examples.mod.fantastic import util`. 
+
+Finally, you will test the new notebook and build it locally before adding, committing, and pushing the new files. See the section on [running tests](#running-tests), below. 
 
 ## File layout
 
@@ -126,7 +116,9 @@ pytest -v idaes_examples -k operations
 # docs/unit_models/operations/turbine_test.ipynb
 ```
 
-## Building documentation
+## Building and preprocessing
+
+### Building documentation
 
 **Note:** Building the documentation runs all the notebooks.
 This is very slow, so is not an operation that a developer should perform during their regular workflow. 
@@ -142,7 +134,7 @@ idaesx build
 
 The output will be in *idaes_examples/nb/_build/html*. As a convenience, you can open that HTML file with the command `idaesx view`.
 
-## Preprocessing notebooks
+### Preprocessing notebooks
 Preprocessing creates separate copies of the Jupyter notebooks that are used for tests, tutorial exercise and solution, and documentation (see [Notebook Names](#notebook-names)).
 These (derived) notebooks are also committed and saved in Git.
 
@@ -188,27 +180,7 @@ When creating or modifying notebooks, you should always use the version with no 
 Other extensions are automatically generated when running tests, building the documentation, and manually running the preprocessing step.
 See the <a href="#table-nbtypes">table of notebook types</a> for details.
 
-## How to add a new notebook
 
-There are two main steps to creating a new notebook example.
-
-1. Add Jupyter Notebook and supporting files
-   1. See the [standards][standards] to figure out the parent directory for the notebook -- usually, it's *docs*.
-   2. Put the notebook in the appropriate subdirectory.
-      If you create a new directory for the notebook, the directory name *should* be in lowercase 
-      with underscores between words. For example: '*docs/machine_learning*'.
-   3. Notebook filename *should* be in lowercase with underscores and ***must*** end with '.ipynb'. For example: 
-      'my_example.ipynb'.
-   4. Add -- in the same directory as the notebook -- any data files or images it needs.
-   5. Additional Python modules should be put in an appropriate place under *idaes_examples/mod*.
-      Then your notebook can write: `from idaes_examples.mod.<subpackage> import <bla>`
-2. Add Jupyter notebook to the Jupyterbook table of contents in *idaes_examples/notebooks/_toc.yml*.
-   1. The notebook will be a *section*. If you added a new directory, you will create a new *chapter*, otherwise it will go under an existing one. See [Jupyterbook][jb] documentation for more details.
-   2. Refer to the notebook as '*path/to/notebook-name*_doc' (add the '_doc' and drop the '.ipynb' extension). For example: 'machine_learning/my_example_doc'.
-   3. If you created a new directory for this notebook, make sure you add an *index.md* file to it. See other *index.md* files for the expected format.
-
-You *should*  test the new notebook and build it locally before pushing the new file, i.e., run `pytest` and `idaesx build`.
-Note that the cache for the documentation will be updated to contain the new output cells, which will modify files in *idaes_examples/notebooks/nbcache*; these files should also be committed and pushed.
 
 ### Jupyter Notebook file extensions
 
@@ -327,7 +299,7 @@ addheader -c addheader.yml
 
 All existing notebooks and Python files will be automatically discovered and modified as needed.
 
-## Packaging
+## Packaging for PyPI
 
 Instructions to package and distribute the examples as idaes-examples in PyPI.
 Based on the PyPA [packaging projects](https://packaging.python.org/en/latest/tutorials/packaging-projects/)  documentation.

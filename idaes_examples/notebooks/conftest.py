@@ -16,7 +16,8 @@ logging.basicConfig()
 
 
 def is_master():
-    worker = os.environ.get("PYTEST_XDIST_WORKER", "gw?")
+    worker = os.environ.get("PYTEST_XDIST_WORKER", "gw0")
+    print(f"Worker = {worker}")
     return worker == "gw0"
 
 
