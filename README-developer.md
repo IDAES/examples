@@ -2,34 +2,16 @@
 
 This file provides details needed by developers to properly create and add new example notebooks to this repository.
 
-**Table of Contents**
-* Installation
-* How to add a new notebook example
-* File layout
-* Running tests
-* Building documentation
-* Preprocessing
-* Copyright headers
-* Notebook names
-* How to create an example
-  * Jupyter Notebook file extensions
-  * Jupyter Notebook header
-  * Jupyter Notebook cell tags
-  * Jupyter notebook metadata
-* Packaging
+**Contents:**
 
-**Quickstart**, skip to sections:
 * [Installation](#installation)
-* [Running tests &rarr; Integration tests](#integration-tests)
-* [Building documentation](#building-documentation)
-
-
-**Quickstart**, skip to sections:
-* [Installation](#installation)
-* [Add a new example](#add-a-new-example)
-* [Running tests &rarr; Integration tests](#integration-tests)
-* [Building documentation](#building-documentation)
-
+* [How to add a new notebook example](#how-to-add-a-new-notebook-example)
+* [File layout](#file-layout)
+* [Running tests](#running-tests)
+* [Building and preprocessing](#building-and-preprocessing)
+* [Notebook names](#notebook-names)
+* [Copyright headers](#copyright-headers)
+* [Packaging for PyPI](#packaging-for-pypi)
 
 ## Installation
 
@@ -47,7 +29,7 @@ The configuration of the installation is stored in `pyproject.toml`.
 
 ## How to add a new notebook example
 
-Examples are currently all [Jupyter](https://jupyter.org) Notebooks. This section goes through the main steps to creating a new notebook example. For more details about naming and layout, see the reference sections on [File layout](File layout) and [Notebook names](Notebook names), below. In particular, it is recommended to read the section on [Jupyter Notebook cell tags](Jupyter Notebook cell tags), found under the Notebook names section; these are used for testing, to handle the "solution" cells in a tutorial, etc.
+Examples are currently all [Jupyter](https://jupyter.org) Notebooks. This section goes through the main steps to creating a new notebook example. For more details about naming and layout, see the reference sections on [File layout](#file-layout) and [Notebook names](#notebook-names), below. In particular, it is recommended to read the section on [Jupyter Notebook cell tags](#jupyter-notebook-cell-tags), found under the Notebook names section; these are used for testing, to handle the "solution" cells in a tutorial, etc.
 
 First, pick the directory in which to add the notebook. See the [standards][standards] to figure out the parent directory for the notebook -- usually, it's *notebooks/docs*. The examples are organized into sections. This affects how the notebook will appear in the overall navigation of the documentation when it is published.
 
@@ -66,7 +48,7 @@ If the new notebook needs any data files or images, add these in the same direct
 
 If your new notebook needs additional Python modules, these should be put under the `mod/` directory in an appropriate place, usually a directory name that matches the notebook's subdirectory under `docs/`. For example, our notebook in `notebooks/docs/fantastic/my_notebook.ipynb` could have an additional module  `mod/fantastic/util.py`, which will be imported: `from idaes_examples.mod.fantastic import util`. 
 
-Finally, you will test the new notebook and build it locally before adding, committing, and pushing the new files. See the section on [running tests](Running tests), below. 
+Finally, you will test the new notebook and build it locally before adding, committing, and pushing the new files. See the section on [running tests](#running-tests), below. 
 
 ## File layout
 
@@ -134,7 +116,9 @@ pytest -v idaes_examples -k operations
 # docs/unit_models/operations/turbine_test.ipynb
 ```
 
-## Building documentation
+## Building and preprocessing
+
+### Building documentation
 
 **Note:** Building the documentation runs all the notebooks.
 This is very slow, so is not an operation that a developer should perform during their regular workflow. 
@@ -150,7 +134,7 @@ idaesx build
 
 The output will be in *idaes_examples/nb/_build/html*. As a convenience, you can open that HTML file with the command `idaesx view`.
 
-## Preprocessing notebooks
+### Preprocessing notebooks
 Preprocessing creates separate copies of the Jupyter notebooks that are used for tests, tutorial exercise and solution, and documentation (see [Notebook Names](#notebook-names)).
 These (derived) notebooks are also committed and saved in Git.
 
@@ -315,7 +299,7 @@ addheader -c addheader.yml
 
 All existing notebooks and Python files will be automatically discovered and modified as needed.
 
-## Packaging
+## Packaging for PyPI
 
 Instructions to package and distribute the examples as idaes-examples in PyPI.
 Based on the PyPA [packaging projects](https://packaging.python.org/en/latest/tutorials/packaging-projects/)  documentation.
