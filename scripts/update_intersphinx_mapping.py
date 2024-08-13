@@ -21,49 +21,29 @@ _log = logging.getLogger("update_intersphinx_mapping")
 _log.setLevel(logging.INFO)
 
 
-def indent_length(line):
-    i = 0
-    while line[i] == " ":
-        i += 1
-    return i
-
-
-def create_modified_file(path):
+def modify(path):
     ix_indent, in_ix = 0, False
     # get the mapping to insert
     mapping = get_intersphinx_mapping()
     # change tuples to lists so yaml.dump doesn't do weird things
     for key in mapping:
         mapping[key] = list(mapping[key])
-    yaml_text = yaml.dump({"intersphinx_mapping": mapping})
-    # Create temporary file with new mapping in it by
-    # replacing all lines under 'intersphinx_mapping: ...'
-    # with the new YAML text.
-    tmp = TemporaryFile("w+")
-    for line in path.open("r"):
-        if in_ix:
-            # Detect end of the block with a return to the same indent
-            if indent_length(line) <= ix_indent:
-                # write out the new YAML mapping
-                indent_spc = " " * ix_indent
-                for new_line in yaml_text.split("\n"):
-                    tmp.write(indent_spc + new_line + "\n")
-                # switch back to 'normal' mode
-                in_ix = False
-            # else: swallow this line
-        elif line.lstrip().startswith("intersphinx_mapping"):
-            # switch to 'in intersphinx_mapping' mode
-            ix_indent, in_ix = indent_length(line), True
-        else:
-            tmp.write(line)
-    return tmp
-
-
-def replace_original_file(tmp_f, path):
-    tmp_f.seek(0)
+    # parse & load current config file
+    with path.open("r") as f:
+        try:
+            data = yaml.safe_load(f)
+        except yaml.parser.ParserError as err:
+            _log.error(f"Parsing config file '{path}': {err}")
+            raise
+    # modify data in memory
+    try:
+        data["sphinx"]["config"]["intersphinx_mapping"] = mapping
+    except KeyError as err:
+        _log.error(f"Modifying config file '{path}': {err} ")
+        raise
+    # dump modified data
     with path.open("w") as f:
-        for line in tmp_f:
-            f.write(line)
+        yaml.dump(data, f)
 
 
 if __name__ == "__main__":
@@ -88,10 +68,14 @@ if __name__ == "__main__":
 
     _log.info(f"Modifying configuration file: {conf_file}")
 
-    tmp_file = create_modified_file(conf_file)
-    replace_original_file(tmp_file, conf_file)
+    try:
+        modify(conf_file)
+    except Exception as err:
+        _log.fatal("Could not create modified file")
+        sys.exit(1)
 
     _log.info(f"Modified configuration file: {conf_file}")
+
     sphinx_config = doc_dir / "conf.py"
 
     if p.command:
