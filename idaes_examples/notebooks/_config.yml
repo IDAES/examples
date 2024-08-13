@@ -13,8 +13,20 @@ sphinx:
   config:
     bibtex_reference_style: author_year
     exclude_patterns: ['**/.jupyter_cache']
-title: IDAES Examples
-repository:
+    intersphinx_mapping:
+      idaes:
+      - https://idaes-pse.readthedocs.io/en/stable/
+      - null
+      idaes-examples:
+      - https://idaes-examples.readthedocs.io/en/stable/
+      - null
+      prommis:
+      - https://prommis.readthedocs.io/en/stable/
+      - null
+      watertap:
+      - https://watertap.readthedocs.io/en/stable/
+      - null
+    
   # `path_to_book` should point to the directory containing this file (`_config.yml`)
   path_to_book: idaes_examples/notebooks
   # FIXME change `url` and `branch` before merging PR
