@@ -6,13 +6,19 @@ You should run this after you run `jupyterbook config sphinx`.
 __author__ = "Dan Gunter (LBNL)"
 
 import argparse
+import logging
 from pathlib import Path
+from subprocess import check_call, CalledProcessError
 import sys
 from tempfile import TemporaryFile
 import yaml
 from idaes.core.util.intersphinx import get_intersphinx_mapping
 
 CONF_FILE = "_config.yml"
+
+logging.basicConfig()
+_log = logging.getLogger("update_intersphinx_mapping")
+_log.setLevel(logging.INFO)
 
 
 def indent_length(line):
@@ -65,6 +71,10 @@ if __name__ == "__main__":
     ap.add_argument("-d", "--dir",
                     help="Directory containing conf.py (default=.)",
                     default=None)
+    ap.add_argument("-c", "--command",
+                    action="store_true",
+                    help="Run `jupyter-book config sphinx <DIR>` "
+                         "after successful update")
     p = ap.parse_args()
     if p.dir is None:
         doc_dir = Path(".")
@@ -76,9 +86,27 @@ if __name__ == "__main__":
         print(f"Config file `{CONF_FILE}` not found in `{doc_dir}`")
         sys.exit(1)
 
+    _log.info(f"Modifying configuration file: {conf_file}")
+
     tmp_file = create_modified_file(conf_file)
     replace_original_file(tmp_file, conf_file)
 
-    print(f"Modified configuration file: {conf_file}")
+    _log.info(f"Modified configuration file: {conf_file}")
+    sphinx_config = doc_dir / "conf.py"
+
+    if p.command:
+        cmdline = ["jupyter-book", "config", "sphinx", str(doc_dir)]
+        _log.info(f"Running command to update {sphinx_config}: {' '.join(cmdline)}")
+        try:
+            check_call(cmdline)
+        except CalledProcessError as err:
+            _log.error(f"Command failed: {' '.join(err.cmd)}")
+            _log.error(f"File {sphinx_config} may not be updated")
+            sys.exit(1)
+    else:
+        print(f"\nTo propagate changes to the Sphinx configuration\n"
+              f"file, '{sphinx_config}', run the following command:\n\n"
+              f"    jupyter-book config sphinx {doc_dir}")
+        print("\nAdd '-c'/'--command' to have this script run the command for you")
 
     sys.exit(0)
