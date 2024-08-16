@@ -12,7 +12,7 @@ description = "IDAES Process Systems Engineering Examples"
 readme = "README.md"
 version = "2.6.dev0"
 license = {text="BSD"}
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 authors = [
     {name="The IDAES Project"},
     {name="Dan Gunter", email="dkgunter@lbl.gov"}
@@ -43,7 +43,7 @@ dependencies = [
     # Pyomo
     "pyomo>=6.5.0",
     "jupyter",
-    "importlib_resources ; python_version < '3.9'",  # importlib.resources.files()
+    "importlib_resources",  # importlib.resources.files()
 ]
 keywords = ["IDAES", "energy systems", "chemical engineering", "process modeling"]
 
