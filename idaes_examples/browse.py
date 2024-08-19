@@ -4,9 +4,6 @@ Graphical examples browser
 # stdlib
 from importlib import resources
 
-if not hasattr(resources, "files"):
-    # importlib.resources.files() added in Python 3.9
-    import importlib_resources as resources
 import json
 import logging
 from logging.handlers import RotatingFileHandler
@@ -22,9 +19,6 @@ try:
     from ctypes import windll
 except:
     windll = None
-
-# third-party
-import markdown
 
 # package
 import idaes_examples
