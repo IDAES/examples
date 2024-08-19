@@ -269,7 +269,7 @@ class SCO2StateBlockData(StateBlockData):
  
         inputs=[self.pressure,self.temperature]
         outputs=[self.enth_mol,self.entr_mol]
-        self.keras_surrogate = KerasSurrogate.load_from_folder("sco2_keras_surr")
+        self.keras_surrogate = KerasSurrogate.load_from_folder(keras_folder_name="sco2_keras_surr", keras_model_name="sco2_keras_model")
         self.surrogate_enth = SurrogateBlock()
         self.surrogate_enth.build_model(
             self.keras_surrogate,

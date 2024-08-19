@@ -34,7 +34,7 @@ concurrency:
 
 env:
   # default Python version to use for checks that do not require multiple versions
-  DEFAULT_PYTHON_VERSION: '3.8'
+  DEFAULT_PYTHON_VERSION: '3.10'
   IDAES_CONDA_ENV_NAME_DEV: idaes-examples-dev
   PYTEST_ADDOPTS: "--color=yes"
 
@@ -62,9 +62,10 @@ jobs:
       fail-fast: false
       matrix:
         python-version:
-          - '3.8'
           - '3.9'
           - '3.10'
+          - '3.11'
+          - '3.12'
         os:
           - linux
           - win64
