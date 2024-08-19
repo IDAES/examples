@@ -136,7 +136,7 @@ class ReactionBlock(ReactionBlockBase):
     This Class contains methods which should be applied to Reaction Blocks as a
     whole, rather than individual elements of indexed Reaction Blocks.
     """
-    
+    default_initializer = HDAInitializer
 
 
 @declare_process_block_class("HDAReactionBlock",
@@ -145,7 +145,6 @@ class HDAReactionBlockData(ReactionBlockDataBase):
     """
     An example reaction package for saponification of ethyl acetate
     """
-    default_initializer = HDAInitializer
 
     def build(self):
         """
