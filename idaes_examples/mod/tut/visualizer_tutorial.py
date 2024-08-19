@@ -289,7 +289,15 @@ def initialize_model(m: ConcreteModel) -> ConcreteModel:
     seq.set_guesses_for(m.fs.H101.inlet, tear_guesses)
 
     def initialize_unit(unit):
-        unit.initialize(outlvl=idaeslog.DEBUG)
+        try:
+            initializer = unit.default_initializer()
+            initializer.initialize(unit, output_level=idaeslog.INFO)
+        except Exception as e:
+            if e=='InitializationError':
+                initializer.initialize(unit, output_level=idaeslog.INFO)
+            else:
+                print(f'Unit {unit} did not initialize successfully')
+    
 
     seq.run(m, initialize_unit)
     return m
