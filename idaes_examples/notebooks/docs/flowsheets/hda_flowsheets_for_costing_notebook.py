@@ -441,7 +441,14 @@ def hda_with_distillation(tee=True):
     seq.set_guesses_for(m.fs.H101.inlet, tear_guesses)
 
     def function(unit):
-        unit.initialize(outlvl=outlvl)
+        try:
+            initializer = unit.default_initializer()
+            initializer.initialize(unit, output_level=idaeslog.INFO)
+        except Exception as e:
+            if e=='InitializationError':
+                initializer.initialize(unit, output_level=idaeslog.INFO)
+            else:
+                print(f'Unit {unit} did not initialize successfully')
 
     seq.run(m, function)
 

@@ -24,7 +24,6 @@ from pyomo.environ import (Constraint,
                            Var,
                            Param,
                            units as pyunits)
-from pyomo.common.config import ConfigValue
 
 # Import IDAES cores
 from idaes.core import (declare_process_block_class,
@@ -34,32 +33,10 @@ from idaes.core import (declare_process_block_class,
                         ReactionBlockBase)
 from idaes.core.util.constants import Constants as const
 from idaes.core.util.misc import add_object_reference
-from idaes.core.initialization import InitializerBase
 
 # Set up logger
 _log = logging.getLogger(__name__)
 
-
-class HDAInitializer(InitializerBase):
-    '''
-        Initializer for HDA Property package.
-
-    '''
-    CONFIG = InitializerBase.CONFIG()
-    CONFIG.declare('solver',ConfigValue(default=None,domain=str,description='Initialization solver'))
-    CONFIG.declare('solver_options', ConfigValue(default=None,description='Initialization solver options'))
-    def initialize(blk, outlvl=0, **kwargs):
-        '''
-        Initialization routine for reaction package.
-        Keyword Arguments:
-            outlvl : sets output level of initialization routine
-                     * 0 = no output (default)
-                     * 1 = report after each step
-        Returns:
-            None
-        '''
-        if outlvl > 0:
-            _log.info('{} Initialization Complete.'.format(blk.name))
 
 @declare_process_block_class("HDAReactionParameterBlock")
 class HDAReactionParameterData(ReactionParameterBlock):
@@ -136,7 +113,18 @@ class ReactionBlock(ReactionBlockBase):
     This Class contains methods which should be applied to Reaction Blocks as a
     whole, rather than individual elements of indexed Reaction Blocks.
     """
-    default_initializer = HDAInitializer
+    def initialize(blk, outlvl=0, **kwargs):
+        '''
+        Initialization routine for reaction package.
+        Keyword Arguments:
+            outlvl : sets output level of initialization routine
+                     * 0 = no output (default)
+                     * 1 = report after each step
+        Returns:
+            None
+        '''
+        if outlvl > 0:
+            _log.info('{} Initialization Complete.'.format(blk.name))
 
 
 @declare_process_block_class("HDAReactionBlock",
