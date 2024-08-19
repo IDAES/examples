@@ -216,15 +216,7 @@ def hda_with_flash(tee=True):
     seq.set_guesses_for(m.fs.H101.inlet, tear_guesses)
 
     def function(unit):
-        try:
-            initializer = unit.default_initializer()
-            initializer.initialize(unit, output_level=idaeslog.INFO)
-        except Exception as e:
-            if e=='InitializationError':
-                initializer.initialize(unit, output_level=idaeslog.INFO)
-            else:
-                print(f'Unit {unit} did not initialize successfully')
-    
+        unit.initialize(outlvl=outlvl)
 
     seq.run(m, function)
 
