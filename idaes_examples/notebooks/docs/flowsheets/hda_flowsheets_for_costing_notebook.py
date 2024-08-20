@@ -445,10 +445,10 @@ def hda_with_distillation(tee=True):
         try:
             initializer = unit.default_initializer()
             initializer.initialize(unit, output_level=idaeslog.INFO)
-        except Exception as e:
-            if e=='InitializationError':
+        except:
+            try:
                 initializer.initialize(unit, output_level=idaeslog.INFO)
-            else:
+            except:
                 print(f'Unit {unit} did not initialize successfully')
 
     seq.run(m, function)
