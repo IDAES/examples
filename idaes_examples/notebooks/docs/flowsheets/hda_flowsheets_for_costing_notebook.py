@@ -220,10 +220,11 @@ def hda_with_flash(tee=True):
         try:
             initializer = unit.default_initializer()
             initializer.initialize(unit, output_level=idaeslog.INFO)
-        except InitializationError:
-            initializer.initialize(unit, output_level=idaeslog.INFO)
-        except Exception:
-            print(f'Unit {unit} did not initialize successfully')
+        except:
+            try:
+                initializer.initialize(unit, output_level=idaeslog.INFO)
+            except:
+                print(f'Unit {unit} did not initialize successfully')
     
 
     seq.run(m, function)
