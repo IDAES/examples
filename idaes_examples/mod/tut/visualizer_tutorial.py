@@ -292,10 +292,10 @@ def initialize_model(m: ConcreteModel) -> ConcreteModel:
         try:
             initializer = unit.default_initializer()
             initializer.initialize(unit, output_level=idaeslog.INFO)
-        except Exception as e:
-            if e=='InitializationError':
+        except:
+            try:
                 initializer.initialize(unit, output_level=idaeslog.INFO)
-            else:
+            except:
                 print(f'Unit {unit} did not initialize successfully')
     
 
