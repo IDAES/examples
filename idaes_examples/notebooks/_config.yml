@@ -26,6 +26,9 @@ sphinx:
       watertap:
       - https://watertap.readthedocs.io/en/stable/
       - null
+      pyomo:
+      - https://pyomo.readthedocs.io/en/stable/
+      - null
     
   # `path_to_book` should point to the directory containing this file (`_config.yml`)
   path_to_book: idaes_examples/notebooks
