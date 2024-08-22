@@ -48,6 +48,7 @@ from idaes_examples.mod.hda import hda_reaction as reaction_props
 
 from idaes.models.unit_models.pressure_changer import ThermodynamicAssumption
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.solvers import get_solver
 
 try:
     import idaes_ui
@@ -293,10 +294,8 @@ def initialize_model(m: ConcreteModel) -> ConcreteModel:
             initializer = unit.default_initializer()
             initializer.initialize(unit, output_level=idaeslog.INFO)
         except:
-            try:
-                initializer.initialize(unit, output_level=idaeslog.INFO)
-            except:
-                print(f'Unit {unit} did not initialize successfully')
+            solver=get_solver()
+            solver.solve(unit)
     
 
     seq.run(m, initialize_unit)
