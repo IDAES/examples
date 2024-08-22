@@ -221,7 +221,6 @@ def hda_with_flash(tee=True):
             initializer = unit.default_initializer()
             initializer.initialize(unit, output_level=idaeslog.INFO)
         except:
-            initializer.initialize(unit, output_level=idaeslog.INFO)
             solver=get_solver()
             solver.solve(unit)
     
