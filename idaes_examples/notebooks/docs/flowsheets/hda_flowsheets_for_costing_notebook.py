@@ -220,7 +220,7 @@ def hda_with_flash(tee=True):
         try:
             initializer = unit.default_initializer()
             initializer.initialize(unit, output_level=idaeslog.INFO)
-        except:
+        except InitializationError:
             solver=get_solver()
             solver.solve(unit)
     
@@ -443,7 +443,7 @@ def hda_with_distillation(tee=True):
         try:
             initializer = unit.default_initializer()
             initializer.initialize(unit, output_level=idaeslog.INFO)
-        except:
+        except InitializationError:
             solver=get_solver()
             solver.solve(unit)
 
