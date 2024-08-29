@@ -52,6 +52,7 @@ from idaes.core.solvers import get_solver
 import idaes.core.util.scaling as iscale
 from pyomo.util.check_units import assert_units_consistent
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.util.exceptions import InitializationError
 
 # Import costing methods - classes, heaters, vessels, compressors, columns
 from idaes.models.costing.SSLW import (
@@ -216,7 +217,13 @@ def hda_with_flash(tee=True):
     seq.set_guesses_for(m.fs.H101.inlet, tear_guesses)
 
     def function(unit):
-        unit.initialize(outlvl=outlvl)
+        try:
+            initializer = unit.default_initializer()
+            initializer.initialize(unit, output_level=idaeslog.INFO)
+        except InitializationError:
+            solver=get_solver()
+            solver.solve(unit)
+    
 
     seq.run(m, function)
 
@@ -433,7 +440,12 @@ def hda_with_distillation(tee=True):
     seq.set_guesses_for(m.fs.H101.inlet, tear_guesses)
 
     def function(unit):
-        unit.initialize(outlvl=outlvl)
+        try:
+            initializer = unit.default_initializer()
+            initializer.initialize(unit, output_level=idaeslog.INFO)
+        except InitializationError:
+            solver=get_solver()
+            solver.solve(unit)
 
     seq.run(m, function)
 
