@@ -12,7 +12,7 @@ description = "IDAES Process Systems Engineering Examples"
 readme = "README.md"
 version = "2.6.dev0"
 license = {text="BSD"}
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 authors = [
     {name="The IDAES Project"},
     {name="Dan Gunter", email="dkgunter@lbl.gov"}
@@ -28,10 +28,10 @@ classifiers = [
         "Operating System :: Unix",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: Implementation :: CPython",
         "Topic :: Scientific/Engineering :: Mathematics",
         "Topic :: Scientific/Engineering :: Chemistry",
@@ -43,7 +43,7 @@ dependencies = [
     # Pyomo
     "pyomo>=6.5.0",
     "jupyter",
-    "importlib_resources ; python_version < '3.9'",  # importlib.resources.files()
+    "importlib_resources",  # importlib.resources.files()
 ]
 keywords = ["IDAES", "energy systems", "chemical engineering", "process modeling"]
 
@@ -51,7 +51,7 @@ keywords = ["IDAES", "energy systems", "chemical engineering", "process modeling
 omlt = [
     # For Keras/OMLT
     "omlt",
-    'tensorflow<2.16.1 ; python_version < "3.12"',
+    "tensorflow >= 2.16.1",
 ]
 idaes = [
     "idaes-pse",  # installing IDAES (from release) is opt-in
