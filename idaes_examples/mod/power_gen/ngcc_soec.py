@@ -21,7 +21,7 @@ import idaes.models.unit_models as um  # um = unit models
 from idaes.core import FlowsheetBlockData, declare_process_block_class
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
-from . import (ngcc, soec)
+from . import ngcc, soec
 import idaes.core.util as iutil
 from idaes.core.solvers import get_solver
 from idaes.core.util.initialization import propagate_state
@@ -43,8 +43,16 @@ class NgccSoecFlowsheetData(FlowsheetBlockData):
         self._add_tags()
 
     def _add_flowsheets(self):
-        self.ngcc = ngcc.NgccFlowsheet(dynamic=self.config.dynamic, time=self.time, time_units=self.config.time_units)
-        self.soec = soec.SoecFlowsheet(dynamic=self.config.dynamic, time=self.time, time_units=self.config.time_units)
+        self.ngcc = ngcc.NgccFlowsheet(
+            dynamic=self.config.dynamic,
+            time=self.time,
+            time_units=self.config.time_units,
+        )
+        self.soec = soec.SoecFlowsheet(
+            dynamic=self.config.dynamic,
+            time=self.time,
+            time_units=self.config.time_units,
+        )
 
     def _add_arcs(self):
         self.c01 = Arc(

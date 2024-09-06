@@ -22,8 +22,9 @@ from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from idaes.core.solvers import get_solver
-from idaes_examples.mod.diagnostics.gas_solid_contactors.properties.methane_iron_OC_reduction. \
-    solid_phase_thermo import SolidPhaseThermoParameterBlock
+from idaes_examples.mod.diagnostics.gas_solid_contactors.properties.methane_iron_OC_reduction.solid_phase_thermo import (
+    SolidPhaseThermoParameterBlock,
+)
 
 # Get default solver for testing
 solver = get_solver()
@@ -65,5 +66,4 @@ def test_setInputs_state_block(solid_prop):
 
 
 def test_initialize(solid_prop):
-    initialization_tester(
-            solid_prop)
+    initialization_tester(solid_prop)

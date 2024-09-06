@@ -30,13 +30,22 @@ def get_subsystem_at_time(model, time, t):
     t0 = time.first()
     t1 = time.next(t0)
     indices = ComponentMap([(time, t1)])
-    scalar_vars, dae_vars = flatten_dae_components(model, time, pyo.Var, indices=indices)
-    scalar_cons, dae_cons = flatten_dae_components(model, time, pyo.Constraint, indices=indices)
+    scalar_vars, dae_vars = flatten_dae_components(
+        model, time, pyo.Var, indices=indices
+    )
+    scalar_cons, dae_cons = flatten_dae_components(
+        model, time, pyo.Constraint, indices=indices
+    )
 
-    constraints = _remove_duplicates([
-        con[t] for con in dae_cons
-        if t in con and con[t].active and isinstance(con[t].expr, EqualityExpression)
-    ])
+    constraints = _remove_duplicates(
+        [
+            con[t]
+            for con in dae_cons
+            if t in con
+            and con[t].active
+            and isinstance(con[t].expr, EqualityExpression)
+        ]
+    )
     var_set = ComponentSet(_get_variables(constraints))
     variables = _remove_duplicates([var[t] for var in dae_vars if var[t] in var_set])
 

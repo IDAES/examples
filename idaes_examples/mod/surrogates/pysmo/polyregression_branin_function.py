@@ -22,7 +22,7 @@ def main():
     def branin_function(x1, x2):
         pi = 3.1417
         t1 = (x2 - (5.1 * x1 * x1 / (4 * pi * pi)) + (5 * x1 / pi) - 6) ** 2
-        t2 = (10 * (1 - 1/(8 * pi))*np.cos(x1))
+        t2 = 10 * (1 - 1 / (8 * pi)) * np.cos(x1)
         y = t1 + t2 + 10
         return y
 
@@ -37,15 +37,31 @@ def main():
     xy_data = np.concatenate((x, y.reshape(y.size, 1)), axis=1)
 
     # Train polynomial model with basis functions similar to ALAMO example: 4th order mononomials, exponents, and first and second degree interaction terms
-    train_obj = PolynomialRegression(xy_data, xy_data, maximum_polynomial_order=4, multinomials=1, training_split=0.8, number_of_crossvalidations=5, overwrite=True)
+    train_obj = PolynomialRegression(
+        xy_data,
+        xy_data,
+        maximum_polynomial_order=4,
+        multinomials=1,
+        training_split=0.8,
+        number_of_crossvalidations=5,
+        overwrite=True,
+    )
     p = train_obj.get_feature_vector()
-    train_obj.set_additional_terms([p[0] * p[0] * p[1],  p[0] * p[1] * p[1], p[0] * p[0] * p[1] * p[1], pyo.exp(p[0]), pyo.exp(p[1])])
+    train_obj.set_additional_terms(
+        [
+            p[0] * p[0] * p[1],
+            p[0] * p[1] * p[1],
+            p[0] * p[0] * p[1] * p[1],
+            pyo.exp(p[0]),
+            pyo.exp(p[1]),
+        ]
+    )
     train_obj.training()
 
     # Evaluate model performance as R2
     y_predict = train_obj.predict_output(xval)
     r2 = kriging.KrigingModel.r2_calculation(yval, y_predict)
-    print('\nThe R^2 value for the polynomial over the 100 off-design points is', r2)
+    print("\nThe R^2 value for the polynomial over the 100 off-design points is", r2)
 
     # Print Pyomo expression
     m = pyo.ConcreteModel()

@@ -16,13 +16,14 @@ Author: Chinedu Okoli
 """
 
 import pytest
-from pyomo.environ import (ConcreteModel, Var)
+from pyomo.environ import ConcreteModel, Var
 from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from idaes.core.solvers import get_solver
-from idaes_examples.mod.diagnostics.gas_solid_contactors.properties.methane_iron_OC_reduction. \
-    gas_phase_thermo import GasPhaseThermoParameterBlock
+from idaes_examples.mod.diagnostics.gas_solid_contactors.properties.methane_iron_OC_reduction.gas_phase_thermo import (
+    GasPhaseThermoParameterBlock,
+)
 
 # Get default solver for testing
 solver = get_solver()
@@ -66,5 +67,4 @@ def test_setInputs_state_block(gas_prop):
 
 
 def test_initialize(gas_prop):
-    initialization_tester(
-            gas_prop)
+    initialization_tester(gas_prop)

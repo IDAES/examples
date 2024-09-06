@@ -129,7 +129,7 @@ class _OrganicStateBlock(StateBlock):
 
     def fix_initialization_states(self):
         fix_state_vars(self)
-    
+
 
 @declare_process_block_class("OrgPhaseStateBlock", block_class=_OrganicStateBlock)
 class OrgPhaseStateBlockData(StateBlockData):

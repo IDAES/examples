@@ -17,13 +17,13 @@ Author: Brandon Paul
 from pyomo.environ import units as pyunits
 
 from idaes.models.properties.modular_properties.base.generic_reaction import (
-        ConcentrationForm)
-from idaes.models.properties.modular_properties.reactions.dh_rxn import \
-    constant_dh_rxn
-from idaes.models.properties.modular_properties.reactions.rate_forms import \
-    power_law_rate
-from idaes.models.properties.modular_properties.reactions.rate_constant import \
-    arrhenius
+    ConcentrationForm,
+)
+from idaes.models.properties.modular_properties.reactions.dh_rxn import constant_dh_rxn
+from idaes.models.properties.modular_properties.reactions.rate_forms import (
+    power_law_rate,
+)
+from idaes.models.properties.modular_properties.reactions.rate_constant import arrhenius
 
 # [1] Reaction properties and stoichiometric coefficients obtained from
 # Nieminen, H.; Laari, A.; Koiranen, T. CO2 Hydrogenation to Methanol
@@ -35,23 +35,30 @@ from idaes.models.properties.modular_properties.reactions.rate_constant import \
 
 
 config_dict = {
-    "base_units": {"time": pyunits.s,
-                   "length": pyunits.m,
-                   "mass": pyunits.kg,
-                   "amount": pyunits.mol,
-                   "temperature": pyunits.K},
+    "base_units": {
+        "time": pyunits.s,
+        "length": pyunits.m,
+        "mass": pyunits.kg,
+        "amount": pyunits.mol,
+        "temperature": pyunits.K,
+    },
     "rate_reactions": {
-        "R1": {"stoichiometry": {("Vap", "CO"): -1,
-                                 ("Vap", "H2"): -2,
-                                 ("Vap", "CH3OH"): 1},
-               "heat_of_reaction": constant_dh_rxn,
-               "concentration_form": ConcentrationForm.moleFraction,
-               "rate_constant": arrhenius,
-               "rate_form": power_law_rate,
-               "parameter_data": {
-                    "reaction_order": {("Vap", "CO"): 1,
-                                       ("Vap", "H2"): 2},
-                    "arrhenius_const": (3.77287e19, pyunits.mol / pyunits.m**3
-                                        / pyunits.s),
-                    "dh_rxn_ref": (-90640, pyunits.J/pyunits.mol),
-                    "energy_activation": (109.2e3, pyunits.J/pyunits.mol)}}}}
+        "R1": {
+            "stoichiometry": {
+                ("Vap", "CO"): -1,
+                ("Vap", "H2"): -2,
+                ("Vap", "CH3OH"): 1,
+            },
+            "heat_of_reaction": constant_dh_rxn,
+            "concentration_form": ConcentrationForm.moleFraction,
+            "rate_constant": arrhenius,
+            "rate_form": power_law_rate,
+            "parameter_data": {
+                "reaction_order": {("Vap", "CO"): 1, ("Vap", "H2"): 2},
+                "arrhenius_const": (3.77287e19, pyunits.mol / pyunits.m**3 / pyunits.s),
+                "dh_rxn_ref": (-90640, pyunits.J / pyunits.mol),
+                "energy_activation": (109.2e3, pyunits.J / pyunits.mol),
+            },
+        }
+    },
+}

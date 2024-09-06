@@ -68,37 +68,37 @@ class SteamTurbineFlowsheetData(FlowsheetBlockData):
             num_lp=11,  # full load ave P ratio about 0.7194 with outlet
             hp_disconnect=[7],  # disconnected for reheater
             ip_disconnect=[10],  # disconnected for HRSG LP steam mix
-            property_package_args={'has_phase_equilibrium':False}
+            property_package_args={"has_phase_equilibrium": False},
         )
         self.steam_turbine_lp_mix = helm.HelmMixer(
             doc="Mix LP steam from HRSG into turbine LP steam.",
             property_package=self.prop_water,
             momentum_mixing_type=helm.MomentumMixingType.none,
             inlet_list=["turbine", "hrsg"],
-            property_package_args={'has_phase_equilibrium':False}
+            property_package_args={"has_phase_equilibrium": False},
         )
         self.steam_turbine_lp_split = helm.HelmSplitter(
             doc="Split off carbon capture steam.",
             property_package=self.prop_water,
             outlet_list=["turbine", "reboiler", "soec"],
-            property_package_args={'has_phase_equilibrium':False}
+            property_package_args={"has_phase_equilibrium": False},
         )
         self.dummy_reheat = gum.Heater(
             doc="Dummy reheater, can be deactivated to couple with HRSG.",
             property_package=self.prop_water,
-            property_package_args={'has_phase_equilibrium':False}
+            property_package_args={"has_phase_equilibrium": False},
         )
         self.main_condenser = helm.HelmNtuCondenser(
             doc="Main steam turbine condenser.",
             shell={
                 "has_pressure_change": False,
                 "property_package": self.prop_water,
-                'has_phase_equilibrium':False
+                "has_phase_equilibrium": False,
             },
             tube={
                 "has_pressure_change": False,
                 "property_package": self.prop_water,
-                'has_phase_equilibrium':False
+                "has_phase_equilibrium": False,
             },
         )
         self.hotwell = helm.HelmMixer(
@@ -106,23 +106,24 @@ class SteamTurbineFlowsheetData(FlowsheetBlockData):
             momentum_mixing_type=helm.MomentumMixingType.none,
             inlet_list=["condensate", "makeup"],
             property_package=self.prop_water,
-            property_package_args={'has_phase_equilibrium':False}
+            property_package_args={"has_phase_equilibrium": False},
         )
         self.cond_pump = helm.HelmIsentropicCompressor(
-            doc="Hotwell condensate pump", property_package=self.prop_water,
-            property_package_args={'has_phase_equilibrium':False}
+            doc="Hotwell condensate pump",
+            property_package=self.prop_water,
+            property_package_args={"has_phase_equilibrium": False},
         )
         self.return_mix = helm.HelmMixer(
             doc="Mixer for steam streams returning to HRSG.",
             property_package=self.prop_water,
-            property_package_args={'has_phase_equilibrium':False},
+            property_package_args={"has_phase_equilibrium": False},
             momentum_mixing_type=helm.MomentumMixingType.none,
             inlet_list=["pump", "reboiler", "dryer", "reclaimer"],
         )
         self.reboiler = gum.Heater(
             doc="Carbon capture system reboiler",
             property_package=self.prop_water,
-            property_package_args={'has_phase_equilibrium':False}
+            property_package_args={"has_phase_equilibrium": False},
         )
 
     def _add_constraints(self):
@@ -133,7 +134,9 @@ class SteamTurbineFlowsheetData(FlowsheetBlockData):
                 1e-6 * b.turbine_state[t].pressure == 1e-6 * b.mixed_state[t].pressure
             )
 
-        self.dummy_reheat.temperature_out = pyo.Var(self.time, initialize=850, units=pyo.units.K)
+        self.dummy_reheat.temperature_out = pyo.Var(
+            self.time, initialize=850, units=pyo.units.K
+        )
 
         @self.dummy_reheat.Constraint(self.time)
         def temperature_eqn(b, t):
@@ -156,8 +159,12 @@ class SteamTurbineFlowsheetData(FlowsheetBlockData):
             return 1e-6 * b.pump_state[t].pressure == 1e-6 * b.mixed_state[t].pressure
 
         # A few more variables and constraints
-        self.hp_steam_temperature = pyo.Var(self.time, initialize=855, units=pyo.units.K)
-        self.hot_reheat_temperature = pyo.Var(self.time, initialize=855, units=pyo.units.K)
+        self.hp_steam_temperature = pyo.Var(
+            self.time, initialize=855, units=pyo.units.K
+        )
+        self.hot_reheat_temperature = pyo.Var(
+            self.time, initialize=855, units=pyo.units.K
+        )
 
         @self.Constraint(self.time)
         def main_steam_temperature_eqn(b, t):
@@ -179,7 +186,8 @@ class SteamTurbineFlowsheetData(FlowsheetBlockData):
         def reboiler_condense_eqn(b, t):
             return (
                 b.control_volume.properties_out[t].enth_mol
-                == b.control_volume.properties_out[t].enth_mol_sat_phase["Liq"] - 100*pyo.units.J/pyo.units.mol
+                == b.control_volume.properties_out[t].enth_mol_sat_phase["Liq"]
+                - 100 * pyo.units.J / pyo.units.mol
             )
 
     def _add_arcs(self):

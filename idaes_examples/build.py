@@ -1,6 +1,7 @@
 """
 Build the examples
 """
+
 import argparse
 import json
 import logging
@@ -272,6 +273,7 @@ def clean(srcdir=None, outputs=True, ids=False, all_files=False):
         results = find_notebooks(src_path, toc, _remove_ids)
         Commands.subheading(processing_report("removed ids", t0, results, _log))
 
+
 def _remove_files(nb_path: Path, **kwargs):
     changed = False
     if nb_path.exists():
@@ -318,12 +320,14 @@ def _remove_ids(nb_path: Path, **kwargs):
         _log.debug(f"Removed code cell id(s) from {nb_path}")
     return changed
 
+
 def remove_build(srcdir=None):
     nb_path = find_notebook_root(Path(srcdir)) / NB_ROOT
     build = nb_path / "_build"
     if build.exists():
         _log.info(f"remove build directory: {build}")
         shutil.rmtree(build)
+
 
 # ---------------
 # List skipped
@@ -408,6 +412,7 @@ def jupyterbook(srcdir=None, quiet=0, dev=False):
     finally:
         os.chdir(cwd)
     _copy_built_files(path)
+
 
 def _copy_built_files(dst: Path):
     src = dst / "_build" / "jupyter_execute"
@@ -529,8 +534,10 @@ def edit_header(
         src_path = find_notebook_root(Path(srcdir)) / NB_ROOT
         if path.parts[0] == "notebooks":
             path = Path("/".join(path.parts[1:]))
-            _log.warning(f"Relative notebook paths should start below 'notebooks' dir; "
-                         f"modified path: {path}")
+            _log.warning(
+                f"Relative notebook paths should start below 'notebooks' dir; "
+                f"modified path: {path}"
+            )
         full_path = src_path / path
         if not full_path.exists():
             _log.error(f"Path '{full_path}' ({src_path} + {path}) does not exist")
@@ -573,6 +580,7 @@ def edit_header(
         else:
             reason = "???"
         _log.warning(f"Skip non-notebook at '{path}': {reason}")
+
 
 ## -- utility functions for header manipulation --
 
@@ -758,7 +766,9 @@ class Commands:
                 "remove output cells", clean, srcdir=args.dir, ids=False, outputs=True
             )
         if result == 0 and not args.keep_build:
-            result = cls._run("remove notebook build dir", remove_build, srcdir=args.dir)
+            result = cls._run(
+                "remove notebook build dir", remove_build, srcdir=args.dir
+            )
 
         return result
 

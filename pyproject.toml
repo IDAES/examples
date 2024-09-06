@@ -83,7 +83,8 @@ docs = [
 dev = [
     "idaes-examples[testing,docs]",
     # For jupyter notebook testing
-    "black[jupyter] ~= 22.8.0",
+    # this MUST match the version used in the CI checks (.github/workflows/*.yml)
+    "black[jupyter] == 24.3.0",
     # For adding copyright headers (see addheader.yml and the readme)
     "addheader >= 0.3.0",
     "blessed ~= 1.20.0",

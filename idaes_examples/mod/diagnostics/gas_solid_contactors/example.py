@@ -103,7 +103,8 @@ def add_density_flowrate_constraint(model):
     @model.fs.MB.Constraint(model.fs.time, model.fs.MB.length_domain)
     def density_flowrate_constraint(mb, t, x):
         return (
-            mb.velocity_superficial_solid[t] * mb.bed_area
+            mb.velocity_superficial_solid[t]
+            * mb.bed_area
             * mb.solid_phase.properties[t, x].dens_mass_particle
             == mb.solid_phase.properties[t, x].flow_mass
         )
