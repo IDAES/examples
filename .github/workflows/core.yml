@@ -85,6 +85,9 @@ jobs:
         uses: ./.github/actions/install
         with:
           install-target: -r requirements-dev.txt
+      - name: Run pytest (repo root)
+        run: |
+          pytest -v .
       - name: Run pytest
         run: |
           pwd

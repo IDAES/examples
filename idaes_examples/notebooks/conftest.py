@@ -16,7 +16,8 @@ logging.basicConfig()
 
 
 def is_master():
-    worker = os.environ.get("PYTEST_XDIST_WORKER", "gw?")
+    worker = os.environ.get("PYTEST_XDIST_WORKER", "gw0")
+    print(f"Worker = {worker}")
     return worker == "gw0"
 
 
@@ -174,6 +175,6 @@ def pytest_collection_modifyitems(session, config, items: list):
 
 
 @pytest.hookimpl(trylast=True)
-def pytest_report_collectionfinish(config, start_path, startdir, items):
+def pytest_report_collectionfinish(config):
     print_hook(config, "pytest_report_collectionfinish")
     return NotebookPrep.report()
