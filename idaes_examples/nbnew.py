@@ -1,6 +1,7 @@
 """
 User interface for creating a new notebook
 """
+
 from enum import Enum
 from pathlib import Path
 import subprocess

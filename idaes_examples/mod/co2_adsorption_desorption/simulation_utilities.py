@@ -28,9 +28,7 @@ from pyomo.environ import value
 from pyomo.dae import ContinuousSet, Integral
 
 
-def heat_computation(
-    m, tj_ads, tj_des, adsorption_temperature, desorption_temperature
-):
+def heat_computation(m, tj_ads, tj_des, adsorption_temperature, desorption_temperature):
     """
     These functions calculate heat transfer behavior across the temporal and
     spatial domains for the adsorption, desorption, preheating, and precooling
@@ -672,9 +670,9 @@ def _var_dict(m, adsorption_temperature, desorption_temperature):
     var_dict["Cycle time [h]"] = m.cycle_time
 
     var_dict["CO2 input per cycle [kg/bed/cycle]"] = m.fs_ads.FB.co2_input_per_cycle
-    var_dict[
-        "CO2 released per cycle [kg/bed/cycle]"
-    ] = m.fs_ads.FB.co2_released_per_cycle
+    var_dict["CO2 released per cycle [kg/bed/cycle]"] = (
+        m.fs_ads.FB.co2_released_per_cycle
+    )
     var_dict["CO2 adsorbed per cycle [kg/bed/cycle]"] = m.co2_adsorbed_per_cycle
     var_dict["CO2 desorbed per cycle [kg/bed/cycle]"] = m.co2_desorbed_per_cycle
 
@@ -687,21 +685,21 @@ def _var_dict(m, adsorption_temperature, desorption_temperature):
     var_dict["CO2 adsorbed per cycle CO2 balance [kg/bed/cycle]"] = value(
         m.fs_ads.FB.co2_input_per_cycle - m.fs_ads.FB.co2_released_per_cycle
     )
-    var_dict[
-        "CO2 adsorbed per cycle carbamate balance [kg/bed/cycle]"
-    ] = m.co2_adsorbed_per_cycle
+    var_dict["CO2 adsorbed per cycle carbamate balance [kg/bed/cycle]"] = (
+        m.co2_adsorbed_per_cycle
+    )
     var_dict["CO2 desorbed per cycle CO2 balance [kg/bed/cycle]"] = 0.044 * value(
         m.fs_des.FB.co2_gas_mol_desorbed_per_cycle
     )
-    var_dict[
-        "CO2 desorbed per cycle carbamate balance [kg/bed/cycle]"
-    ] = m.co2_desorbed_per_cycle
+    var_dict["CO2 desorbed per cycle carbamate balance [kg/bed/cycle]"] = (
+        m.co2_desorbed_per_cycle
+    )
 
     var_dict["Cycles per year"] = m.cycles_per_year
 
-    var_dict[
-        "Total CO2 captured per year per bed[tonne/year/bed]"
-    ] = m.co2_captured_per_year
+    var_dict["Total CO2 captured per year per bed[tonne/year/bed]"] = (
+        m.co2_captured_per_year
+    )
 
     var_dict["Amount of CO2 to atmosphere [kg/s]"] = m.average_co2_released_per_cycle
 

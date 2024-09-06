@@ -1,6 +1,7 @@
 """
 Graphical examples browser
 """
+
 # stdlib
 from importlib import resources
 

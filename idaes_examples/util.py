@@ -1,6 +1,7 @@
 """
 Common variables and methods for tests and scripts.
 """
+
 # stdlib
 import datetime
 from enum import Enum

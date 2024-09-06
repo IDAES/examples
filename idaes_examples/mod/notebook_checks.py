@@ -25,12 +25,14 @@ except Exception as err:
 idaes_import_check = True
 try:
     from idaes.core import *
-    from idaes.models.unit_models import (PressureChanger,
-                                                  CSTR,
-                                                  Flash,
-                                                  Heater,
-                                                  Mixer,
-                                                  Separator)
+    from idaes.models.unit_models import (
+        PressureChanger,
+        CSTR,
+        Flash,
+        Heater,
+        Mixer,
+        Separator,
+    )
     from idaes.models.unit_models.pressure_changer import ThermodynamicAssumption
 
     from idaes.core.util.model_statistics import degrees_of_freedom
@@ -54,7 +56,7 @@ def run_checks():
         print("IDAES Import Checks:        FAILED")
 
     # Test available solvers
-    if SolverFactory('ipopt').available():
+    if SolverFactory("ipopt").available():
         print("Solver Availability Check:  Passed")
         check_count += 1
     else:
@@ -73,11 +75,13 @@ def run_checks():
     m.fs.c = Constraint(m.fs.time, rule=cons_rule)
 
     # Create a solver
-    solver = SolverFactory('ipopt')
+    solver = SolverFactory("ipopt")
     results = solver.solve(m.fs)
 
-    if (results.solver.termination_condition == TerminationCondition.optimal
-            and results.solver.status == SolverStatus.ok):
+    if (
+        results.solver.termination_condition == TerminationCondition.optimal
+        and results.solver.status == SolverStatus.ok
+    ):
         print("Simple Model Check:         Passed")
         check_count += 1
     else:

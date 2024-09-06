@@ -31,15 +31,27 @@ from mpl_toolkits import mplot3d
 def main():
     # Load the necessary data
     current_path = os.path.dirname(os.path.realpath(__file__))
-    data = pd.read_csv(os.path.join(current_path, 'data_files', 'cardinal_sine.txt'), sep='\s+', header=None, index_col=None)
+    data = pd.read_csv(
+        os.path.join(current_path, "data_files", "cardinal_sine.txt"),
+        sep="\s+",
+        header=None,
+        index_col=None,
+    )
 
     # Fit a multiquadric RBF model to 100 points generated from the cardinal sine function
     data_scaled = data.values
-    f1 = RadialBasisFunctions(data_scaled, basis_function='mq', solution_method='pyomo', regularization=True)
+    f1 = RadialBasisFunctions(
+        data_scaled, basis_function="mq", solution_method="pyomo", regularization=True
+    )
     f1.training()
 
     # Predict values for other 2500 off-design in loaded data, evaluate R^2
-    data2 = pd.read_csv(os.path.join(current_path, 'data_files', 'cardinal_sine_2500.txt'), sep='\s+', header=None, index_col=None)
+    data2 = pd.read_csv(
+        os.path.join(current_path, "data_files", "cardinal_sine_2500.txt"),
+        sep="\s+",
+        header=None,
+        index_col=None,
+    )
     data2_scaled = data2.values
     y_predicted = f1.predict_output(data2_scaled[:, :-1])
     r2_pyomo = f1.r2_calculation(data2_scaled[:, -1], y_predicted)
@@ -50,11 +62,11 @@ def main():
     x2 = np.linspace(-1, 1, 50)
     X1, X2 = np.meshgrid(x1, x2)
     Y = difference_vector.reshape(50, 50)
-    ax = plt.axes(projection='3d')
-    ax.plot_surface(X2, X1, Y, cmap='viridis', edgecolor='none')
-    ax.set_xlabel('x1')
-    ax.set_ylabel('x2')
-    ax.set_zlabel('Error')
+    ax = plt.axes(projection="3d")
+    ax.plot_surface(X2, X1, Y, cmap="viridis", edgecolor="none")
+    ax.set_xlabel("x1")
+    ax.set_ylabel("x2")
+    ax.set_zlabel("Error")
     plt.show()
 
 

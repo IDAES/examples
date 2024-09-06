@@ -3,6 +3,7 @@ Handle pre-processing and filtering of Jupyter Notebooks for pytest.
 
 Note that this replaces some functionality that in theory could be in pytest.ini
 """
+
 from idaes_examples import build
 from pathlib import Path
 import logging

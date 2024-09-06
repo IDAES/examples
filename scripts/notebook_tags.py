@@ -1,6 +1,7 @@
 """
 Control notebook level tags to skip (when preprocessing notebooks).
 """
+
 import argparse
 from enum import Enum
 import json

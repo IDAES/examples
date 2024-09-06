@@ -1,6 +1,7 @@
 """
 Fake 'test' that provides information
 """
+
 import pytest
 from warnings import warn
 

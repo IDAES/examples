@@ -27,19 +27,29 @@ Valid Temperature Range = 306.25 K to 1000 K
 import logging
 
 # Import Pyomo libraries
-from pyomo.environ import Constraint, Param, \
-      Reals, Set, value, Var, NonNegativeReals, units
+from pyomo.environ import (
+    Constraint,
+    Param,
+    Reals,
+    Set,
+    value,
+    Var,
+    NonNegativeReals,
+    units,
+)
 from pyomo.opt import SolverFactory, TerminationCondition
 
 # Import IDAES cores
-from idaes.core import (declare_process_block_class,
-                        PhysicalParameterBlock,
-                        StateBlockData,
-                        StateBlock,
-                        MaterialBalanceType,
-                        EnergyBalanceType,
-                        LiquidPhase,
-                        Component)
+from idaes.core import (
+    declare_process_block_class,
+    PhysicalParameterBlock,
+    StateBlockData,
+    StateBlock,
+    MaterialBalanceType,
+    EnergyBalanceType,
+    LiquidPhase,
+    Component,
+)
 from idaes.core.util.initialization import solve_indexed_blocks
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.misc import extract_data
@@ -67,13 +77,14 @@ class PhysicalParameterData(PhysicalParameterBlock):
     supercritical CO2.
 
     """
+
     def build(self):
-        '''
+        """
         Callable method for Block construction.
-        '''
+        """
         super(PhysicalParameterData, self).build()
 
-        self._state_block_class  = SCO2StateBlock
+        self._state_block_class = SCO2StateBlock
 
         # List of valid phases in property package
         self.Liq = LiquidPhase()
@@ -83,29 +94,43 @@ class PhysicalParameterData(PhysicalParameterBlock):
 
     @classmethod
     def define_metadata(cls, obj):
-        obj.add_properties({
-                'flow_mol': {'method': None, 'units': 'kmol/s'},
-                'pressure': {'method': None, 'units': 'MPa'},
-                'temperature': {'method': None, 'units': 'K'},
-                'enth_mol': {'method': None, 'units': 'kJ/kmol'},
-                'entr_mol': {'method': None, 'units': 'kJ/kmol/K'}})
+        obj.add_properties(
+            {
+                "flow_mol": {"method": None, "units": "kmol/s"},
+                "pressure": {"method": None, "units": "MPa"},
+                "temperature": {"method": None, "units": "K"},
+                "enth_mol": {"method": None, "units": "kJ/kmol"},
+                "entr_mol": {"method": None, "units": "kJ/kmol/K"},
+            }
+        )
 
-        obj.add_default_units({'time': units.s,
-                               'length': units.m,
-                               'mass': units.kg,
-                               'amount': units.mol,
-                               'temperature': units.K})
+        obj.add_default_units(
+            {
+                "time": units.s,
+                "length": units.m,
+                "mass": units.kg,
+                "amount": units.mol,
+                "temperature": units.K,
+            }
+        )
+
 
 class _StateBlock(StateBlock):
     """
     This Class contains methods which should be applied to Property Blocks as a
     whole, rather than individual elements of indexed Property Blocks.
     """
-    def initialize(blk, state_args=None, hold_state=False, outlvl=1,
-                   state_vars_fixed=False, solver='ipopt',
-                   optarg={'tol': 1e-8}):
 
-        '''
+    def initialize(
+        blk,
+        state_args=None,
+        hold_state=False,
+        outlvl=1,
+        state_vars_fixed=False,
+        solver="ipopt",
+        optarg={"tol": 1e-8},
+    ):
+        """
         Initialisation routine for property package.
 
         Keyword Arguments:
@@ -145,7 +170,7 @@ class _StateBlock(StateBlock):
         Returns:
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
-        '''
+        """
         if state_vars_fixed is False:
             # Fix state variables if not already fixed
             Fcflag = {}
@@ -181,16 +206,17 @@ class _StateBlock(StateBlock):
                         blk[k].temperature.fix(state_args["temperature"])
 
             # If input block, return flags, else release state
-            flags = {"Fcflag": Fcflag, "Pflag": Pflag,
-                     "Tflag": Tflag}
+            flags = {"Fcflag": Fcflag, "Pflag": Pflag, "Tflag": Tflag}
 
         else:
             # Check when the state vars are fixed already result in dof 0
             for k in blk.keys():
                 if degrees_of_freedom(blk[k]) != 0:
-                    raise Exception("State vars fixed but degrees of freedom "
-                                    "for state block is not zero during "
-                                    "initialization.")
+                    raise Exception(
+                        "State vars fixed but degrees of freedom "
+                        "for state block is not zero during "
+                        "initialization."
+                    )
 
         if state_vars_fixed is False:
             if hold_state is True:
@@ -199,7 +225,7 @@ class _StateBlock(StateBlock):
                 blk.release_state(flags)
 
     def release_state(blk, flags, outlvl=0):
-        '''
+        """
         Method to release state variables fixed during initialisation.
 
         Keyword Arguments:
@@ -208,26 +234,25 @@ class _StateBlock(StateBlock):
                     unfixed. This dict is returned by initialize if
                     hold_state=True.
             outlvl : sets output level of of logging
-        '''
+        """
         if flags is None:
             return
 
         # Unfix state variables
         for k in blk.keys():
-            if flags['Fcflag'][k] is False:
+            if flags["Fcflag"][k] is False:
                 blk[k].flow_mol.unfix()
-            if flags['Pflag'][k] is False:
+            if flags["Pflag"][k] is False:
                 blk[k].pressure.unfix()
-            if flags['Tflag'][k] is False:
+            if flags["Tflag"][k] is False:
                 blk[k].temperature.unfix()
 
         if outlvl > 0:
             if outlvl > 0:
-                _log.info('{} State Released.'.format(blk.name))
+                _log.info("{} State Released.".format(blk.name))
 
 
-@declare_process_block_class("SCO2StateBlock",
-                             block_class=_StateBlock)
+@declare_process_block_class("SCO2StateBlock", block_class=_StateBlock)
 class SCO2StateBlockData(StateBlockData):
     """
     An example property package for ideal gas properties with Gibbs energy
@@ -240,36 +265,48 @@ class SCO2StateBlockData(StateBlockData):
         super(SCO2StateBlockData, self).build()
         self._make_state_vars()
 
-    def _make_state_vars(self):        
-        self.flow_mol = Var(domain=NonNegativeReals,
-                            initialize=1.0,
-                            units=units.kmol/units.s,
-                            doc='Total molar flowrate [kmol/s]')
-        self.pressure = Var(domain=NonNegativeReals,
-                            initialize=8,
-                            bounds=(7.38, 40),
-                            units=units.MPa,
-                            doc='State pressure [MPa]')
+    def _make_state_vars(self):
+        self.flow_mol = Var(
+            domain=NonNegativeReals,
+            initialize=1.0,
+            units=units.kmol / units.s,
+            doc="Total molar flowrate [kmol/s]",
+        )
+        self.pressure = Var(
+            domain=NonNegativeReals,
+            initialize=8,
+            bounds=(7.38, 40),
+            units=units.MPa,
+            doc="State pressure [MPa]",
+        )
 
-        self.temperature = Var(domain=NonNegativeReals,
-                               initialize=350,
-                               bounds=(304.2, 760+273.15),
-                               units=units.K,
-                               doc='State temperature [K]')
+        self.temperature = Var(
+            domain=NonNegativeReals,
+            initialize=350,
+            bounds=(304.2, 760 + 273.15),
+            units=units.K,
+            doc="State temperature [K]",
+        )
 
-        self.entr_mol = Var(domain=Reals,
-                            initialize=10,
-                            units=units.kJ/units.kmol/units.K,
-                            doc='Entropy [KJ/kmol/K]')
-        
-        self.enth_mol = Var(domain=Reals,
-                            initialize=1,
-                            units=units.kJ/units.kmol,
-                            doc='Enthalpy [KJ/ kmol]')
- 
-        inputs=[self.pressure,self.temperature]
-        outputs=[self.enth_mol,self.entr_mol]
-        self.keras_surrogate = KerasSurrogate.load_from_folder(keras_folder_name="sco2_keras_surr", keras_model_name="sco2_keras_model")
+        self.entr_mol = Var(
+            domain=Reals,
+            initialize=10,
+            units=units.kJ / units.kmol / units.K,
+            doc="Entropy [KJ/kmol/K]",
+        )
+
+        self.enth_mol = Var(
+            domain=Reals,
+            initialize=1,
+            units=units.kJ / units.kmol,
+            doc="Enthalpy [KJ/ kmol]",
+        )
+
+        inputs = [self.pressure, self.temperature]
+        outputs = [self.enth_mol, self.entr_mol]
+        self.keras_surrogate = KerasSurrogate.load_from_folder(
+            keras_folder_name="sco2_keras_surr", keras_model_name="sco2_keras_model"
+        )
         self.surrogate_enth = SurrogateBlock()
         self.surrogate_enth.build_model(
             self.keras_surrogate,
@@ -277,12 +314,12 @@ class SCO2StateBlockData(StateBlockData):
             input_vars=inputs,
             output_vars=outputs,
         )
-        
+
     def get_material_flow_terms(self, p, j):
         return self.flow_mol
 
     def get_enthalpy_flow_terms(self, p):
-        return self.flow_mol*self.enth_mol
+        return self.flow_mol * self.enth_mol
 
     def default_material_balance_type(self):
         return MaterialBalanceType.componentTotal
@@ -291,9 +328,11 @@ class SCO2StateBlockData(StateBlockData):
         return EnergyBalanceType.enthalpyTotal
 
     def define_state_vars(self):
-        return {"flow_mol": self.flow_mol,
-                "temperature": self.temperature,
-                "pressure": self.pressure}
+        return {
+            "flow_mol": self.flow_mol,
+            "temperature": self.temperature,
+            "pressure": self.pressure,
+        }
 
     def model_check(blk):
         """
@@ -301,14 +340,12 @@ class SCO2StateBlockData(StateBlockData):
         """
         # Check temperature bounds
         if value(blk.temperature) < blk.temperature.lb:
-            _log.error('{} Temperature set below lower bound.'
-                       .format(blk.name))
+            _log.error("{} Temperature set below lower bound.".format(blk.name))
         if value(blk.temperature) > blk.temperature.ub:
-            _log.error('{} Temperature set above upper bound.'
-                       .format(blk.name))
+            _log.error("{} Temperature set above upper bound.".format(blk.name))
 
         # Check pressure bounds
         if value(blk.pressure) < blk.pressure.lb:
-            _log.error('{} Pressure set below lower bound.'.format(blk.name))
+            _log.error("{} Pressure set below lower bound.".format(blk.name))
         if value(blk.pressure) > blk.pressure.ub:
-            _log.error('{} Pressure set above upper bound.'.format(blk.name))
+            _log.error("{} Pressure set above upper bound.".format(blk.name))

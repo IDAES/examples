@@ -33,8 +33,8 @@ from idaes_examples.mod.diagnostics.gas_solid_contactors.properties.methane_iron
 
 
 def set_default_design_variables(m):
-    m.fs.MB.bed_diameter.fix(6.5) # m
-    m.fs.MB.bed_height.fix(5) # m
+    m.fs.MB.bed_diameter.fix(6.5)  # m
+    m.fs.MB.bed_height.fix(5)  # m
 
 
 def set_default_inlet_conditions(m, fix_porosity=False):
@@ -85,7 +85,7 @@ def add_piecewise_constant_constraints(
     sample_time=60.0,
 ):
     if sample_points is None:
-        sample_points = [i*sample_time for i in range(n_samples + 1)]
+        sample_points = [i * sample_time for i in range(n_samples + 1)]
     inputs = [
         m.fs.MB.gas_inlet.flow_mol,
         m.fs.MB.solid_inlet.flow_mass,
@@ -105,47 +105,58 @@ def get_state_variable_names(space):
     setpoint_states = []
     setpoint_states.extend(
         "fs.MB.gas_phase.properties[*,%s].flow_mol" % x
-        for x in space if x != space.first()
+        for x in space
+        if x != space.first()
     )
     setpoint_states.extend(
         "fs.MB.gas_phase.properties[*,%s].temperature" % x
-        for x in space if x != space.first()
+        for x in space
+        if x != space.first()
     )
     setpoint_states.extend(
         "fs.MB.gas_phase.properties[*,%s].pressure" % x
-        for x in space if x != space.first()
+        for x in space
+        if x != space.first()
     )
     setpoint_states.extend(
         "fs.MB.gas_phase.properties[*,%s].mole_frac_comp[CH4]" % x
-        for x in space if x != space.first()
+        for x in space
+        if x != space.first()
     )
     setpoint_states.extend(
         "fs.MB.gas_phase.properties[*,%s].mole_frac_comp[H2O]" % x
-        for x in space if x != space.first()
+        for x in space
+        if x != space.first()
     )
     setpoint_states.extend(
         "fs.MB.gas_phase.properties[*,%s].mole_frac_comp[CO2]" % x
-        for x in space if x != space.first()
+        for x in space
+        if x != space.first()
     )
     setpoint_states.extend(
         "fs.MB.solid_phase.properties[*,%s].flow_mass" % x
-        for x in space if x != space.last()
+        for x in space
+        if x != space.last()
     )
     setpoint_states.extend(
         "fs.MB.solid_phase.properties[*,%s].temperature" % x
-        for x in space if x != space.last()
+        for x in space
+        if x != space.last()
     )
     setpoint_states.extend(
         "fs.MB.solid_phase.properties[*,%s].mass_frac_comp[Fe2O3]" % x
-        for x in space if x != space.last()
+        for x in space
+        if x != space.last()
     )
     setpoint_states.extend(
         "fs.MB.solid_phase.properties[*,%s].mass_frac_comp[Fe3O4]" % x
-        for x in space if x != space.last()
+        for x in space
+        if x != space.last()
     )
     setpoint_states.extend(
         "fs.MB.solid_phase.properties[*,%s].mass_frac_comp[Al2O3]" % x
-        for x in space if x != space.last()
+        for x in space
+        if x != space.last()
     )
     return setpoint_states
 
@@ -194,7 +205,8 @@ def add_objective(
         expr=sum(
             m.tracking_cost[i, t]
             for i in m.tracking_var_set
-            for t in m.fs.time if t != m.fs.time.first()
+            for t in m.fs.time
+            if t != m.fs.time.first()
         )
     )
 

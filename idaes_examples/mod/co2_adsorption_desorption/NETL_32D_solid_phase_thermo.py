@@ -214,13 +214,14 @@ class PhysicalParameterData(PhysicalParameterBlock):
                 "enth_mass": {"method": "_enth_mass", "units": "J/kg"},
             }
         )
-        
+
         obj.define_custom_properties(
             {
-                "dens_mass_particle": {"method": None,
-                                       "units": pyunits.dimensionless},
-                "mass_frac_comp_max": {"method": "_mass_frac_comp_max",
-                                       "units": pyunits.dimensionless},
+                "dens_mass_particle": {"method": None, "units": pyunits.dimensionless},
+                "mass_frac_comp_max": {
+                    "method": "_mass_frac_comp_max",
+                    "units": pyunits.dimensionless,
+                },
             }
         )
 

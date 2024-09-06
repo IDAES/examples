@@ -26,7 +26,10 @@ from idaes.models.properties.modular_properties.base.generic_property import (
     GenericStateBlockData,
 )
 import idaes.core.util.scaling as iscale
-from idaes.models_extra.power_generation.properties.natural_gas_PR import get_prop, EosType
+from idaes.models_extra.power_generation.properties.natural_gas_PR import (
+    get_prop,
+    EosType,
+)
 import idaes.models_extra.power_generation.unit_models.soc_submodels as soc
 import idaes.models.unit_models as gum
 import idaes.models_extra.power_generation.unit_models.helm as hum
@@ -106,67 +109,111 @@ class SoecFlowsheetData(FlowsheetBlockData):
         self.h2_pure_prop_params.set_default_scaling("mole_frac_phase_comp", 1)
 
     def _define_cell_params(self):
-        self.soec_module.number_cells.fix(1e6)#1.8*4.4e5)
+        self.soec_module.number_cells.fix(1e6)  # 1.8*4.4e5)
 
         self.soec_module.solid_oxide_cell.fuel_channel.length_x.fix(0.002)
         self.soec_module.solid_oxide_cell.length_y.fix(0.2345)
         self.soec_module.solid_oxide_cell.length_z.fix(0.2345)
-        self.soec_module.solid_oxide_cell.fuel_channel.heat_transfer_coefficient.fix(100)
+        self.soec_module.solid_oxide_cell.fuel_channel.heat_transfer_coefficient.fix(
+            100
+        )
 
         self.soec_module.solid_oxide_cell.oxygen_channel.length_x.fix(0.002)
-        self.soec_module.solid_oxide_cell.oxygen_channel.heat_transfer_coefficient.fix(100)
+        self.soec_module.solid_oxide_cell.oxygen_channel.heat_transfer_coefficient.fix(
+            100
+        )
 
         self.soec_module.solid_oxide_cell.fuel_electrode.length_x.fix(1e-3)
         self.soec_module.solid_oxide_cell.fuel_electrode.porosity.fix(0.326)
         self.soec_module.solid_oxide_cell.fuel_electrode.tortuosity.fix(3)  # Revisit
         self.soec_module.solid_oxide_cell.fuel_electrode.solid_heat_capacity.fix(595)
         self.soec_module.solid_oxide_cell.fuel_electrode.solid_density.fix(7740.0)
-        self.soec_module.solid_oxide_cell.fuel_electrode.solid_thermal_conductivity.fix(6.23)
+        self.soec_module.solid_oxide_cell.fuel_electrode.solid_thermal_conductivity.fix(
+            6.23
+        )
         self.soec_module.solid_oxide_cell.fuel_electrode.resistivity_log_preexponential_factor.fix(
             pyo.log(2.5e-5)
         )
-        self.soec_module.solid_oxide_cell.fuel_electrode.resistivity_thermal_exponent_dividend.fix(0)
+        self.soec_module.solid_oxide_cell.fuel_electrode.resistivity_thermal_exponent_dividend.fix(
+            0
+        )
 
         self.soec_module.solid_oxide_cell.oxygen_electrode.length_x.fix(40e-6)
         self.soec_module.solid_oxide_cell.oxygen_electrode.porosity.fix(0.30717)
-        self.soec_module.solid_oxide_cell.oxygen_electrode.tortuosity.fix(3.0)  # Revisit
+        self.soec_module.solid_oxide_cell.oxygen_electrode.tortuosity.fix(
+            3.0
+        )  # Revisit
         # Heat capacity and heat transfer coefficients of oxygen electrode aren't well known but probably don't matter
         # because the electrode is extremely thin
-        self.soec_module.solid_oxide_cell.oxygen_electrode.solid_heat_capacity.fix(142.3)
+        self.soec_module.solid_oxide_cell.oxygen_electrode.solid_heat_capacity.fix(
+            142.3
+        )
         self.soec_module.solid_oxide_cell.oxygen_electrode.solid_density.fix(5300)
-        self.soec_module.solid_oxide_cell.oxygen_electrode.solid_thermal_conductivity.fix(2.0)
+        self.soec_module.solid_oxide_cell.oxygen_electrode.solid_thermal_conductivity.fix(
+            2.0
+        )
         # Also unknown but probably insignificant
         self.soec_module.solid_oxide_cell.oxygen_electrode.resistivity_log_preexponential_factor.fix(
             pyo.log(7.8125e-05)
         )
-        self.soec_module.solid_oxide_cell.oxygen_electrode.resistivity_thermal_exponent_dividend.fix(0)
+        self.soec_module.solid_oxide_cell.oxygen_electrode.resistivity_thermal_exponent_dividend.fix(
+            0
+        )
 
         self.soec_module.solid_oxide_cell.electrolyte.length_x.fix(10.5e-6)
         self.soec_module.solid_oxide_cell.electrolyte.heat_capacity.fix(400)
         self.soec_module.solid_oxide_cell.electrolyte.density.fix(6000)
         self.soec_module.solid_oxide_cell.electrolyte.thermal_conductivity.fix(2.17)
         # Lumping all stack ohmic resistance into electrolyte because isolating it at contacts is hard
-        self.soec_module.solid_oxide_cell.electrolyte.resistivity_log_preexponential_factor.fix(-9.001)
-        self.soec_module.solid_oxide_cell.electrolyte.resistivity_thermal_exponent_dividend.fix(8988.134)
+        self.soec_module.solid_oxide_cell.electrolyte.resistivity_log_preexponential_factor.fix(
+            -9.001
+        )
+        self.soec_module.solid_oxide_cell.electrolyte.resistivity_thermal_exponent_dividend.fix(
+            8988.134
+        )
 
         self.soec_module.solid_oxide_cell.fuel_triple_phase_boundary.exchange_current_log_preexponential_factor.fix(
             22.5
         )
-        self.soec_module.solid_oxide_cell.fuel_triple_phase_boundary.exchange_current_activation_energy.fix(110.802e3)
-        self.soec_module.solid_oxide_cell.fuel_triple_phase_boundary.activation_potential_alpha1.fix(0.647816)
-        self.soec_module.solid_oxide_cell.fuel_triple_phase_boundary.activation_potential_alpha2.fix(0.352184)
+        self.soec_module.solid_oxide_cell.fuel_triple_phase_boundary.exchange_current_activation_energy.fix(
+            110.802e3
+        )
+        self.soec_module.solid_oxide_cell.fuel_triple_phase_boundary.activation_potential_alpha1.fix(
+            0.647816
+        )
+        self.soec_module.solid_oxide_cell.fuel_triple_phase_boundary.activation_potential_alpha2.fix(
+            0.352184
+        )
 
-        self.soec_module.solid_oxide_cell.fuel_triple_phase_boundary.exchange_current_exponent_comp["H2"].fix(0.5)
-        self.soec_module.solid_oxide_cell.fuel_triple_phase_boundary.exchange_current_exponent_comp["H2O"].fix(0.5)
+        self.soec_module.solid_oxide_cell.fuel_triple_phase_boundary.exchange_current_exponent_comp[
+            "H2"
+        ].fix(
+            0.5
+        )
+        self.soec_module.solid_oxide_cell.fuel_triple_phase_boundary.exchange_current_exponent_comp[
+            "H2O"
+        ].fix(
+            0.5
+        )
 
         self.soec_module.solid_oxide_cell.oxygen_triple_phase_boundary.exchange_current_log_preexponential_factor.fix(
             25.5
         )
-        self.soec_module.solid_oxide_cell.oxygen_triple_phase_boundary.exchange_current_activation_energy.fix(112.066e3)
-        self.soec_module.solid_oxide_cell.oxygen_triple_phase_boundary.activation_potential_alpha1.fix(0.503)
-        self.soec_module.solid_oxide_cell.oxygen_triple_phase_boundary.activation_potential_alpha2.fix(0.497)
+        self.soec_module.solid_oxide_cell.oxygen_triple_phase_boundary.exchange_current_activation_energy.fix(
+            112.066e3
+        )
+        self.soec_module.solid_oxide_cell.oxygen_triple_phase_boundary.activation_potential_alpha1.fix(
+            0.503
+        )
+        self.soec_module.solid_oxide_cell.oxygen_triple_phase_boundary.activation_potential_alpha2.fix(
+            0.497
+        )
 
-        self.soec_module.solid_oxide_cell.oxygen_triple_phase_boundary.exchange_current_exponent_comp["O2"].fix(0.25)
+        self.soec_module.solid_oxide_cell.oxygen_triple_phase_boundary.exchange_current_exponent_comp[
+            "O2"
+        ].fix(
+            0.25
+        )
 
     def _add_units(self):
         zfaces = np.linspace(0, 1, 11).tolist()
@@ -207,7 +254,12 @@ class SoecFlowsheetData(FlowsheetBlockData):
                 "inert_fuel_species_triple_phase_boundary": [],
                 "oxygen_component_list": oxygen_comps,
                 "oxygen_triple_phase_boundary_stoich_dict": oxygen_stoich_dict,
-                "inert_oxygen_species_triple_phase_boundary": ["N2", "Ar", "CO2", "H2O"],
+                "inert_oxygen_species_triple_phase_boundary": [
+                    "N2",
+                    "Ar",
+                    "CO2",
+                    "H2O",
+                ],
                 "include_temperature_x_thermo": True,
                 "include_contact_resistance": False,
             },
@@ -273,12 +325,8 @@ class SoecFlowsheetData(FlowsheetBlockData):
             outlet_property_package=self.h2_side_prop_params,
             outlet_state_defined=False,
         )
-        self.feed_heater = gum.Heater(
-            property_package=self.h2_side_prop_params
-        )
-        self.sweep_heater = gum.Heater(
-            property_package=self.o2_side_prop_params
-        )
+        self.feed_heater = gum.Heater(property_package=self.h2_side_prop_params)
+        self.sweep_heater = gum.Heater(property_package=self.o2_side_prop_params)
         self.water_pump = hum.HelmIsentropicCompressor(
             property_package=self.steam_prop_params
         )
@@ -298,6 +346,7 @@ class SoecFlowsheetData(FlowsheetBlockData):
             shell={"property_package": self.o2_side_prop_params},
             tube={"property_package": self.steam_prop_params},
         )
+
         # Magic dryer, just magically drop water out of a port.
         @self.Expression(self.time, {"H2"})
         def waterless_h2_mole_frac_expr(b, t, i):
@@ -318,24 +367,14 @@ class SoecFlowsheetData(FlowsheetBlockData):
                 "mole_frac_comp": b.waterless_h2_mole_frac_expr,
             }
         )
-        self.h2_precooler = gum.Heater(
-            property_package=self.h2_pure_prop_params
-        )
-        self.cmp01 = gum.Compressor(
-            property_package=self.h2_pure_prop_params
-        )
+        self.h2_precooler = gum.Heater(property_package=self.h2_pure_prop_params)
+        self.cmp01 = gum.Compressor(property_package=self.h2_pure_prop_params)
         self.ic01 = gum.Heater(property_package=self.h2_pure_prop_params)
-        self.cmp02 = gum.Compressor(
-            property_package=self.h2_pure_prop_params
-        )
+        self.cmp02 = gum.Compressor(property_package=self.h2_pure_prop_params)
         self.ic02 = gum.Heater(property_package=self.h2_pure_prop_params)
-        self.cmp03 = gum.Compressor(
-            property_package=self.h2_pure_prop_params
-        )
+        self.cmp03 = gum.Compressor(property_package=self.h2_pure_prop_params)
         self.ic03 = gum.Heater(property_package=self.h2_pure_prop_params)
-        self.cmp04 = gum.Compressor(
-            property_package=self.h2_pure_prop_params
-        )
+        self.cmp04 = gum.Compressor(property_package=self.h2_pure_prop_params)
         self.makeup_mix = hum.HelmMixer(
             dynamic=False,
             property_package=self.steam_prop_params,
@@ -559,10 +598,16 @@ class SoecFlowsheetData(FlowsheetBlockData):
         def soec_single_pass_water_conversion_eqn(b, t):
             return b.soec_single_pass_water_conversion[t] == (
                 (
-                    b.soec_module.solid_oxide_cell.fuel_channel.flow_mol_comp_outlet[t, "H2"]
-                    - b.soec_module.solid_oxide_cell.fuel_channel.flow_mol_comp_inlet[t, "H2"]
+                    b.soec_module.solid_oxide_cell.fuel_channel.flow_mol_comp_outlet[
+                        t, "H2"
+                    ]
+                    - b.soec_module.solid_oxide_cell.fuel_channel.flow_mol_comp_inlet[
+                        t, "H2"
+                    ]
                 )
-                / b.soec_module.solid_oxide_cell.fuel_channel.flow_mol_comp_inlet[t, "H2O"]
+                / b.soec_module.solid_oxide_cell.fuel_channel.flow_mol_comp_inlet[
+                    t, "H2O"
+                ]
             )
 
         self.soec_overall_water_conversion = pyo.Var(self.time, initialize=0.75)
@@ -579,7 +624,7 @@ class SoecFlowsheetData(FlowsheetBlockData):
 
         @self.Expression(self.time)
         def soec_ac_power(b, t):
-            return b.soec_module.electrical_work[t]/b.soec_inverter_efficiency
+            return b.soec_module.electrical_work[t] / b.soec_inverter_efficiency
 
         @self.Expression(self.time)
         def soec_power_per_h2(b, t):
@@ -1059,14 +1104,17 @@ class SoecFlowsheetData(FlowsheetBlockData):
         )
         tag_group["soec_current_density"] = iutil.ModelTag(
             doc="SOEC electrical current density",
-            expr=sum(self.soec_module.solid_oxide_cell.current_density[0, iz]
-                                         * self.soec_module.solid_oxide_cell.fuel_electrode.xface_area[iz]
-                                         for iz in self.soec_module.solid_oxide_cell.iznodes)/sum(
-                                         self.soec_module.solid_oxide_cell.fuel_electrode.xface_area[iz]
-                                         for iz in self.soec_module.solid_oxide_cell.iznodes
-                                         ),
+            expr=sum(
+                self.soec_module.solid_oxide_cell.current_density[0, iz]
+                * self.soec_module.solid_oxide_cell.fuel_electrode.xface_area[iz]
+                for iz in self.soec_module.solid_oxide_cell.iznodes
+            )
+            / sum(
+                self.soec_module.solid_oxide_cell.fuel_electrode.xface_area[iz]
+                for iz in self.soec_module.solid_oxide_cell.iznodes
+            ),
             format_string="{:.1f}",
-            display_units=pyo.units.A/pyo.units.m**2,
+            display_units=pyo.units.A / pyo.units.m**2,
         )
         tag_group["soec_power"] = iutil.ModelTag(
             doc="SOEC electric power",
@@ -1206,6 +1254,7 @@ class SoecFlowsheetData(FlowsheetBlockData):
         return self._stream_table(self.tags_streams)
 
     pfd_file = "soec_template.svg"
+
     def write_pfd(self, fname=None):
         """Add model results to the flowsheet template.  If fname is specified,
         this saves the resulting svg to a file.  If fname is not specified, it
@@ -1221,6 +1270,7 @@ class SoecFlowsheetData(FlowsheetBlockData):
         s = svg_tag(svg=s, tag_group=self.tags_input, outfile=fname)
         if fname is None:
             return s
+
 
 if __name__ == "__main__":
     import os

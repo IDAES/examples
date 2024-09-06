@@ -21,21 +21,29 @@ import os
 def main():
     # Load XY data from high fidelity model from tab file using Pandas. Y-data must be in the last column.
     current_path = os.path.dirname(os.path.realpath(__file__))
-    data = pd.read_csv(os.path.join(current_path, 'data_files', 'six_hump_function_data.tab'), sep='\t', header=0, index_col=0)
+    data = pd.read_csv(
+        os.path.join(current_path, "data_files", "six_hump_function_data.tab"),
+        sep="\t",
+        header=0,
+        index_col=0,
+    )
 
-    b = sp.LatinHypercubeSampling(data, 30, 'selection')
+    b = sp.LatinHypercubeSampling(data, 30, "selection")
     tr_data = b.sample_points()
 
     # Carry out polynomial regression
-    d = PolynomialRegression(tr_data, tr_data, maximum_polynomial_order=8, multinomials=1, overwrite=True)
+    d = PolynomialRegression(
+        tr_data, tr_data, maximum_polynomial_order=8, multinomials=1, overwrite=True
+    )
     p = d.get_feature_vector()
     d.training()
 
     # Print pyomo expression
     m = pyo.ConcreteModel()
-    m.x = pyo.Var([1,2])
+    m.x = pyo.Var([1, 2])
     print("")
     print(d.generate_expression([m.x[1], m.x[2]]))
+
 
 if __name__ == "__main__":
     main()

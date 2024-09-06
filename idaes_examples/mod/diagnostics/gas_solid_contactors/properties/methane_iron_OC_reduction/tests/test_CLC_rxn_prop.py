@@ -22,12 +22,15 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.testing import initialization_tester
 from idaes.core.solvers import get_solver
 
-from idaes_examples.mod.diagnostics.gas_solid_contactors.properties.methane_iron_OC_reduction. \
-    gas_phase_thermo import GasPhaseThermoParameterBlock
-from idaes_examples.mod.diagnostics.gas_solid_contactors.properties.methane_iron_OC_reduction. \
-    solid_phase_thermo import SolidPhaseThermoParameterBlock
-from idaes_examples.mod.diagnostics.gas_solid_contactors.properties.methane_iron_OC_reduction. \
-    hetero_reactions import HeteroReactionParameterBlock
+from idaes_examples.mod.diagnostics.gas_solid_contactors.properties.methane_iron_OC_reduction.gas_phase_thermo import (
+    GasPhaseThermoParameterBlock,
+)
+from idaes_examples.mod.diagnostics.gas_solid_contactors.properties.methane_iron_OC_reduction.solid_phase_thermo import (
+    SolidPhaseThermoParameterBlock,
+)
+from idaes_examples.mod.diagnostics.gas_solid_contactors.properties.methane_iron_OC_reduction.hetero_reactions import (
+    HeteroReactionParameterBlock,
+)
 
 
 # Get default solver for testing
@@ -87,5 +90,4 @@ def test_setInputs_reaction_block(rxn_prop):
 
 
 def test_initialize(rxn_prop):
-    initialization_tester(
-            rxn_prop)
+    initialization_tester(rxn_prop)

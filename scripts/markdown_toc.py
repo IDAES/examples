@@ -8,6 +8,7 @@ so by default this would be:
 
 Then a bulleted list gives the contents.
 """
+
 import argparse
 import logging
 import re
@@ -18,7 +19,9 @@ from typing import List, Tuple, Iterable
 
 _log = logging.getLogger("markdown_toc")
 h = logging.StreamHandler()
-h.setFormatter(logging.Formatter("[%(levelname)s] %(asctime)s (%(module)s) - %(message)s"))
+h.setFormatter(
+    logging.Formatter("[%(levelname)s] %(asctime)s (%(module)s) - %(message)s")
+)
 _log.addHandler(h)
 
 TOC_TITLE = "Table of Contents"
@@ -99,13 +102,14 @@ def process(infile, outfile, min_level: int = 1) -> bool:
 
 def main() -> int:
     p = argparse.ArgumentParser()
-    p.add_argument("infile", nargs="?", default=None,
-                   help="Input file (default=stdin)")
-    p.add_argument("--out", dest="outfile", default=None,
-                   help="Output file (default=stdout)")
+    p.add_argument("infile", nargs="?", default=None, help="Input file (default=stdin)")
+    p.add_argument(
+        "--out", dest="outfile", default=None, help="Output file (default=stdout)"
+    )
     p.add_argument("--inplace", "-i", help="Modify input file", action="store_true")
-    p.add_argument("--min-level", "-m", help="Minimum level to include", default=1,
-                   type=int)
+    p.add_argument(
+        "--min-level", "-m", help="Minimum level to include", default=1, type=int
+    )
     args = p.parse_args()
 
     _log.setLevel(logging.INFO)
