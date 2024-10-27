@@ -85,11 +85,11 @@ class GasTurbineFlowsheetData(FlowsheetBlockData):
         self.cmb_species = cmb_species
         self.flue_species = flue_species
         self.rxns = rxns
-        # Here three differnt type of property blocks are used, so that we can
+        # Here three different type of property blocks are used, so that we can
         # avoid components with zero flow, which can cause problems with
         # certain property calculations (entropy for example). Three types of
         # gas streams are Air, combstion mixture, and flue gas.  Fortunately
-        # natural gas has some air compoents in it so the combustion property
+        # natural gas has some air components in it so the combustion property
         # parameters can be used for natural gas and natural gas mixed with air.
         self.prop_water = iapws95.Iapws95ParameterBlock()
         self.air_prop_params = GenericParameterBlock(
@@ -122,7 +122,7 @@ class GasTurbineFlowsheetData(FlowsheetBlockData):
             property_package=self.flue_prop_params,
         )
         self.vsv = um.Valve(
-            doc="Valve to approximatly variable inlet guide vanes",
+            doc="Valve to approximately variable inlet guide vanes",
             valve_function_callback=um.ValveFunctionType.linear,
             property_package=self.air_prop_params,
         )
@@ -234,7 +234,9 @@ class GasTurbineFlowsheetData(FlowsheetBlockData):
             support_isentropic_performance_curves=True,
         )
 
-    def _add_performance_curves_gts1(self, flow_scale=0.896):
+    def _add_performance_curves_gts1(
+        self, flow_scale=0.896 * pyo.units.s / pyo.units.m**3
+    ):
         """Add isentropic head and efficiency curves for gas turbine stage 1"""
 
         @self.gts1.performance_curve.Constraint(
@@ -260,11 +262,16 @@ class GasTurbineFlowsheetData(FlowsheetBlockData):
             f = pyo.log(
                 flow_scale * b.parent_block().control_volume.properties_in[t].flow_vol
             )
-            return b.head_isentropic[t] == -(
-                -2085.1 * f**3 + 38433 * f**2 - 150764 * f + 422313
+            return (
+                b.head_isentropic[t]
+                == -(-2085.1 * f**3 + 38433 * f**2 - 150764 * f + 422313)
+                * pyo.units.m**2
+                / pyo.units.s**2
             )
 
-    def _add_performance_curves_gts2(self, flow_scale=0.896):
+    def _add_performance_curves_gts2(
+        self, flow_scale=0.896 * pyo.units.s / pyo.units.m**3
+    ):
         """Add isentropic head and efficiency curves for gas turbine stage 2"""
 
         @self.gts2.performance_curve.Constraint(
@@ -288,11 +295,16 @@ class GasTurbineFlowsheetData(FlowsheetBlockData):
             f = pyo.log(
                 flow_scale * b.parent_block().control_volume.properties_in[t].flow_vol
             )
-            return b.head_isentropic[t] == -(
-                -1676.3 * f**3 + 34916 * f**2 - 173801 * f + 456957
+            return (
+                b.head_isentropic[t]
+                == -(-1676.3 * f**3 + 34916 * f**2 - 173801 * f + 456957)
+                * pyo.units.m**2
+                / pyo.units.s**2
             )
 
-    def _add_performance_curves_gts3(self, flow_scale=0.896):
+    def _add_performance_curves_gts3(
+        self, flow_scale=0.896 * pyo.units.s / pyo.units.m**3
+    ):
         """Add isentropic head and efficiency curves for gas turbine stage 3"""
 
         @self.gts3.performance_curve.Constraint(
@@ -318,12 +330,15 @@ class GasTurbineFlowsheetData(FlowsheetBlockData):
             f = pyo.log(
                 flow_scale * b.parent_block().control_volume.properties_in[t].flow_vol
             )
-            return b.head_isentropic[t] == -(
-                -1373.6 * f**3 + 31759 * f**2 - 188528 * f + 500520
+            return (
+                b.head_isentropic[t]
+                == -(-1373.6 * f**3 + 31759 * f**2 - 188528 * f + 500520)
+                * pyo.units.m**2
+                / pyo.units.s**2
             )
 
     def _add_constraints(self):
-        """Add addtional flowsheet constraints and expressions"""
+        """Add additional flowsheet constraints and expressions"""
         self.cmbout_o2_mol_frac = pyo.Var(
             self.time, initialize=0.1157, doc="Combustor outlet O2 mole fraction."
         )
@@ -373,7 +388,7 @@ class GasTurbineFlowsheetData(FlowsheetBlockData):
                 + self.gts3.control_volume.work[t]
             )
 
-        # Add a varable and constraint for gross power.  This allows fixing power
+        # Add a variable and constraint for gross power.  This allows fixing power
         # for simulations where a specific power output is desired.
         self.gt_power = pyo.Var(self.time, units=pyo.units.W)
 
@@ -759,10 +774,10 @@ class GasTurbineFlowsheetData(FlowsheetBlockData):
         for i in ["air05", "air07", "air09"]:
             iscale.set_scaling_factor(self.splt1.split_fraction[0.0, i], 100)
 
-        iscale.set_scaling_factor(self.valve01.control_volume.work, 1e-8)
-        iscale.set_scaling_factor(self.valve02.control_volume.work, 1e-8)
-        iscale.set_scaling_factor(self.valve03.control_volume.work, 1e-8)
-        iscale.set_scaling_factor(self.vsv.control_volume.work, 1e-8)
+        iscale.set_scaling_factor(self.valve01.control_volume.work, 1)
+        iscale.set_scaling_factor(self.valve02.control_volume.work, 1)
+        iscale.set_scaling_factor(self.valve03.control_volume.work, 1)
+        iscale.set_scaling_factor(self.vsv.control_volume.work, 1)
         iscale.set_scaling_factor(self.cmp1.control_volume.work, 1e-8)
         iscale.set_scaling_factor(self.gts1.control_volume.work, 1e-8)
         iscale.set_scaling_factor(self.gts2.control_volume.work, 1e-8)
@@ -858,11 +873,11 @@ class GasTurbineFlowsheetData(FlowsheetBlockData):
         """Initialize the gas turbine flowsheet
 
         Args:
-            outlvl: Logging level for initializtion
-            solver (str): solver to user for initializtion
+            outlvl: Logging level for initialization
+            solver (str): solver to user for initialization
             optarg (dict): solver options
             load_from (str): if file exists and is not None, load initialization
-            save_to (str): save initializtion
+            save_to (str): save initialization
 
         Returns:
             None
@@ -889,6 +904,7 @@ class GasTurbineFlowsheetData(FlowsheetBlockData):
         self.feed_fuel1.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
         # compressor
         propagate_state(self.air01)
+        self.vsv.valve_opening.fix(1 - 1e-6)
         self.vsv.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
         propagate_state(self.air02)
         self.cmp1.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
@@ -919,7 +935,7 @@ class GasTurbineFlowsheetData(FlowsheetBlockData):
         propagate_state(self.g02b)
         self.gts1.ratioP[0] = 0.7
         self.gts1.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
-        # blade cooling air valve01, and calculate a flow coefficent
+        # blade cooling air valve01, and calculate a flow coefficient
         propagate_state(self.air05)
         self.valve01.Cv = 2
         self.valve01.Cv.unfix()
@@ -942,7 +958,7 @@ class GasTurbineFlowsheetData(FlowsheetBlockData):
         propagate_state(self.g04)
         self.gts2.ratioP[0] = 0.7
         self.gts2.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
-        # blade cooling air valve02, and calculate a flow coefficent
+        # blade cooling air valve02, and calculate a flow coefficient
         propagate_state(self.air07)
         self.valve02.Cv = 2
         self.valve02.Cv.unfix()
@@ -965,7 +981,7 @@ class GasTurbineFlowsheetData(FlowsheetBlockData):
         propagate_state(self.g06)
         self.gts3.ratioP[0] = 0.7
         self.gts3.initialize(outlvl=outlvl, solver=solver, optarg=optarg)
-        # blade cooling air valve03, and calculate a flow coefficent
+        # blade cooling air valve03, and calculate a flow coefficient
         propagate_state(self.air09)
         self.valve03.Cv = 2
         self.valve03.Cv.unfix()
@@ -997,17 +1013,17 @@ class GasTurbineFlowsheetData(FlowsheetBlockData):
         self.valve01.control_volume.properties_in[0].flow_mol.unfix()
         self.valve02.control_volume.properties_in[0].flow_mol.unfix()
         self.valve03.control_volume.properties_in[0].flow_mol.unfix()
-        # deltaP will be whatever is needed to satisfy the power requirment
+        # deltaP will be whatever is needed to satisfy the power requirement
         self.vsv.deltaP.unfix()
         # The compressor efficiency is a little high since it doesn't include
         # throttling in the valve use to approximate VSV.
         self.cmp1.efficiency_isentropic.fix(0.92)
         self.cmp1.ratioP.fix(17.5)  # lowering this ratio, just means less pressure
-        # drop in the VSV valve, decresing throttle loss
+        # drop in the VSV valve, decreasing throttle loss
         # Exhaust pressure will be a bit over ATM due to HRSG. This will come from
         # HRSG model when coupled to form NGCC model
         self.exhaust_1.pressure.fix(1.1e5)
-        # Don't know how much blade cooling air is needed for off desing case, but
+        # Don't know how much blade cooling air is needed for off design case, but
         # full load flows were based on WVU model.  For now just leave valves at
         # fixed opening.
         self.valve01.valve_opening.fix()

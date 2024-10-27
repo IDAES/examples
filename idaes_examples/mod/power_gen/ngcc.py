@@ -20,7 +20,7 @@ import idaes.models.unit_models as um  # um = unit models
 from idaes.core import FlowsheetBlockData, declare_process_block_class
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
-from . import (gas_turbine, hrsg, steam_turbine)
+from . import gas_turbine, hrsg, steam_turbine
 import idaes.core.util as iutil
 from idaes.core.solvers import get_solver
 from idaes.core.util.initialization import propagate_state
@@ -221,7 +221,7 @@ class NgccFlowsheetData(FlowsheetBlockData):
         self.cap_specific_reboiler_duty = pyo.Var(
             initialize=2.7e6, units=pyo.units.J / pyo.units.kg
         )
-        self.cap_addtional_co2 = pyo.Var(
+        self.cap_additional_co2 = pyo.Var(
             self.config.time, initialize=0.0, units=pyo.units.kg / pyo.units.s
         )
         self.cap_specific_compression_power = pyo.Var(
@@ -349,7 +349,7 @@ class NgccFlowsheetData(FlowsheetBlockData):
                     * 0.04401
                     * pyo.units.kg
                     / pyo.units.mol
-                    + b.cap_addtional_co2[t]
+                    + b.cap_additional_co2[t]
                 )
                 + b.cap_additional_reboiler_duty[t]
             )
@@ -360,7 +360,9 @@ class NgccFlowsheetData(FlowsheetBlockData):
 
         @self.Constraint(self.config.time)
         def net_power_constraint(b, t):
-            return b.net_power_mw[t] / 100.0 == -b.net_power[t] / 1e6 / 100.0
+            return b.net_power_mw[t] / 100.0 == pyo.units.convert(
+                -b.net_power[t] / 100.0, to_units=pyo.units.MW
+            )
 
         @self.Constraint(self.config.time)
         def lp_steam_temperature_eqn(b, t):
@@ -431,14 +433,13 @@ class NgccFlowsheetData(FlowsheetBlockData):
             # here suffix=False avoids loading scaling factors
             iutil.from_json(self, fname=load_from, wts=iutil.StoreSpec(suffix=False))
         else:
-            self.cap_addtional_co2.fix()
+            self.cap_additional_co2.fix()
             self.cap_fraction.fix()
             self.cap_specific_reboiler_duty.fix()
             self.cap_specific_compression_power.fix()
             self.cap_additional_reboiler_duty.fix()
             self.fuel_lhv.fix()
             self.fuel_hhv.fix()
-
             self.gt.initialize(
                 load_from="gas_turbine_init.json.gz",
                 save_to="gas_turbine_init.json.gz",
@@ -496,7 +497,7 @@ class NgccFlowsheetData(FlowsheetBlockData):
             self.st.steam_turbine.inlet_split.inlet.unfix()
             solver_obj.solve(self, tee=True)
 
-            init_log.info(f"Fix flow coefficent and free throttle")
+            init_log.info(f"Fix flow coefficient and free throttle")
             self.st.steam_turbine.throttle_valve[1].pressure_flow_equation.deactivate()
             self.st.steam_turbine.outlet_stage.flow_coeff.fix()
             solver_obj.solve(self, tee=True)

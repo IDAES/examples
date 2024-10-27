@@ -18,6 +18,8 @@ details can be found in the associated jupyter notebook.
 """
 
 import os
+import logging
+
 from collections import OrderedDict
 
 # Import Pyomo libraries
@@ -33,7 +35,6 @@ from idaes.core.util.initialization import propagate_state
 from idaes.core.util import model_serializer as ms, ModelTag, ModelTagGroup
 from idaes.core.util.tags import svg_tag
 from idaes.core.util.tables import create_stream_table_dataframe
-from idaes.core.util.exceptions import InitializationError
 
 import idaes.core.util.scaling as iscale
 
@@ -71,10 +72,8 @@ from idaes_examples.mod.power_gen.SOFC_ROM import (
     initialize_SOFC_ROM,
 )
 
-import logging
 
-
-def build_power_island(m):
+def build_properties(m):
     # create property packages - 3 property packages and 1 reaction
     NG_config = get_prop(
         components=[
@@ -105,10 +104,11 @@ def build_power_island(m):
         **get_rxn(m.fs.syn_props, reactions=["h2_cmb", "co_cmb", "ch4_cmb"])
     )
 
+
+def build_power_island(m):
     # build anode side units
     m.fs.anode_mix = Mixer(
-        inlet_list=["feed", "recycle"],
-        property_package=m.fs.NG_props
+        inlet_list=["feed", "recycle"], property_package=m.fs.NG_props
     )
 
     m.fs.anode_hx = HeatExchanger(
@@ -224,8 +224,7 @@ def build_power_island(m):
     )
 
     m.fs.cathode_mix = Mixer(
-        inlet_list=["feed", "recycle"],
-        property_package=m.fs.air_props
+        inlet_list=["feed", "recycle"], property_package=m.fs.air_props
     )
 
     # represents oxygen moving across SOFC electrolyte
@@ -263,8 +262,7 @@ def build_power_island(m):
     m.fs.cathode_translator.outlet.mole_frac_comp[0, "O2"].fix(1)
 
     m.fs.cathode_heat = Heater(
-        has_pressure_change=True,
-        property_package=m.fs.air_props
+        has_pressure_change=True, property_package=m.fs.air_props
     )
 
     m.fs.cathode_recycle = Separator(
@@ -291,8 +289,7 @@ def build_power_island(m):
     )
 
     m.fs.cathode_HRSG = Heater(
-        has_pressure_change=True,
-        property_package=m.fs.air_props
+        has_pressure_change=True, property_package=m.fs.air_props
     )
 
     m.fs.cathode_exhaust_translator = Translator(
@@ -343,10 +340,7 @@ def build_power_island(m):
         thermodynamic_assumption=ThermodynamicAssumption.isentropic,
     )
 
-    m.fs.anode_HRSG = Heater(
-        has_pressure_change=True,
-        property_package=m.fs.syn_props
-    )
+    m.fs.anode_HRSG = Heater(has_pressure_change=True, property_package=m.fs.syn_props)
 
     # build arcs to connect unit operations
     # arcs for anode side
@@ -607,8 +601,7 @@ def build_reformer(m):
         return air_flow == 2.868 * (1 - IR) * ng_flow
 
     m.fs.intercooler_s1 = Heater(
-        property_package=m.fs.NG_props,
-        has_pressure_change=True
+        property_package=m.fs.NG_props, has_pressure_change=True
     )
 
     m.fs.air_compressor_s2 = PressureChanger(
@@ -618,8 +611,7 @@ def build_reformer(m):
     )
 
     m.fs.intercooler_s2 = Heater(
-        property_package=m.fs.NG_props,
-        has_pressure_change=True
+        property_package=m.fs.NG_props, has_pressure_change=True
     )
 
     m.fs.reformer_mix = Mixer(
@@ -725,7 +717,7 @@ def set_reformer_inputs(m):
     m.fs.reformer_bypass.split_fraction[0, "bypass_outlet"].fix(0.6)
 
     # air to reformer
-    m.fs.air_compressor_s1.inlet.flow_mol[0] == 1332.9  # mol/s
+    m.fs.air_compressor_s1.inlet.flow_mol[0] = 1332.9  # mol/s
     m.fs.air_compressor_s1.inlet.temperature.fix(288.15)  # K
     m.fs.air_compressor_s1.inlet.pressure.fix(101353)  # Pa, equal to 14.7 psia
     m.fs.air_compressor_s1.inlet.mole_frac_comp.fix(1e-11)
@@ -749,7 +741,7 @@ def set_reformer_inputs(m):
     m.fs.intercooler_s2.deltaP.fix(-3447)  # Pa, equal to -0.5 psi
 
     # steam to reformer
-    m.fs.reformer_mix.steam_inlet.flow_mol[0] == 464.77  # mol/s
+    m.fs.reformer_mix.steam_inlet.flow_mol[0] = 464.77  # mol/s
     m.fs.reformer_mix.steam_inlet.temperature.fix(422)  # K
     m.fs.reformer_mix.steam_inlet.pressure.fix(206843)  # Pa, equal to 30 psia
     m.fs.reformer_mix.steam_inlet.mole_frac_comp.fix(1e-11)
@@ -761,225 +753,231 @@ def set_reformer_inputs(m):
 
 
 def scale_flowsheet(m):
-    print('Scaling flowsheet variables')
+    print("Scaling flowsheet variables")
     # set NG_props default scaling
     m.fs.NG_props.set_default_scaling("flow_mol", 1e-3)
     m.fs.NG_props.set_default_scaling("flow_mol_phase", 1e-3)
     m.fs.NG_props.set_default_scaling("temperature", 1e-2)
     m.fs.NG_props.set_default_scaling("pressure", 1e-5)
-
     m.fs.NG_props.set_default_scaling("mole_frac_comp", 1e2)
-    m.fs.NG_props.set_default_scaling("mole_frac_comp", 1e2, index="C2H6")
-    m.fs.NG_props.set_default_scaling("mole_frac_comp", 1e2, index="C3H8")
-    m.fs.NG_props.set_default_scaling("mole_frac_comp", 1e2, index="C4H10")
-
     m.fs.NG_props.set_default_scaling("mole_frac_phase_comp", 1e2)
-    m.fs.NG_props.set_default_scaling(
-        "mole_frac_phase_comp", 1e2, index=("Vap", "C2H6")
-    )
-    m.fs.NG_props.set_default_scaling(
-        "mole_frac_phase_comp", 1e2, index=("Vap", "C3H8")
-    )
-    m.fs.NG_props.set_default_scaling(
-        "mole_frac_phase_comp", 1e2, index=("Vap", "C4H10")
-    )
-
     m.fs.NG_props.set_default_scaling("enth_mol_phase", 1e-6)
-    m.fs.NG_props.set_default_scaling("entr_mol_phase", 1e-4)
+    m.fs.NG_props.set_default_scaling("entr_mol_phase", 1e-1)
+    m.fs.NG_props.set_default_scaling("entr_mol", 1e-1)
 
     # set syn_props default scaling
     m.fs.syn_props.set_default_scaling("flow_mol", 1e-3)
     m.fs.syn_props.set_default_scaling("flow_mol_phase", 1e-3)
+    m.fs.syn_props.set_default_scaling("flow_mol_phase_comp", 1e-3)
     m.fs.syn_props.set_default_scaling("temperature", 1e-2)
     m.fs.syn_props.set_default_scaling("pressure", 1e-5)
     m.fs.syn_props.set_default_scaling("mole_frac_comp", 1e2)
     m.fs.syn_props.set_default_scaling("mole_frac_phase_comp", 1e2)
     m.fs.syn_props.set_default_scaling("enth_mol_phase", 1e-6)
-    m.fs.syn_props.set_default_scaling("entr_mol_phase", 1e-4)
+    m.fs.syn_props.set_default_scaling("entr_mol_phase", 1e-1)
+    m.fs.syn_props.set_default_scaling("entr_mol", 1e-1)
 
     # set air_props default scaling
     m.fs.air_props.set_default_scaling("flow_mol", 1e-3)
     m.fs.air_props.set_default_scaling("flow_mol_phase", 1e-3)
+    m.fs.air_props.set_default_scaling("flow_mol_phase_comp", 1)
     m.fs.air_props.set_default_scaling("temperature", 1e-2)
     m.fs.air_props.set_default_scaling("pressure", 1e-5)
     m.fs.air_props.set_default_scaling("mole_frac_comp", 1e2)
     m.fs.air_props.set_default_scaling("mole_frac_phase_comp", 1e2)
     m.fs.air_props.set_default_scaling("enth_mol_phase", 1e-6)
-    m.fs.air_props.set_default_scaling("entr_mol_phase", 1e-4)
+    m.fs.air_props.set_default_scaling("entr_mol_phase", 1e-1)
+    m.fs.air_props.set_default_scaling("entr_mol", 1e-1)
 
-    iscale.set_scaling_factor(m.fs.prereformer.lagrange_mult, 1e-4)
-    iscale.set_scaling_factor(m.fs.anode.lagrange_mult, 1e-4)
+    built_units = []
 
-    iscale.set_scaling_factor(m.fs.reformer.lagrange_mult, 1e-4)
+    if hasattr(m.fs, "reformer"):
+        iscale.set_scaling_factor(m.fs.reformer.lagrange_mult, 1e-4)
 
-    # overwrite mole_frac lower bound to remove warnings
-    print('overwriting mole_frac lower bound, set to 0 to remove warnings')
-    for var in m.fs.component_data_objects(pyo.Var, descend_into=True):
-        if '.mole_frac' in var.name: # don't catch log_mole_frac variables
-            var.setlb(0)
+        # heat exchanger areas and overall heat transfer coefficients
+        iscale.set_scaling_factor(m.fs.reformer_recuperator.area, 1e-3)
+        iscale.set_scaling_factor(
+            m.fs.reformer_recuperator.overall_heat_transfer_coefficient, 1e-1
+        )
 
-    # some specific variable scaling
-    
-    # heat exchanger areas and overall heat transfer coefficiencts
-    iscale.set_scaling_factor(m.fs.anode_hx.area, 1e-4)
-    iscale.set_scaling_factor(m.fs.anode_hx.overall_heat_transfer_coefficient, 1)
-    iscale.set_scaling_factor(m.fs.cathode_hx.area, 1e-4)
-    iscale.set_scaling_factor(m.fs.cathode_hx.overall_heat_transfer_coefficient, 1)
-    iscale.set_scaling_factor(m.fs.reformer_recuperator.area, 1e-4)
-    iscale.set_scaling_factor(m.fs.reformer_recuperator.overall_heat_transfer_coefficient, 1)
+        # control volume heats
+        iscale.set_scaling_factor(m.fs.intercooler_s1.control_volume.heat, 1e-4)
+        iscale.set_scaling_factor(m.fs.intercooler_s2.control_volume.heat, 1e-5)
+        iscale.set_scaling_factor(m.fs.reformer.control_volume.heat, 1e-6)
+        iscale.set_scaling_factor(m.fs.reformer_recuperator.shell.heat, 1e-6)
+        iscale.set_scaling_factor(m.fs.reformer_recuperator.tube.heat, 1e-6)
 
-    # control volume heats
-    iscale.set_scaling_factor(m.fs.anode_hx.tube.heat, 1e-7)
-    iscale.set_scaling_factor(m.fs.anode_hx.shell.heat, 1e-7)
-    iscale.set_scaling_factor(m.fs.anode.control_volume.heat, 1e-8)
-    iscale.set_scaling_factor(m.fs.cathode_hx.tube.heat, 1e-8)
-    iscale.set_scaling_factor(m.fs.cathode_hx.shell.heat, 1e-8)
-    iscale.set_scaling_factor(m.fs.cathode_heat.control_volume.heat, 1e-8)
-    iscale.set_scaling_factor(m.fs.cathode_HRSG.control_volume.heat, 1e-6)
-    iscale.set_scaling_factor(m.fs.intercooler_s1.control_volume.heat, 1e-6)
-    iscale.set_scaling_factor(m.fs.intercooler_s2.control_volume.heat, 1e-6)
-    iscale.set_scaling_factor(m.fs.anode_HRSG.control_volume.heat, 1e-8)
-    iscale.set_scaling_factor(m.fs.prereformer.control_volume.heat, 1e-6)
-    iscale.set_scaling_factor(m.fs.reformer.control_volume.heat, 1e-6)
-    iscale.set_scaling_factor(m.fs.reformer_recuperator.shell.heat, 1e-6)
-    iscale.set_scaling_factor(m.fs.reformer_recuperator.tube.heat, 1e-6)
+        # work
+        iscale.set_scaling_factor(m.fs.air_compressor_s1.control_volume.work, 1e-5)
+        iscale.set_scaling_factor(m.fs.air_compressor_s2.control_volume.work, 1e-5)
+        iscale.set_scaling_factor(m.fs.NG_expander.control_volume.work, 1e-6)
 
-    # work
-    iscale.set_scaling_factor(m.fs.anode_blower.control_volume.work, 1e-5)
-    iscale.set_scaling_factor(m.fs.air_blower.control_volume.work, 1e-6)
-    iscale.set_scaling_factor(m.fs.cathode_blower.control_volume.work, 1e-5)
-    iscale.set_scaling_factor(m.fs.air_compressor_s1.control_volume.work, 1e-6)
-    iscale.set_scaling_factor(m.fs.air_compressor_s2.control_volume.work, 1e-6)
-    iscale.set_scaling_factor(m.fs.cathode_expander.control_volume.work, 1e-6)
-    iscale.set_scaling_factor(m.fs.combustor_expander.control_volume.work, 1e-6)
-    iscale.set_scaling_factor(m.fs.NG_expander.control_volume.work, 1e-6)
+        reformer_units = [
+            "reformer_recuperator",
+            "NG_expander",
+            "reformer_bypass",
+            "air_compressor_s1",
+            "intercooler_s1",
+            "air_compressor_s2",
+            "intercooler_s2",
+            "reformer_mix",
+            "reformer",
+            "bypass_rejoin",
+        ]
+        built_units += reformer_units
 
-    # reaction extents
-    iscale.set_scaling_factor(m.fs.combustor.control_volume.rate_reaction_extent[0, "h2_cmb"], 1e2)
-    iscale.set_scaling_factor(m.fs.combustor.control_volume.rate_reaction_extent[0, "co_cmb"], 1e2)
-    iscale.set_scaling_factor(m.fs.combustor.control_volume.rate_reaction_extent[0, "ch4_cmb"], 1e5)
+    if hasattr(m.fs, "anode"):
+        iscale.set_scaling_factor(m.fs.anode.lagrange_mult, 1e-4)
+        iscale.set_scaling_factor(m.fs.prereformer.lagrange_mult, 1e-4)
 
-    print('Scaling flowsheet constraints')
+        # heat exchanger areas and overall heat transfer coefficients
+        iscale.set_scaling_factor(m.fs.anode_hx.area, 1e-4)
+        iscale.set_scaling_factor(m.fs.anode_hx.overall_heat_transfer_coefficient, 1e-1)
+        iscale.set_scaling_factor(m.fs.cathode_hx.area, 1e-4)
+        iscale.set_scaling_factor(
+            m.fs.cathode_hx.overall_heat_transfer_coefficient, 1e-1
+        )
 
-    list_units = ['anode_mix', 'anode_hx', 'prereformer', 'anode_translator',
-                  'fuel_cell_mix', 'anode', 'anode_recycle', 'anode_blower',
-                  'recycle_translator', 'air_blower', 'cathode_hx',
-                  'cathode_mix', 'cathode', 'cathode_translator',
-                  'cathode_heat', 'cathode_recycle', 'cathode_blower',
-                  'cathode_exhaust_split', 'cathode_expander', 'cathode_HRSG',
-                  'cathode_exhaust_translator', 'combustor_mix', 'combustor',
-                  'combustor_expander', 'anode_HRSG', 'reformer_recuperator',
-                  'NG_expander', 'reformer_bypass', 'air_compressor_s1',
-                  'intercooler_s1', 'air_compressor_s2', 'intercooler_s2',
-                  'reformer_mix', 'reformer', 'bypass_rejoin']
+        # control volume heats
+        iscale.set_scaling_factor(m.fs.anode_hx.tube.heat, 1e-7)
+        iscale.set_scaling_factor(m.fs.anode_hx.shell.heat, 1e-7)
+        iscale.set_scaling_factor(m.fs.anode.control_volume.heat, 1e-8)
+        iscale.set_scaling_factor(m.fs.cathode_hx.tube.heat, 1e-8)
+        iscale.set_scaling_factor(m.fs.cathode_hx.shell.heat, 1e-8)
+        iscale.set_scaling_factor(m.fs.cathode_heat.control_volume.heat, 1e-8)
+        iscale.set_scaling_factor(m.fs.cathode_HRSG.control_volume.heat, 1e-7)
+        iscale.set_scaling_factor(m.fs.anode_HRSG.control_volume.heat, 1e-8)
+        iscale.set_scaling_factor(m.fs.prereformer.control_volume.heat, 1)
+
+        # work
+        iscale.set_scaling_factor(m.fs.anode_blower.control_volume.work, 1e-4)
+        iscale.set_scaling_factor(m.fs.air_blower.control_volume.work, 1e-5)
+        iscale.set_scaling_factor(m.fs.cathode_blower.control_volume.work, 1e-5)
+        iscale.set_scaling_factor(m.fs.cathode_expander.control_volume.work, 1e-3)
+        iscale.set_scaling_factor(m.fs.combustor_expander.control_volume.work, 1e-3)
+
+        # reaction extents
+        iscale.set_scaling_factor(
+            m.fs.combustor.control_volume.rate_reaction_extent[0, "h2_cmb"], 1
+        )
+        iscale.set_scaling_factor(
+            m.fs.combustor.control_volume.rate_reaction_extent[0, "co_cmb"], 1
+        )
+        iscale.set_scaling_factor(
+            m.fs.combustor.control_volume.rate_reaction_extent[0, "ch4_cmb"], 1e1
+        )
+
+        iscale.set_scaling_factor(
+            m.fs.combustor.control_volume.rate_reaction_generation[0, "Vap", "H2"], 1e-1
+        )
+        iscale.set_scaling_factor(
+            m.fs.combustor.control_volume.rate_reaction_generation[0, "Vap", "CO"], 1e-1
+        )
+        iscale.set_scaling_factor(
+            m.fs.combustor.control_volume.rate_reaction_generation[0, "Vap", "H2O"],
+            1e-1,
+        )
+        iscale.set_scaling_factor(
+            m.fs.combustor.control_volume.rate_reaction_generation[0, "Vap", "CO2"],
+            1e-1,
+        )
+        iscale.set_scaling_factor(
+            m.fs.combustor.control_volume.rate_reaction_generation[0, "Vap", "O2"], 1e-1
+        )
+
+        power_island_units = [
+            "anode_mix",
+            "anode_hx",
+            "prereformer",
+            "anode_translator",
+            "fuel_cell_mix",
+            "anode",
+            "anode_recycle",
+            "anode_blower",
+            "recycle_translator",
+            "air_blower",
+            "cathode_hx",
+            "cathode_mix",
+            "cathode",
+            "cathode_translator",
+            "cathode_heat",
+            "cathode_recycle",
+            "cathode_blower",
+            "cathode_exhaust_split",
+            "cathode_expander",
+            "cathode_HRSG",
+            "cathode_exhaust_translator",
+            "combustor_mix",
+            "combustor",
+            "combustor_expander",
+            "anode_HRSG",
+        ]
+        built_units += power_island_units
 
     # set scaling for unit constraints
-    for name in list_units:
+    for name in built_units:
         unit = getattr(m.fs, name)
-        # mixer constraints
-        if hasattr(unit, 'material_mixing_equations'):
+        # mixer
+        if hasattr(unit, "material_mixing_equations"):
             for (t, j), c in unit.material_mixing_equations.items():
                 iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
-        if hasattr(unit, 'enthalpy_mixing_equations'):
-            for t, c in unit.enthalpy_mixing_equations.items():
-                iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
-        if hasattr(unit, 'minimum_pressure_constraint'):
-            for (t, i), c in unit.minimum_pressure_constraint.items():
-                iscale.constraint_scaling_transform(c, 1e-5, overwrite=False)
-        if hasattr(unit, 'mixture_pressure'):
-            for t, c in unit.mixture_pressure.items():
-                iscale.constraint_scaling_transform(c, 1e-5, overwrite=False)
-
-        # separator constraints
-        if hasattr(unit, 'material_splitting_eqn'):
-            for (t, o, j), c in unit.material_splitting_eqn.items():
-                iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
-        if hasattr(unit, 'temperature_equality_eqn'):
-            for (t, o), c in unit.temperature_equality_eqn.items():
-                iscale.constraint_scaling_transform(c, 1e-2, overwrite=False)
-        if hasattr(unit, 'pressure_equality_eqn'):
-            for (t, o), c in unit.pressure_equality_eqn.items():
-                iscale.constraint_scaling_transform(c, 1e-5, overwrite=False)
-        if hasattr(unit, 'sum_split_frac'):
-            for t, c in unit.sum_split_frac.items():
-                iscale.constraint_scaling_transform(c, 1, overwrite=False)
-
-        # pressurechanger constraints
-
-        if hasattr(unit, "ratioP_calculation"):
-            for t, c in unit.ratioP_calculation.items():
-                iscale.constraint_scaling_transform(c, 1e-5, overwrite=False)
-
-        if hasattr(unit, "actual_work"):
-            for t, c in unit.actual_work.items():
-                iscale.constraint_scaling_transform(c, 1e-6, overwrite=False)
-
-        if hasattr(unit, "isentropic_pressure"):
-            for t, c in unit.isentropic_pressure.items():
-                iscale.constraint_scaling_transform(c, 1e-5, overwrite=False)
-
-        if hasattr(unit, "isentropic"):
-            for t, c in unit.isentropic.items():
-                iscale.constraint_scaling_transform(c, 1e-1, overwrite=False)
-
+        # pressure changer
         if hasattr(unit, "isentropic_energy_balance"):
             for t, c in unit.isentropic_energy_balance.items():
                 iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
-
-        if hasattr(unit, "state_material_balances"):
-            for (t, j), c in unit.state_material_balances.items():
-                iscale.constraint_scaling_transform(c, 1e-3, overwrite=False)
-
-        # HeatExchanger non-CV constraints
+        # heat exchanger
         if hasattr(unit, "heat_transfer_equation"):
             for t, c in unit.heat_transfer_equation.items():
                 iscale.constraint_scaling_transform(c, 1e-7, overwrite=False)
 
-        if hasattr(unit, "unit_heat_balance"):
-            for t, c in unit.unit_heat_balance.items():
-                iscale.constraint_scaling_transform(c, 1e-7, overwrite=False)
-
-        if hasattr(unit, "delta_temperature_in_equation"):
-            for t, c in unit.delta_temperature_in_equation.items():
-                iscale.constraint_scaling_transform(c, 1e-1, overwrite=False)
-
-        if hasattr(unit, "delta_temperature_out_equation"):
-            for t, c in unit.delta_temperature_out_equation.items():
-                iscale.constraint_scaling_transform(c, 1e-1, overwrite=False)
-
-        # Translator has no constraints to scale
-        # Gibbs reactor minimization is scaled elsewhere, set by gibbs_scaling
-        # adding scaling factors of unity here for completeness
-        if hasattr(unit, "gibbs_minimization"):
-            for (t, p, j), c in unit.gibbs_minimization.items():
-                iscale.constraint_scaling_transform(c, 1, overwrite=False)
-
-        if hasattr(unit, "inert_species_balance"):
-            for (t, p, j), c in unit.inert_species_balance.items():
-                iscale.constraint_scaling_transform(c, 1, overwrite=False)
-
-    print('Calculating scaling factors')
     iscale.calculate_scaling_factors(m)
-    print()
+
+    constraints_to_scale = {
+        m.fs.prereformer.control_volume.element_balances[0.0, "H"]: 1e-2,
+        m.fs.prereformer.control_volume.element_balances[0.0, "C"]: 1e-2,
+        m.fs.prereformer.control_volume.element_balances[0.0, "O"]: 1e-2,
+        m.fs.prereformer.control_volume.element_balances[0.0, "N"]: 1e-2,
+        m.fs.prereformer.control_volume.element_balances[0.0, "Ar"]: 1e-2,
+        m.fs.prereformer.inert_species_balance[0.0, "Vap", "O2"]: 1e-2,
+        m.fs.anode.control_volume.element_balances[0.0, "H"]: 1e-2,
+        m.fs.anode.control_volume.element_balances[0.0, "C"]: 1e-2,
+        m.fs.anode.control_volume.element_balances[0.0, "O"]: 1e-2,
+        m.fs.anode.control_volume.element_balances[0.0, "N"]: 1e-2,
+        m.fs.anode.control_volume.element_balances[0.0, "Ar"]: 1e-2,
+        m.fs.anode_recycle.material_splitting_eqn[0.0, "exhaust", "CH4"]: 0.01,
+        m.fs.anode_recycle.material_splitting_eqn[0.0, "recycle", "CH4"]: 0.01,
+        m.fs.anode_hx.hot_side.material_balances[0.0, "CH4"]: 0.01,
+        m.fs.combustor_mix.material_mixing_equations[0.0, "CH4"]: 0.01,
+        m.fs.combustor.control_volume.material_balances[0.0, "CH4"]: 0.01,
+        m.fs.anode_blower.isentropic_energy_balance[0.0]: 1e-5,
+        m.fs.air_blower.isentropic_energy_balance[0.0]: 1e-5,
+        m.fs.cathode_blower.isentropic_energy_balance[0.0]: 1e-5,
+        m.fs.cathode_expander.isentropic_energy_balance[0.0]: 1e-5,
+        m.fs.combustor_expander.isentropic_energy_balance[0.0]: 1e-4,
+    }
+
+    for c, sf in constraints_to_scale.items():
+        iscale.constraint_scaling_transform(c, sf)
 
 
-def initialize_power_island(m):
+def initialize_power_island(m, outlvl=logging.INFO):
     solver = pyo.SolverFactory("ipopt")
     solver.options = {
         "max_iter": 500,
         "tol": 1e-5,
         "bound_push": 1e-8,
         "linear_solver": "ma57",
-        "ma57_pivtol": 1e-3,
         "OF_ma57_automatic_scaling": "yes",
-        "nlp_scaling_method": "user-scaling"
-          }
+        "nlp_scaling_method": "user-scaling",
+    }
     # cathode side
-    m.fs.air_blower.initialize(outlvl=logging.INFO)
+    m.fs.air_blower.initialize(outlvl=outlvl, optarg=solver.options)
 
-    propagate_state(m.fs.cathode_hx.tube_inlet, m.fs.air_blower.outlet)
+    propagate_state(
+        source=m.fs.air_blower.outlet, destination=m.fs.cathode_hx.tube_inlet
+    )
 
-    # fix cathode inlet to initial guess
+    # set cathode inlet to initial guess
     m.fs.cathode.inlet.flow_mol[0] = 34174
     m.fs.cathode.inlet.temperature[0] = 892
     m.fs.cathode.inlet.pressure[0] = 105490
@@ -989,39 +987,49 @@ def initialize_power_island(m):
     m.fs.cathode.inlet.mole_frac_comp[0, "O2"] = 0.1690
     m.fs.cathode.inlet.mole_frac_comp[0, "Ar"] = 0.0099
 
-    m.fs.cathode.initialize(outlvl=logging.INFO)
-
-    m.fs.cathode.inlet.unfix()
+    m.fs.cathode.initialize(outlvl=outlvl, optarg=solver.options)
 
     # cathode translator block
-    propagate_state(m.fs.cathode_translator.inlet, m.fs.cathode.ion_outlet)
+    propagate_state(
+        source=m.fs.cathode.ion_outlet, destination=m.fs.cathode_translator.inlet
+    )
 
-    m.fs.cathode_translator.initialize()
+    m.fs.cathode_translator.initialize(outlvl=outlvl, optarg=solver.options)
 
     # rest of cathode side
-    propagate_state(m.fs.cathode_heat.inlet, m.fs.cathode.air_outlet)
+    propagate_state(source=m.fs.cathode.air_outlet, destination=m.fs.cathode_heat.inlet)
 
-    m.fs.cathode_heat.initialize(outlvl=logging.INFO)
+    m.fs.cathode_heat.initialize(outlvl=outlvl, optarg=solver.options)
 
-    propagate_state(m.fs.cathode_recycle.inlet, m.fs.cathode_heat.outlet)
+    propagate_state(
+        source=m.fs.cathode_heat.outlet, destination=m.fs.cathode_recycle.inlet
+    )
 
-    m.fs.cathode_recycle.initialize(outlvl=logging.INFO)
+    m.fs.cathode_recycle.initialize(outlvl=outlvl, optarg=solver.options)
 
-    propagate_state(m.fs.cathode_hx.shell_inlet, m.fs.cathode_recycle.exhaust)
+    propagate_state(
+        source=m.fs.cathode_recycle.exhaust, destination=m.fs.cathode_hx.shell_inlet
+    )
 
-    m.fs.cathode_hx.initialize(outlvl=logging.INFO)
+    m.fs.cathode_hx.initialize(outlvl=outlvl, optarg=solver.options)
 
-    propagate_state(m.fs.cathode_blower.inlet, m.fs.cathode_recycle.recycle)
+    propagate_state(
+        source=m.fs.cathode_recycle.recycle, destination=m.fs.cathode_blower.inlet
+    )
 
-    m.fs.cathode_blower.initialize(outlvl=logging.INFO)
+    m.fs.cathode_blower.initialize(outlvl=outlvl, optarg=solver.options)
 
-    propagate_state(m.fs.cathode_mix.recycle, m.fs.cathode_blower.outlet)
+    propagate_state(
+        source=m.fs.cathode_blower.outlet, destination=m.fs.cathode_mix.recycle
+    )
 
-    propagate_state(m.fs.cathode_mix.feed, m.fs.cathode_hx.tube_outlet)
+    propagate_state(
+        source=m.fs.cathode_hx.tube_outlet, destination=m.fs.cathode_mix.feed
+    )
 
-    m.fs.cathode_mix.initialize(outlvl=logging.INFO)
+    m.fs.cathode_mix.initialize(outlvl=outlvl, optarg=solver.options)
 
-    propagate_state(m.fs.cathode.inlet, m.fs.cathode_mix.outlet)
+    propagate_state(source=m.fs.cathode_mix.outlet, destination=m.fs.cathode.inlet)
 
     # anode side
     # anode inlet is used as tear stream
@@ -1041,51 +1049,41 @@ def initialize_power_island(m):
     m.fs.anode.lagrange_mult[0, "H"] = 78296
     m.fs.anode.lagrange_mult[0, "O"] = 291784
 
-    m.fs.anode.outlet.mole_frac_comp[0, "O2"] = 0
+    m.fs.anode.initialize(outlvl=outlvl, optarg=solver.options)
 
-    # This initialization step fails to converge, but is sufficient to resolve
-    try:
-        m.fs.anode.initialize(outlvl=logging.INFO)
-    except InitializationError:
-        # this step may end on Solve to Acceptable Level, add resolve condition
-        for i in range(1, 10):  # keep looping until condition is met
-            res = solver.solve(m.fs.anode, tee=True)
-            if 'Optimal Solution Found' in res.solver.message:
-                break
+    propagate_state(source=m.fs.anode.outlet, destination=m.fs.anode_recycle.inlet)
 
-    propagate_state(m.fs.anode_recycle.inlet, m.fs.anode.outlet)
+    m.fs.anode_recycle.initialize(outlvl=outlvl, optarg=solver.options)
 
-    m.fs.anode_recycle.initialize(outlvl=logging.INFO)
+    propagate_state(
+        source=m.fs.anode_recycle.recycle, destination=m.fs.anode_blower.inlet
+    )
 
-    propagate_state(m.fs.anode_blower.inlet, m.fs.anode_recycle.recycle)
+    m.fs.anode_blower.initialize(outlvl=outlvl, optarg=solver.options)
 
-    # This initialization step fails to converge, but is sufficient to resolve
-    try:
-        m.fs.anode_blower.initialize(outlvl=logging.INFO)
-    except InitializationError:
-        # this step may end on Solve to Acceptable Level, add resolve condition
-        for i in range(1, 10):  # keep looping until condition is met
-            res = solver.solve(m.fs.anode_blower, tee=True)
-            if 'Optimal Solution Found' in res.solver.message:
-                break
+    propagate_state(
+        source=m.fs.anode_blower.outlet, destination=m.fs.recycle_translator.inlet
+    )
 
-    propagate_state(m.fs.recycle_translator.inlet, m.fs.anode_blower.outlet)
+    m.fs.recycle_translator.initialize(outlvl=outlvl, optarg=solver.options)
 
-    m.fs.recycle_translator.initialize()
+    propagate_state(
+        source=m.fs.recycle_translator.outlet, destination=m.fs.anode_mix.recycle
+    )
 
-    propagate_state(m.fs.anode_mix.recycle, m.fs.recycle_translator.outlet)
+    m.fs.anode_mix.initialize(outlvl=outlvl, optarg=solver.options)
 
-    m.fs.anode_mix.initialize(outlvl=logging.INFO)
+    propagate_state(source=m.fs.anode_mix.outlet, destination=m.fs.anode_hx.tube_inlet)
 
-    propagate_state(m.fs.anode_hx.tube_inlet, m.fs.anode_mix.outlet)
+    propagate_state(
+        source=m.fs.anode_recycle.exhaust, destination=m.fs.anode_hx.shell_inlet
+    )
 
-    propagate_state(m.fs.anode_hx.shell_inlet, m.fs.anode_recycle.exhaust)
+    m.fs.anode_hx.initialize(outlvl=outlvl, optarg=solver.options)
 
-    m.fs.anode_hx.initialize(outlvl=logging.INFO)
-
-    propagate_state(m.fs.prereformer.inlet, m.fs.anode_hx.tube_outlet)
-
-    propagate_state(m.fs.prereformer.outlet, m.fs.prereformer.inlet)
+    propagate_state(
+        source=m.fs.anode_hx.tube_outlet, destination=m.fs.prereformer.inlet
+    )
 
     m.fs.prereformer.gibbs_scaling = 1e-4
 
@@ -1093,91 +1091,96 @@ def initialize_power_island(m):
     m.fs.prereformer.lagrange_mult[0, "H"] = 62744
     m.fs.prereformer.lagrange_mult[0, "O"] = 293569
 
-    m.fs.prereformer.outlet.mole_frac_comp[0, "O2"] = 0
-    m.fs.prereformer.outlet.mole_frac_comp[0, "Ar"] = 0.003
-    m.fs.prereformer.outlet.mole_frac_comp[0, "C2H6"] = 0
-    m.fs.prereformer.outlet.mole_frac_comp[0, "C3H8"] = 0
-    m.fs.prereformer.outlet.mole_frac_comp[0, "C4H10"] = 0
+    m.fs.prereformer.initialize(outlvl=outlvl, optarg=solver.options)
 
-    m.fs.prereformer.initialize(outlvl=logging.INFO)
+    propagate_state(
+        source=m.fs.prereformer.outlet, destination=m.fs.anode_translator.inlet
+    )
 
-    propagate_state(m.fs.anode_translator.inlet, m.fs.prereformer.outlet)
+    m.fs.anode_translator.initialize(outlvl=outlvl, optarg=solver.options)
 
-    m.fs.anode_translator.initialize()
+    propagate_state(
+        source=m.fs.anode_translator.outlet, destination=m.fs.fuel_cell_mix.fuel_inlet
+    )
 
-    propagate_state(m.fs.fuel_cell_mix.fuel_inlet, m.fs.anode_translator.outlet)
+    propagate_state(
+        source=m.fs.cathode_translator.outlet, destination=m.fs.fuel_cell_mix.ion_inlet
+    )
 
-    propagate_state(m.fs.fuel_cell_mix.ion_inlet, m.fs.cathode_translator.outlet)
-
-    m.fs.fuel_cell_mix.initialize(outlvl=logging.INFO)
+    m.fs.fuel_cell_mix.initialize(outlvl=outlvl, optarg=solver.options)
 
     ##############################
     # Combustor and HRSG section #
     ##############################
 
     # cathode side
-    propagate_state(m.fs.cathode_exhaust_split.inlet, m.fs.cathode_hx.shell_outlet)
-
-    m.fs.cathode_exhaust_split.initialize(outlvl=logging.INFO)
-
     propagate_state(
-        m.fs.cathode_expander.inlet, m.fs.cathode_exhaust_split.exhaust_outlet
+        source=m.fs.cathode_hx.shell_outlet,
+        destination=m.fs.cathode_exhaust_split.inlet,
     )
 
-    m.fs.cathode_expander.initialize(outlvl=logging.INFO)
-
-    propagate_state(m.fs.cathode_HRSG.inlet, m.fs.cathode_expander.outlet)
-
-    m.fs.cathode_HRSG.initialize(outlvl=logging.INFO)
+    m.fs.cathode_exhaust_split.initialize(outlvl=outlvl, optarg=solver.options)
 
     propagate_state(
-        m.fs.cathode_exhaust_translator.inlet,
-        m.fs.cathode_exhaust_split.combustor_outlet,
+        source=m.fs.cathode_exhaust_split.exhaust_outlet,
+        destination=m.fs.cathode_expander.inlet,
     )
 
-    m.fs.cathode_exhaust_translator.initialize()
+    m.fs.cathode_expander.initialize(outlvl=outlvl, optarg=solver.options)
+
+    propagate_state(
+        source=m.fs.cathode_expander.outlet, destination=m.fs.cathode_HRSG.inlet
+    )
+
+    m.fs.cathode_HRSG.initialize(outlvl=outlvl, optarg=solver.options)
+
+    propagate_state(
+        source=m.fs.cathode_exhaust_split.combustor_outlet,
+        destination=m.fs.cathode_exhaust_translator.inlet,
+    )
+
+    m.fs.cathode_exhaust_translator.initialize(outlvl=outlvl, optarg=solver.options)
 
     # anode side
     propagate_state(
-        m.fs.combustor_mix.cathode_inlet, m.fs.cathode_exhaust_translator.outlet
+        source=m.fs.cathode_exhaust_translator.outlet,
+        destination=m.fs.combustor_mix.cathode_inlet,
     )
 
-    propagate_state(m.fs.combustor_mix.anode_inlet, m.fs.anode_hx.shell_outlet)
+    propagate_state(
+        source=m.fs.anode_hx.shell_outlet, destination=m.fs.combustor_mix.anode_inlet
+    )
 
-    m.fs.combustor_mix.initialize(outlvl=logging.INFO)
+    m.fs.combustor_mix.initialize(outlvl=outlvl, optarg=solver.options)
 
-    propagate_state(m.fs.combustor.inlet, m.fs.combustor_mix.outlet)
+    propagate_state(source=m.fs.combustor_mix.outlet, destination=m.fs.combustor.inlet)
 
-    # This initialization step fails to converge, but is sufficient to resolve
-    try:
-        m.fs.combustor.initialize(outlvl=logging.INFO)
-    except InitializationError:
-        # this step may end on Solve to Acceptable Level, add resolve condition
-        for i in range(1, 10):  # keep looping until condition is met
-            res = solver.solve(m.fs.combustor, tee=True)
-            if 'Optimal Solution Found' in res.solver.message:
-                break
+    m.fs.combustor.initialize(outlvl=outlvl, optarg=solver.options)
 
-    propagate_state(m.fs.combustor_expander.inlet, m.fs.combustor.outlet)
+    propagate_state(
+        source=m.fs.combustor.outlet, destination=m.fs.combustor_expander.inlet
+    )
 
-    m.fs.combustor_expander.initialize()
+    m.fs.combustor_expander.initialize(outlvl=outlvl, optarg=solver.options)
 
-    propagate_state(m.fs.anode_HRSG.inlet, m.fs.combustor_expander.outlet)
+    propagate_state(
+        source=m.fs.combustor_expander.outlet, destination=m.fs.anode_HRSG.inlet
+    )
 
-    m.fs.anode_HRSG.initialize()
+    m.fs.anode_HRSG.initialize(outlvl=outlvl, optarg=solver.options)
 
 
-def initialize_reformer(m):
+def initialize_reformer(m, outlvl=logging.INFO):
     solver = pyo.SolverFactory("ipopt")
     solver.options = {
         "max_iter": 500,
         "tol": 1e-5,
         "bound_push": 1e-8,
         "linear_solver": "ma57",
-        "ma57_pivtol": 1e-3,
         "OF_ma57_automatic_scaling": "yes",
-        "nlp_scaling_method": "user-scaling"
-          }
+        "nlp_scaling_method": "user-scaling",
+    }
+
     m.fs.reformer.inlet.flow_mol[0] = 2262  # mol/s
     m.fs.reformer.inlet.temperature[0] = 470  # K
     m.fs.reformer.inlet.pressure[0] = 203395  # Pa
@@ -1185,102 +1188,82 @@ def initialize_reformer(m):
     m.fs.reformer.inlet.mole_frac_comp[0, "C2H6"] = 0.006
     m.fs.reformer.inlet.mole_frac_comp[0, "C3H8"] = 0.002
     m.fs.reformer.inlet.mole_frac_comp[0, "C4H10"] = 0.001
-    m.fs.reformer.inlet.mole_frac_comp[0, "H2"] = 0
-    m.fs.reformer.inlet.mole_frac_comp[0, "CO"] = 0
+    m.fs.reformer.inlet.mole_frac_comp[0, "H2"] = 1e-19
+    m.fs.reformer.inlet.mole_frac_comp[0, "CO"] = 1e-19
     m.fs.reformer.inlet.mole_frac_comp[0, "CO2"] = 0.002
     m.fs.reformer.inlet.mole_frac_comp[0, "H2O"] = 0.212
     m.fs.reformer.inlet.mole_frac_comp[0, "N2"] = 0.458
     m.fs.reformer.inlet.mole_frac_comp[0, "O2"] = 0.122
     m.fs.reformer.inlet.mole_frac_comp[0, "Ar"] = 0.006
 
-    m.fs.reformer.lagrange_mult[0, "C"] = 39230
-    m.fs.reformer.lagrange_mult[0, "H"] = 81252
-    m.fs.reformer.lagrange_mult[0, "O"] = 315049
-
-    m.fs.reformer.outlet.mole_frac_comp[0, "O2"] = 0
-    m.fs.reformer.outlet.mole_frac_comp[0, "Ar"] = 0.004
-    m.fs.reformer.outlet.mole_frac_comp[0, "CH4"] = 0.0005
-    m.fs.reformer.outlet.mole_frac_comp[0, "C2H6"] = 0
-    m.fs.reformer.outlet.mole_frac_comp[0, "C3H8"] = 0
-    m.fs.reformer.outlet.mole_frac_comp[0, "C4H10"] = 0
-
-    # This initialization step fails to converge, but is sufficient to resolve
-    try:
-        m.fs.reformer.initialize(outlvl=logging.INFO)
-    except InitializationError:
-        # this step may end on Solve to Acceptable Level, add resolve condition
-        for i in range(1, 10):  # keep looping until condition is met
-            res = solver.solve(m.fs.reformer, tee=True)
-            if 'Optimal Solution Found' in res.solver.message:
-                break
+    m.fs.reformer.initialize(outlvl=outlvl, optarg=solver.options)
 
     # reformer recuperator
-    propagate_state(m.fs.reformer_recuperator.shell_inlet, m.fs.reformer.outlet)
+    propagate_state(
+        source=m.fs.reformer.outlet, destination=m.fs.reformer_recuperator.shell_inlet
+    )
 
-    # This initialization step fails to converge, but is sufficient to resolve
-    try:
-        m.fs.reformer_recuperator.initialize(outlvl=logging.INFO)
-    except InitializationError:
-        # this step may end on Solve to Acceptable Level, add resolve condition
-        for i in range(1, 10):  # keep looping until condition is met
-            res = solver.solve(m.fs.reformer_recuperator, tee=True)
-            if 'Optimal Solution Found' in res.solver.message:
-                break
+    m.fs.reformer_recuperator.initialize(outlvl=outlvl, optarg=solver.options)
 
     # NG expander
-    propagate_state(m.fs.NG_expander.inlet, m.fs.reformer_recuperator.tube_outlet)
+    propagate_state(
+        source=m.fs.reformer_recuperator.tube_outlet, destination=m.fs.NG_expander.inlet
+    )
 
-    # This initialization step fails to converge, but is sufficient to resolve
-    try:
-        m.fs.NG_expander.initialize(outlvl=logging.INFO)
-    except InitializationError:
-        # this step may end on Solve to Acceptable Level, add resolve condition
-        for i in range(1, 10):  # keep looping until condition is met
-            res = solver.solve(m.fs.NG_expander, tee=True)
-            if 'Optimal Solution Found' in res.solver.message:
-                break
+    m.fs.NG_expander.initialize(outlvl=outlvl, optarg=solver.options)
 
     # reformer bypass
-    propagate_state(m.fs.reformer_bypass.inlet, m.fs.NG_expander.outlet)
+    propagate_state(
+        source=m.fs.NG_expander.outlet, destination=m.fs.reformer_bypass.inlet
+    )
 
-    m.fs.reformer_bypass.initialize()
+    m.fs.reformer_bypass.initialize(outlvl=outlvl, optarg=solver.options)
 
     # air compressor train
-    m.fs.air_compressor_s1.initialize()
+    m.fs.air_compressor_s1.initialize(outlvl=outlvl, optarg=solver.options)
 
-    propagate_state(m.fs.intercooler_s1.inlet, m.fs.air_compressor_s1.outlet)
+    propagate_state(
+        source=m.fs.air_compressor_s1.outlet, destination=m.fs.intercooler_s1.inlet
+    )
 
-    m.fs.intercooler_s1.initialize()
+    m.fs.intercooler_s1.initialize(outlvl=outlvl, optarg=solver.options)
 
-    propagate_state(m.fs.air_compressor_s2.inlet, m.fs.intercooler_s1.outlet)
+    propagate_state(
+        source=m.fs.intercooler_s1.outlet, destination=m.fs.air_compressor_s2.inlet
+    )
 
-    # This initialization step fails to converge, but is sufficient to resolve
-    try:
-        m.fs.air_compressor_s2.initialize(outlvl=logging.INFO)
-    except InitializationError:
-        # this step may end on Solve to Acceptable Level, add resolve condition
-        for i in range(1, 10):  # keep looping until condition is met
-            res = solver.solve(m.fs.air_compressor_s2, tee=True)
-            if 'Optimal Solution Found' in res.solver.message:
-                break
+    m.fs.air_compressor_s2.initialize(outlvl=outlvl, optarg=solver.options)
 
-    propagate_state(m.fs.intercooler_s2.inlet, m.fs.air_compressor_s2.outlet)
+    propagate_state(
+        source=m.fs.air_compressor_s2.outlet, destination=m.fs.intercooler_s2.inlet
+    )
 
-    m.fs.intercooler_s2.initialize()
+    m.fs.intercooler_s2.initialize(outlvl=outlvl, optarg=solver.options)
 
     # reformer mixer
-    propagate_state(m.fs.reformer_mix.oxygen_inlet, m.fs.intercooler_s2.outlet)
+    propagate_state(
+        source=m.fs.intercooler_s2.outlet, destination=m.fs.reformer_mix.oxygen_inlet
+    )
 
-    propagate_state(m.fs.reformer_mix.gas_inlet, m.fs.reformer_bypass.reformer_outlet)
+    propagate_state(
+        source=m.fs.reformer_bypass.reformer_outlet,
+        destination=m.fs.reformer_mix.gas_inlet,
+    )
 
-    m.fs.reformer_mix.initialize()
+    m.fs.reformer_mix.initialize(outlvl=outlvl, optarg=solver.options)
 
     # bypass rejoin
-    propagate_state(m.fs.bypass_rejoin.syngas_inlet, m.fs.reformer_recuperator.shell_outlet)
+    propagate_state(
+        source=m.fs.reformer_recuperator.shell_outlet,
+        destination=m.fs.bypass_rejoin.syngas_inlet,
+    )
 
-    propagate_state(m.fs.bypass_rejoin.bypass_inlet, m.fs.reformer_bypass.bypass_outlet)
+    propagate_state(
+        source=m.fs.reformer_bypass.bypass_outlet,
+        destination=m.fs.bypass_rejoin.bypass_inlet,
+    )
 
-    m.fs.bypass_rejoin.initialize()
+    m.fs.bypass_rejoin.initialize(outlvl=outlvl, optarg=solver.options)
 
 
 def connect_reformer_to_power_island(m):
@@ -1291,7 +1274,7 @@ def connect_reformer_to_power_island(m):
     pyo.TransformationFactory("network.expand_arcs").apply_to(m.fs)
 
 
-def SOFC_ROM_setup(m):
+def SOFC_ROM_setup(m, init=True):
     # create the ROM
     build_SOFC_ROM(m.fs)
 
@@ -1404,11 +1387,12 @@ def SOFC_ROM_setup(m):
     m.fs.SOFC.pressure.fix(1)
 
     # initialize ROM
-    calculate_variable_from_constraint(
-        m.fs.SOFC.air_temperature, m.fs.ROM_air_inlet_temperature
-    )
-    calculate_variable_from_constraint(m.fs.SOFC.air_util, m.fs.ROM_air_utilization)
-    initialize_SOFC_ROM(m.fs.SOFC)
+    if init:
+        calculate_variable_from_constraint(
+            m.fs.SOFC.air_temperature, m.fs.ROM_air_inlet_temperature
+        )
+        calculate_variable_from_constraint(m.fs.SOFC.air_util, m.fs.ROM_air_utilization)
+        initialize_SOFC_ROM(m.fs.SOFC)
 
     # add constraints for power calculations
     m.fs.F = pyo.Param(initialize=96487, units=pyunits.C / pyunits.mol)
@@ -1619,7 +1603,7 @@ def pfd_result(outfile, m, df):
     # set up tags
     tags = {}
     for i in df.index:
-        if i == 'Units':
+        if i == "Units":
             continue
         tags[i + "_F"] = fstr(df.loc[i, "Total Molar Flowrate"], 0, " mol/s")
         tags[i + "_T"] = fstr(df.loc[i, "Temperature"], 0, " K")
@@ -1660,8 +1644,9 @@ def pfd_result(outfile, m, df):
         tag_group[key] = ModelTag(expr=tag, format_string=format_string)
         tag_group.str_include_units = False
 
-    original_svg_file = os.path.join(this_file_dir(),
-                                     "../../notebooks/archive/power_gen/ngfc/NGFC_results_template.svg")
+    original_svg_file = os.path.join(
+        this_file_dir(), "../../archive/power_gen/ngfc/NGFC_results_template.svg"
+    )
     with open(original_svg_file, "r") as f:
         svg_tag(svg=f, tag_group=tag_group, outfile=outfile)
 
@@ -1674,45 +1659,50 @@ def main():
     reinit = False  # switch to True to re-initialize and re-solve
     resolve = False  # switch to True to re-solve only (for debugging)
 
-    if os.path.exists("../../notebooks/archive/power_gen/ngfc/NGFC_flowsheet_init.json.gz") and reinit is False:
+    if (
+        os.path.exists(
+            "../../notebooks/archive/power_gen/ngfc/NGFC_flowsheet_init.json.gz"
+        )
+        and reinit is False
+    ):
         # already initialized, can build model and load results from json
+        build_properties(m)
         build_power_island(m)
         build_reformer(m)
         scale_flowsheet(m)
         connect_reformer_to_power_island(m)
-        SOFC_ROM_setup(m)
+        SOFC_ROM_setup(m, init=False)
         add_SOFC_energy_balance(m)
         add_result_constraints(m)
-        if os.path.exists("../../notebooks/archive/power_gen/ngfc/NGFC_flowsheet_solution.json.gz") and resolve is False:
+        if (
+            os.path.exists(
+                "../../notebooks/archive/power_gen/ngfc/NGFC_flowsheet_solution.json.gz"
+            )
+            and resolve is False
+        ):
             # don't need to solve, can load results from json
-            print('Loading solved model')
+            print("Loading solved model")
             ms.from_json(m, fname="NGFC_flowsheet_solution.json.gz")
         else:
             # need to solve the model using loaded initialization point
             # and then serialize solved model results
-            print('Loading initialized model')
+            print("Loading initialized model")
             ms.from_json(m, fname="NGFC_flowsheet_init.json.gz")
             # solver and options
-            solver = pyo.SolverFactory("ipopt")
-            solver.options = {
-                "max_iter": 50,
-                "tol": 1e-5,
-                "bound_push": 1e-8,
-                "linear_solver": "ma57",
-                "ma57_pivtol": 1e-3,
-                "OF_ma57_automatic_scaling": "yes",
-                "nlp_scaling_method": "user-scaling"
-                  }
-            solve_iteration = 0
-            for i in range(1, 10):  # keep looping until condition is met
-                solve_iteration += 1
-                print('Solve # ', solve_iteration)
-                res = solver.solve(m, tee=True)
-                if 'Optimal Solution Found' in res.solver.message:
-                    break
+            solver_ma97 = pyo.SolverFactory("ipopt")
+            solver_ma97.options = {
+                "max_iter": 200,
+                "tol": 1e-7,
+                "bound_push": 1e-5,
+                "mu_init": 1e-2,
+                "linear_solver": "ma97",
+                "nlp_scaling_method": "user-scaling",
+            }
+            solver_ma97.solve(m, tee=True)
             ms.to_json(m, fname="NGFC_flowsheet_solution.json.gz")
     else:
         # need to initialize model, serialize, and try to solve/serialize
+        build_properties(m)
         build_power_island(m)
         build_reformer(m)
         scale_flowsheet(m)
@@ -1721,27 +1711,34 @@ def main():
         initialize_power_island(m)
         initialize_reformer(m)
         connect_reformer_to_power_island(m)
-        SOFC_ROM_setup(m)
+
+        solver_ma57 = pyo.SolverFactory("ipopt")
+        solver_ma57.options = {
+            "max_iter": 200,
+            "tol": 1e-7,
+            "bound_push": 1e-5,
+            "linear_solver": "ma57",
+            "OF_ma57_automatic_scaling": "yes",
+            "nlp_scaling_method": "user-scaling",
+        }
+        solver_ma57.solve(m, tee=True)
+
+        SOFC_ROM_setup(m, init=True)
         add_SOFC_energy_balance(m)
         add_result_constraints(m)
+
         ms.to_json(m, fname="NGFC_flowsheet_init.json.gz")
-        solver = pyo.SolverFactory("ipopt")
-        solver.options = {
-            "max_iter": 50,
-            "tol": 1e-5,
-            "bound_push": 1e-8,
-            "linear_solver": "ma57",
-            "ma57_pivtol": 1e-3,
-            "OF_ma57_automatic_scaling": "yes",
-            "nlp_scaling_method": "user-scaling"
-              }
-        solve_iteration = 0
-        for i in range(1, 10):  # keep looping until condition is met
-            solve_iteration += 1
-            print('Solve # ', solve_iteration)
-            res = solver.solve(m, tee=True)
-            if 'Optimal Solution Found' in res.solver.message:
-                break
+
+        solver_ma97 = pyo.SolverFactory("ipopt")
+        solver_ma97.options = {
+            "max_iter": 200,
+            "tol": 1e-7,
+            "bound_push": 1e-5,
+            "mu_init": 1e-2,
+            "linear_solver": "ma97",
+            "nlp_scaling_method": "user-scaling",
+        }
+        solver_ma97.solve(m, tee=True)
 
         ms.to_json(m, fname="NGFC_flowsheet_solution.json.gz")
 
@@ -1749,7 +1746,7 @@ def main():
     make_stream_dict(m)
     df = create_stream_table_dataframe(streams=m._streams, orient="index")
     pfd_result("NGFC_results.svg", m, df)
-    print('PFD Results Created')
+    print("PFD Results Created")
 
     return m
 

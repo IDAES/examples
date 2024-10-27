@@ -104,7 +104,7 @@ class PhysicalParameterData(PhysicalParameterBlock):
         )
 
         # TODO - actual molecular weights of the materials can be substituted here
-        # but are not necessary for peformance calculations
+        # but are not necessary for performance calculations
         mw_comp_dict = {
             "H2O_s": 0.018,  # MW of H2O(g) is used for H2O(s)
             "Car": 0.044,  # MW of CO2(g) is used for carbamate
@@ -214,13 +214,14 @@ class PhysicalParameterData(PhysicalParameterBlock):
                 "enth_mass": {"method": "_enth_mass", "units": "J/kg"},
             }
         )
-        
+
         obj.define_custom_properties(
             {
-                "dens_mass_particle": {"method": None,
-                                       "units": pyunits.dimensionless},
-                "mass_frac_comp_max": {"method": "_mass_frac_comp_max",
-                                       "units": pyunits.dimensionless},
+                "dens_mass_particle": {"method": None, "units": pyunits.dimensionless},
+                "mass_frac_comp_max": {
+                    "method": "_mass_frac_comp_max",
+                    "units": pyunits.dimensionless,
+                },
             }
         )
 
@@ -275,7 +276,7 @@ class _SolidPhaseStateBlock(StateBlock):
                                  initialization.
                         - False - state variables are unfixed after
                                  initialization by calling the
-                                 relase_state method
+                                 release_state method
         Returns:
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
@@ -342,7 +343,7 @@ class _SolidPhaseStateBlock(StateBlock):
 
     def release_state(blk, flags, outlvl=idaeslog.NOTSET):
         """
-        Method to relase state variables fixed during initialization.
+        Method to release state variables fixed during initialization.
         Keyword Arguments:
             flags : dict containing information of which state variables
                     were fixed during initialization, and should now be

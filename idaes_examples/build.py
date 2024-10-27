@@ -1,6 +1,7 @@
 """
 Build the examples
 """
+
 import argparse
 import json
 import logging
@@ -8,7 +9,7 @@ import os
 from pathlib import Path
 import re
 import shutil
-from subprocess import check_call
+import subprocess
 import sys
 import time
 import traceback
@@ -37,8 +38,6 @@ from idaes_examples.util import (
 from idaes_examples.util import _log as util_log
 
 # third-party
-from jupyter_cache import get_cache
-import nbformat as nbf
 
 
 # -------------
@@ -274,6 +273,7 @@ def clean(srcdir=None, outputs=True, ids=False, all_files=False):
         results = find_notebooks(src_path, toc, _remove_ids)
         Commands.subheading(processing_report("removed ids", t0, results, _log))
 
+
 def _remove_files(nb_path: Path, **kwargs):
     changed = False
     if nb_path.exists():
@@ -320,12 +320,14 @@ def _remove_ids(nb_path: Path, **kwargs):
         _log.debug(f"Removed code cell id(s) from {nb_path}")
     return changed
 
+
 def remove_build(srcdir=None):
     nb_path = find_notebook_root(Path(srcdir)) / NB_ROOT
     build = nb_path / "_build"
     if build.exists():
         _log.info(f"remove build directory: {build}")
         shutil.rmtree(build)
+
 
 # ---------------
 # List skipped
@@ -371,7 +373,7 @@ def black(srcdir=None):
     src_path = find_notebook_root(Path(srcdir)) / NB_ROOT
     commandline = ["black", "--include", ".*_src\\.ipynb", str(src_path)]
     add_vb_flags(_log, commandline)
-    check_call(commandline)
+    subprocess.check_call(commandline)
 
 
 # --------------------
@@ -406,10 +408,11 @@ def jupyterbook(srcdir=None, quiet=0, dev=False):
         else:
             add_vb_flags(_log, commandline)
         # run build
-        check_call(commandline)
+        subprocess.check_call(commandline)
     finally:
         os.chdir(cwd)
     _copy_built_files(path)
+
 
 def _copy_built_files(dst: Path):
     src = dst / "_build" / "jupyter_execute"
@@ -487,7 +490,7 @@ def modify_conf(
     if sphinx:
         Commands.subheading(f"Updating Sphinx config file")
         commandline = ["jupyter-book", "config", "sphinx", str(config_file.parent)]
-        check_call(commandline)
+        subprocess.check_call(commandline)
 
     if show:
 
@@ -531,8 +534,10 @@ def edit_header(
         src_path = find_notebook_root(Path(srcdir)) / NB_ROOT
         if path.parts[0] == "notebooks":
             path = Path("/".join(path.parts[1:]))
-            _log.warning(f"Relative notebook paths should start below 'notebooks' dir; "
-                         f"modified path: {path}")
+            _log.warning(
+                f"Relative notebook paths should start below 'notebooks' dir; "
+                f"modified path: {path}"
+            )
         full_path = src_path / path
         if not full_path.exists():
             _log.error(f"Path '{full_path}' ({src_path} + {path}) does not exist")
@@ -575,6 +580,7 @@ def edit_header(
         else:
             reason = "???"
         _log.warning(f"Skip non-notebook at '{path}': {reason}")
+
 
 ## -- utility functions for header manipulation --
 
@@ -760,7 +766,9 @@ class Commands:
                 "remove output cells", clean, srcdir=args.dir, ids=False, outputs=True
             )
         if result == 0 and not args.keep_build:
-            result = cls._run("remove notebook build dir", remove_build, srcdir=args.dir)
+            result = cls._run(
+                "remove notebook build dir", remove_build, srcdir=args.dir
+            )
 
         return result
 
@@ -770,22 +778,27 @@ class Commands:
         return cls._run("format notebook code", black, srcdir=args.dir)
 
     @classmethod
-    def gui(cls, args):
+    def serve(cls, args):
         from idaes_examples import browse
 
-        cls.heading(f"Load notebooks into GUI")
-        nb_dir = browse.find_notebook_dir().parent
+        nb_dir = browse.find_notebook_dir()
         cls._run(f"pre-process notebooks", preprocess, srcdir=nb_dir)
         browse.set_log_level(_log.getEffectiveLevel())
-        nb = browse.Notebooks()
-        if args.console:
-            for val in nb._sorted_values:
-                pth = Path(val.path).relative_to(Path.cwd())
-                print(f"{val.type}{' '*(10 - len(val.type))} {val.title} -> {pth}")
-            status = 0
-        else:
-            status = browse.gui(nb, use_lab=args.lab, stop_notebooks_on_quit=args.stop)
-        return status
+
+        def _run_jupyter_server():
+            try:
+                ret = subprocess.run(
+                    [
+                        "jupyter",
+                        "notebook",
+                        str(nb_dir),
+                        "-y",  # answer 'yes' to skip confirmation prompts
+                    ],
+                )
+            except KeyboardInterrupt:
+                return
+
+        return cls._run(f"starting Jupyter server in {nb_dir}", _run_jupyter_server)
 
     @classmethod
     def where(cls, args):
@@ -857,7 +870,7 @@ def main():
         ("hdr", "View or edit headers"),
         ("clean", "Clean generated files"),
         ("black", "Format code in notebooks with Black"),
-        ("gui", "Graphical notebook browser"),
+        ("serve", "Start local Jupyter server to browse and run notebooks"),
         ("skipped", "List notebooks tagged to skip some pre-processing"),
         ("where", "Print example notebook directory path"),
         ("new", "Terminal-based UI for starting a new notebook"),
@@ -921,25 +934,6 @@ def main():
     )
     subp["conf"].add_argument(
         "--sphinx", action="store_true", help="Run JB command to update Sphinx conf.py"
-    )
-    subp["gui"].add_argument("--console", "-c", action="store_true", dest="console")
-    subp["gui"].add_argument(
-        "--stderr",
-        "-e",
-        action="store_true",
-        default=False,
-        dest="log_console",
-        help=(
-            "Print logs to the console "
-            "(stderr) instead of redirecting "
-            "them to a file in ~/.idaes/logs"
-        ),
-    )
-    subp["gui"].add_argument(
-        "--lab", help="Use Jupyter Lab instead of Jupyter Notebook", action="store_true"
-    )
-    subp["gui"].add_argument(
-        "--stop", help="Stop notebooks on GUI quit", action="store_true"
     )
     subp["hdr"].add_argument("--path", help="Path to notebook for `--edit`")
     subp["hdr"].add_argument(

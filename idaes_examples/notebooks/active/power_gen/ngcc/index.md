@@ -1,1 +1,0 @@
-# Natural gas combined cycle

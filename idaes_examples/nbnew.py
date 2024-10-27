@@ -1,6 +1,7 @@
 """
 User interface for creating a new notebook
 """
+
 from enum import Enum
 from pathlib import Path
 import subprocess
@@ -90,7 +91,7 @@ class AddNotebook:
     directories in the table of contents.
     """
 
-    def __init__(self, term: Terminal, path: Path = None):
+    def __init__(self, term: Terminal, path: Path = None, git: str = "git"):
         """Constructor.
 
         Args:
@@ -108,15 +109,7 @@ class AddNotebook:
 
         c, spc = self.colors, " " * 10
         self._hdr = f"{c.rev}{spc}add notebook{spc}{c.reg}"
-        self._git = "git"
-
-    @property
-    def git_program(self):
-        return self._git
-
-    @git_program.setter
-    def git_program(self, value):
-        self._git = value
+        self.git_program = git
 
     def run(self) -> Union[Path, None]:
         """Run the UI.
@@ -306,7 +299,13 @@ class AddNotebook:
         assert len(created) > 0
 
         t, c = self.term, self.colors
-        print(f"{c.star}Add and commit files to git")
+        print(
+            f"{c.star}Add and commit files to git (git command={c.em}{self.git_program}{c.reg})"
+        )
+
+        if self.git_program is None:
+            print(f"{c.em}Not staging to Git{c.reg}")
+            return True  # ok
 
         ok = False
 
@@ -350,43 +349,58 @@ class AddNotebook:
             f"Add {c.light}{path}{c.reg} notebook to section {c.light}{dirname}{c.reg}"
         )
         toc = read_toc(self.root / "notebooks")
-        found = False
+
         for part in toc["parts"]:
+            # Look in each chapter
             for chapter in part["chapters"]:
-                for item in chapter:
-                    # Chapter with sections
-                    if "sections" in item:
-                        for section in chapter["sections"]:
-                            if section.get("file", "").startswith(dirname):
-                                if entry in chapter["sections"]:
-                                    part_name = part.get("caption", "?")
-                                    chap_name = chapter.get("file", "?")
-                                    print(
-                                        f"{c.err}Found existing entry in "
-                                        f"{c.light}_toc.yml{c.err} at{c.light}"
-                                        f"({part_name}).chapters.({chap_name})"
-                                        f"{c.err}!{c.reg}"
-                                    )
-                                    break
-                                chapter["sections"].append(entry)
-                                found = True
-                                break
-                    # Chapter w/o sections
-                    elif isinstance(item, dict) and item.get("file", "").startswith(
-                        dirname
-                    ):
-                        if entry in part["chapters"]:
+                if "file" not in chapter:
+                    continue
+                # Get chapter file and directory
+                ch_file = chapter["file"]
+                ch_dirname = Path(ch_file).parent.as_posix()
+
+                # See if we found the location
+                if ch_dirname != dirname:
+                    continue  # keep looking
+
+                # Chapter with sections (root file is an index)
+                if ch_file.endswith("index"):
+                    # Add to existing section or create new section
+                    if "sections" in chapter:
+                        sec_files = (sec["file"] for sec in chapter["sections"])
+                        if entry["file"] in sec_files:
                             part_name = part.get("caption", "?")
+                            chap_name = chapter.get("file", "?")
                             print(
-                                f"{c.err}Found existing entry in {c.reg}"
-                                f"({part_name}).chapters{c.err}!{c.reg}"
+                                f"{c.err}Found existing entry in "
+                                f"{c.light}_toc.yml{c.err} at{c.light}"
+                                f"({part_name}).chapters.({chap_name})"
+                                f"{c.err}!{c.reg}"
                             )
-                            break
-                        part["chapters"].append(entry)
-                        found = True
-                    if found:
-                        return toc
-        return None
+                            return None  # abort!
+                        chapter["sections"].append(entry)
+                        return toc  # success!
+                    else:
+                        chapter["sections"] = [entry]
+                        return toc  # success!
+
+                # Chapters without sections, i.e. just
+                # {"file": "notebook_name_doc"}
+                else:
+                    # Look for matching {"file":..} entry in the chapter
+                    ch_files = (ch["file"] for ch in part["chapters"])
+                    if entry["file"] in ch_files:
+                        part_name = part.get("caption", "?")
+                        print(
+                            f"{c.err}Found existing entry in {c.reg}"
+                            f"({part_name}).chapters{c.err}!{c.reg}"
+                        )
+                        return None  # abort!
+                    # Otherwise add a new chapter entry
+                    part["chapters"].append(entry)
+                    return toc  # success!
+
+        return None  # not found at all
 
     def _write_new_toc(self, d: dict):
         """Preserve comments from original YAML.
@@ -421,6 +435,7 @@ class AddNotebook:
 class App:
     def __init__(self):
         self.term = Terminal()
+        self.git_program = None
 
     def run(self) -> int:
         try:
@@ -435,7 +450,7 @@ class App:
         return retcode
 
     def do_new(self) -> int:
-        adder = AddNotebook(self.term)
+        adder = AddNotebook(self.term, git=self.git_program)
         path = adder.run()
 
         if path is None:

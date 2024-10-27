@@ -391,10 +391,13 @@ class PhysicalParameterData(PhysicalParameterBlock):
                 "diffusion_comp": {"method": "_diffusion_comp"},
             }
         )
-        
+
         obj.define_custom_properties(
             {
-                "mole_frac_comp_max": {"method": "_mole_frac_comp_max", "units": pyunits.dimensionless},
+                "mole_frac_comp_max": {
+                    "method": "_mole_frac_comp_max",
+                    "units": pyunits.dimensionless,
+                },
             }
         )
 
@@ -442,13 +445,13 @@ class _GasPhaseStateBlock(StateBlock):
             hold_state : flag indicating whether the initialization routine
                          should unfix any state variables fixed during
                          initialization (default=False).
-                         - True - states varaibles are not unfixed, and
+                         - True - states variables are not unfixed, and
                                  a dict of returned containing flags for
                                  which states were fixed during
                                  initialization.
                         - False - state variables are unfixed after
                                  initialization by calling the
-                                 relase_state method
+                                 release_state method
         Returns:
             If hold_states is True, returns a dict containing flags for
             which states were fixed during initialization.
@@ -563,7 +566,7 @@ class _GasPhaseStateBlock(StateBlock):
 
     def release_state(blk, flags, outlvl=0):
         """
-        Method to relase state variables fixed during initialization.
+        Method to release state variables fixed during initialization.
         Keyword Arguments:
             flags : dict containing information of which state variables
                     were fixed during initialization, and should now be
@@ -590,7 +593,7 @@ class _GasPhaseStateBlock(StateBlock):
 @declare_process_block_class("GasPhaseStateBlock", block_class=_GasPhaseStateBlock)
 class GasPhaseStateBlockData(StateBlockData):
     """
-    Property package for gas phase properties 
+    Property package for gas phase properties
     """
 
     def build(self):
@@ -696,9 +699,7 @@ class GasPhaseStateBlockData(StateBlockData):
             temperature = pyunits.convert(b.temperature, to_units=pyunits.K)
             eps = 1e-8 * pyunits.K  # epsilon parameter for smoothing
             temperature_smooth = (temperature**2 + eps**2) ** 0.5
-            dens_mol = pyunits.convert(
-                b.dens_mol, to_units=pyunits.mol / pyunits.m**3
-            )
+            dens_mol = pyunits.convert(b.dens_mol, to_units=pyunits.mol / pyunits.m**3)
             gas_constant = pyunits.convert(
                 Constants.gas_constant, to_units=pyunits.J / pyunits.mol / pyunits.K
             )

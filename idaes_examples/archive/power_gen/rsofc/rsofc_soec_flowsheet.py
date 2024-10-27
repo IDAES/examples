@@ -153,7 +153,10 @@ def add_properties(fs):
     fs.h2_compress_prop.set_default_scaling("mole_frac_phase_comp", 1e2)
 
     fs.CO2_H2O_VLE = GenericParameterBlock(
-        **get_prop(components=air_comp, phases=["Vap", "Liq"],)
+        **get_prop(
+            components=air_comp,
+            phases=["Vap", "Liq"],
+        )
     )
     fs.CO2_H2O_VLE.set_default_scaling("mole_frac_comp", 1e2)
     fs.CO2_H2O_VLE.set_default_scaling("mole_frac_phase_comp", 1e2)
@@ -202,7 +205,7 @@ def add_asu(fs):
     fs.intercooler_s2.outlet.temperature.fix(310.93)  # K (100 F)
     fs.intercooler_s2.deltaP.fix(-3447)  # Pa (-0.5 psi)
 
-    # air seperation unit
+    # air separation unit
     fs.ASU.split_fraction[0, "O2_outlet", "CO2"].fix(1e-10)
     fs.ASU.split_fraction[0, "O2_outlet", "H2O"].fix(1e-10)
     fs.ASU.split_fraction[0, "O2_outlet", "N2"].fix(0.0005)
@@ -247,7 +250,8 @@ def add_preheater(fs):
         tube={"property_package": fs.fg_prop},
     )
     fs.preheat_split = gum.Separator(
-        property_package=fs.air_prop, outlet_list=["oxygen", "ng"],
+        property_package=fs.air_prop,
+        outlet_list=["oxygen", "ng"],
     )
 
     ###########################################################################
@@ -401,7 +405,7 @@ def add_aux_boiler_steam(fs):
     )  # enthalpy outlet
     fs.bhx2.outlet.enth_mol.fix(
         h_bhx2
-    )  # K (100 F) # unfix after initalize and spec Q from cmb
+    )  # K (100 F) # unfix after initialize and spec Q from cmb
 
     fs.bhx1.overall_heat_transfer_coefficient.fix(100)
     fs.bhx1.delta_temperature_out.fix(10)  # fix DT for pinch side
@@ -512,10 +516,12 @@ def add_soec_unit(fs):
     fs.soec_stack.number_cells.fix(3.22e6)
 
     fs.spltf1 = gum.Separator(
-        property_package=fs.h2_prop, outlet_list=["out", "recycle"],
+        property_package=fs.h2_prop,
+        outlet_list=["out", "recycle"],
     )
     fs.splta1 = gum.Separator(
-        property_package=fs.air_prop, outlet_list=["out", "recycle"],
+        property_package=fs.air_prop,
+        outlet_list=["out", "recycle"],
     )
 
     ###########################################################################
@@ -634,8 +640,10 @@ def add_soec_inlet_mix(fs):
         inlet_list=["air", "recycle"],
         momentum_mixing_type=gum.MomentumMixingType.none,
     )
-    fs.fuel_recycle_heater = gum.Heater(  # recycle heater for temperature control purposes
-        has_pressure_change=False, property_package=fs.h2_prop
+    fs.fuel_recycle_heater = (
+        gum.Heater(  # recycle heater for temperature control purposes
+            has_pressure_change=False, property_package=fs.h2_prop
+        )
     )
 
     ###########################################################################
@@ -677,15 +685,20 @@ def add_soec_inlet_mix(fs):
         }
     )
 
-    fs.s04 = Arc(source=fs.main_steam_split.h_side_adapt, destination=fs.mxf1.water,)
+    fs.s04 = Arc(
+        source=fs.main_steam_split.h_side_adapt,
+        destination=fs.mxf1.water,
+    )
     ###########################################################################
 
     ###########################################################################
     fs.hr01 = Arc(  # h2 rich air from soec recycle stream
-        source=fs.spltf1.recycle, destination=fs.fuel_recycle_heater.inlet,
+        source=fs.spltf1.recycle,
+        destination=fs.fuel_recycle_heater.inlet,
     )
     fs.hr02 = Arc(  # h2 rich air from soec recycle stream
-        source=fs.fuel_recycle_heater.outlet, destination=fs.mxf1.recycle,
+        source=fs.fuel_recycle_heater.outlet,
+        destination=fs.mxf1.recycle,
     )
     fs.a03 = Arc(source=fs.air_preheater_2.tube_outlet, destination=fs.mxa1.air)
     fs.s05 = Arc(
@@ -1407,7 +1420,7 @@ def set_guess(fs):
         fs.preheat_split.inlet, F=7765, T=700, P=1.04e5, comp=comp_guess, fix=True
     )
 
-    # Set guess for temp, pressure and mole frac conditions to initalize soec
+    # Set guess for temp, pressure and mole frac conditions to initialize soec
     fs.soec_stack.fuel_inlet.flow_mol[0].fix(5600)
     fs.soec_stack.fuel_inlet.temperature[0].fix(1023.15)
     fs.soec_stack.fuel_inlet.pressure[0].fix(1.01325e5)
@@ -1487,7 +1500,8 @@ def initialize_plant(fs, solver):
         1.285
     )  # Roughly at the thermoneutral point
     fs.soec_stack.initialize(
-        current_density_guess=-5000, temperature_guess=1023.15,  # mA/cm2
+        current_density_guess=-5000,
+        temperature_guess=1023.15,  # mA/cm2
     )
     iinit.propagate_state(fs.h01)
     iinit.propagate_state(fs.o01)
@@ -1681,7 +1695,11 @@ def add_scaling(fs):
     for (t, j), c in fs.cmb.control_volume.material_balances.items():
         iscale.constraint_scaling_transform(c, 1e-1, overwrite=True)
     for (
-        (t, p, j,),
+        (
+            t,
+            p,
+            j,
+        ),
         c,
     ) in fs.cmb.control_volume.rate_reaction_stoichiometry_constraint.items():
         iscale.constraint_scaling_transform(c, 1e-1, overwrite=True)
@@ -1752,12 +1770,16 @@ def set_missing_scaling_and_bounds(fs):
 
     # catch some mole fraction variables that slipped through
     iscale.set_scaling_factor(fs.CPU_translator.properties_out[0.0].mole_frac_comp, 1e2)
-    iscale.set_scaling_factor(fs.flash.control_volume.properties_in[0.0].mole_frac_comp, 1e2)
-    iscale.set_scaling_factor(fs.flash.control_volume.properties_out[0.0].mole_frac_comp, 1e2)
+    iscale.set_scaling_factor(
+        fs.flash.control_volume.properties_in[0.0].mole_frac_comp, 1e2
+    )
+    iscale.set_scaling_factor(
+        fs.flash.control_volume.properties_out[0.0].mole_frac_comp, 1e2
+    )
 
     # correct lower bounds on mole fractions that default to 1e-20
     for var in fs.component_data_objects(pyo.Var, descend_into=True):
-        if '.mole_frac_comp' in var.name and var.lb == 1e-20:
+        if ".mole_frac_comp" in var.name and var.lb == 1e-20:
             var.setlb(0)
             if var.value == 0:
                 var.set_value(1e-10, skip_validation=True)
@@ -1912,7 +1934,7 @@ def tags_for_pfd(fs):
             doc=f"{i}: volumetric flow",
             expr=s.flow_vol,
             format_string="{:.3f}",
-            display_units=pyo.units.m ** 3 / pyo.units.s,
+            display_units=pyo.units.m**3 / pyo.units.s,
         )
         tag_group[f"{i}_T"] = iutil.ModelTag(
             doc=f"{i}: temperature",
@@ -1964,7 +1986,7 @@ def tags_for_pfd(fs):
         doc="Average current density of SOEC",
         expr=fs.soec_stack.solid_oxide_cell.average_current_density[0],
         format_string="{:.0f}",
-        display_units=pyo.units.A / pyo.units.m ** 2,
+        display_units=pyo.units.A / pyo.units.m**2,
     )
     tag_group["h2_product_rate_mass"] = iutil.ModelTag(
         expr=fs.h2_product_rate_mass[0],
@@ -1982,7 +2004,9 @@ def tags_for_pfd(fs):
         display_units=pyo.units.kg / pyo.units.s,
     )
     tag_group["net_power"] = iutil.ModelTag(
-        expr=fs.net_power[0], format_string="{:.3f}", display_units=pyo.units.MW,
+        expr=fs.net_power[0],
+        format_string="{:.3f}",
+        display_units=pyo.units.MW,
     )
     tag_group["net_power_per_mass_h2"] = iutil.ModelTag(
         expr=fs.net_power_per_mass_h2[0],
@@ -2321,7 +2345,8 @@ def base_case_optimization(m, solver):
     )
 
     m.soec_fs.obj = pyo.Objective(
-        expr=1e2 * m.soec_fs.costing.total_variable_OM_cost[0]
+        expr=1e2
+        * m.soec_fs.costing.total_variable_OM_cost[0]
         / m.soec_fs.h2_product_rate_mass[0]
     )
 
@@ -2348,7 +2373,9 @@ def results_table_dataframe(result_variables):
 
     # Populate results table from results_variables list
     for var in result_variables:
-        variable_name.append(var[0].name)  # make descriptive Var names and update to var.doc
+        variable_name.append(
+            var[0].name
+        )  # make descriptive Var names and update to var.doc
         variable_value.append(var[0].value)
         variable_units.append(pyo.units.get_units(var[0]))
 
@@ -2522,8 +2549,9 @@ def optimize_model(fs):
         )
     )
 
-    fs.obj = pyo.Objective(expr=1e2 * fs.costing.total_variable_OM_cost[0]
-                           / fs.h2_product_rate_mass[0])
+    fs.obj = pyo.Objective(
+        expr=1e2 * fs.costing.total_variable_OM_cost[0] / fs.h2_product_rate_mass[0]
+    )
 
     options = {
         "max_iter": 150,
@@ -2538,8 +2566,7 @@ def optimize_model(fs):
     # Additional tags for variable O&M costs
     fs.tag_pfd["total_variable_OM_cost"] = iutil.ModelTag(
         expr=fs.costing.total_variable_OM_cost[0]
-        / pyo.units.convert(fs.h2_product_rate_mass[0],
-                            pyo.units.kg/pyo.units.a),
+        / pyo.units.convert(fs.h2_product_rate_mass[0], pyo.units.kg / pyo.units.a),
         format_string="{:.3f}",
         display_units=pyo.units.MUSD_2018 / pyo.units.kg,
         doc="Total variable O&M cost $MM/kg hydrogen",
@@ -2547,8 +2574,7 @@ def optimize_model(fs):
 
     fs.tag_pfd["electricity_variable_OM_costs"] = iutil.ModelTag(
         expr=fs.costing.variable_operating_costs[0, "electricity"]
-        / pyo.units.convert(fs.h2_product_rate_mass[0],
-                            pyo.units.kg/pyo.units.a),
+        / pyo.units.convert(fs.h2_product_rate_mass[0], pyo.units.kg / pyo.units.a),
         format_string="{:.3f}",
         display_units=pyo.units.MUSD_2018 / pyo.units.kg,
         doc="Electricity variable O&M cost $MM/kg hydrogen",
@@ -2556,8 +2582,7 @@ def optimize_model(fs):
 
     fs.tag_pfd["natural_gas_variable_OM_costs"] = iutil.ModelTag(
         expr=fs.costing.variable_operating_costs[0, "natural_gas"]
-        / pyo.units.convert(fs.h2_product_rate_mass[0],
-                            pyo.units.kg/pyo.units.a),
+        / pyo.units.convert(fs.h2_product_rate_mass[0], pyo.units.kg / pyo.units.a),
         format_string="{:.3f}",
         display_units=pyo.units.MUSD_2018 / pyo.units.kg,
         doc="Natural gas variable O&M cost $MM/kg hydrogen",
@@ -2565,8 +2590,7 @@ def optimize_model(fs):
 
     fs.tag_pfd["water_variable_OM_costs"] = iutil.ModelTag(
         expr=fs.costing.variable_operating_costs[0, "water"]
-        / pyo.units.convert(fs.h2_product_rate_mass[0],
-                            pyo.units.kg/pyo.units.a),
+        / pyo.units.convert(fs.h2_product_rate_mass[0], pyo.units.kg / pyo.units.a),
         format_string="{:.3f}",
         display_units=pyo.units.MUSD_2018 / pyo.units.kg,
         doc="Water variable O&M cost $MM/kg hydrogen",
@@ -2574,8 +2598,7 @@ def optimize_model(fs):
 
     fs.tag_pfd["water_treatment_chemicals_OM_costs"] = iutil.ModelTag(
         expr=fs.costing.variable_operating_costs[0, "water_treatment_chemicals"]
-        / pyo.units.convert(fs.h2_product_rate_mass[0],
-                            pyo.units.kg/pyo.units.a),
+        / pyo.units.convert(fs.h2_product_rate_mass[0], pyo.units.kg / pyo.units.a),
         format_string="{:.3f}",
         display_units=pyo.units.MUSD_2018 / pyo.units.kg,
         doc="Water treatment chemicals O&M cost $MM/kg hydrogen",
@@ -2731,7 +2754,6 @@ if __name__ == "__main__":
     base_case_optimization(m, solver)  # 5 kg/s
     # uncomment to optimize model
     # optimize_model(m.soec_fs)
-
 
     # display_input_tags(m.soec_fs)
     write_pfd_results(m, "rsofc_soec_results.svg")

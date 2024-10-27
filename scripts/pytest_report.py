@@ -8,6 +8,7 @@ Usage (from root of repo)::
 
    python scripts/pytest_report.py
  """
+
 import argparse
 from pathlib import Path
 import json

@@ -234,7 +234,7 @@ class ReactionParameterData(ReactionParameterBlock):
                 },
             }
         )
-        
+
         obj.define_custom_properties(
             {
                 "specie_concentration": {

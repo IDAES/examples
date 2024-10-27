@@ -11,7 +11,7 @@
 # for full copyright and license information.
 #################################################################################
 """
-Captured sover
+Captured solver
 """
 
 import json
@@ -35,7 +35,7 @@ class ModelWidget:
     def solve(self, solver):
         solver = CapturedSolver(solver)
         self._result = solver.solve(self._model)
-        self._text = solver.ouput_text
+        self._text = solver.output_text
         return self._result
 
     def report(self):
@@ -63,7 +63,7 @@ class CapturedSolver:
         return self._solve_captured(model)
 
     @property
-    def ouput_text(self):
+    def output_text(self):
         p = self._output.index(self._outsep)
         output = self._output if p == -1 else self._output[:p]
         return "\n".join(output)
@@ -78,7 +78,8 @@ class CapturedSolver:
             filename = opath.name
             result = {}
             tailed = Thread(
-                target=self._tail_file, args=(filename, self._outsep, self._outcb, result)
+                target=self._tail_file,
+                args=(filename, self._outsep, self._outcb, result),
             )
             proc = Thread(
                 target=self._run_captured,
@@ -140,8 +141,6 @@ class CapturedSolver:
         if num_sep >= 2:
             n1 = all_data.index(sep)
             n2 = all_data.index(sep, n1 + 1)
-            json_text = "".join(all_data[n1 + 1: n2])
+            json_text = "".join(all_data[n1 + 1 : n2])
             r = json.loads(json_text)
             result.update(r)
-
-

@@ -24,13 +24,8 @@ import subprocess
 import pytest
 
 # package
-from idaes_examples.util import (
-    NotebookCollection,
-    NB_CELLS
-)
-from idaes_examples.build import (
- _get_cell_title, _get_header_cell, _get_header_meta
-)
+from idaes_examples.util import NotebookCollection, NB_CELLS
+from idaes_examples.build import _get_cell_title, _get_header_cell, _get_header_meta
 
 #  Fixtures
 # ----------

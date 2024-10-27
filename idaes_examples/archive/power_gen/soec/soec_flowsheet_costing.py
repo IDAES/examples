@@ -17,7 +17,12 @@ import pyomo.environ as pyo
 from pyomo.environ import units as pyunits
 from pyomo.common.config import ConfigValue
 from pyomo.util.calc_var_value import calculate_variable_from_constraint
-from idaes.core import UnitModelCostingBlock, UnitModelBlock, FlowsheetCostingBlockData, register_idaes_currency_units
+from idaes.core import (
+    UnitModelCostingBlock,
+    UnitModelBlock,
+    FlowsheetCostingBlockData,
+    register_idaes_currency_units,
+)
 from idaes.core.util.constants import Constants
 import idaes.core.util.scaling as iscale
 from idaes.core.util.math import smooth_max
@@ -35,7 +40,7 @@ from idaes.models.costing.SSLW import (
     HXType,
     VesselMaterial,
     BlowerMaterial,
-    CompressorType
+    CompressorType,
 )
 
 ssf = iscale.set_scaling_factor
@@ -169,6 +174,7 @@ def get_solo_soec_capital_costing(fs, CE_index_year):
                 "material_type": VesselMaterial.LowAlloySteel,
             },
         )
+
         # Heuristics for flash vessel taken from Analysis, Synthesis, and Design of Chemical Processes by Turton et al.
         # Fourth edition, copyright 2012. Page 344
         @flash.Constraint()
@@ -199,23 +205,19 @@ def get_solo_soec_capital_costing(fs, CE_index_year):
     # Have to hack entries into the Helmholtz compressor config dict that the costing method expects to exist
     fs.water_compressor.config.declare(
         "thermodynamic_assumption",
-        ConfigValue(
-            default=ThermodynamicAssumption.isentropic
-        ),
+        ConfigValue(default=ThermodynamicAssumption.isentropic),
     )
     fs.water_compressor.config.declare(
         "compressor",
-        ConfigValue(
-            default=True
-        ),
+        ConfigValue(default=True),
     )
     fs.water_compressor.costing = UnitModelCostingBlock(
-            flowsheet_costing_block=fs.costing,
-            costing_method=SSLWCostingData.cost_compressor,
-            costing_method_arguments={
-                "compressor_type": CompressorType.Screw,
-            },
-        )
+        flowsheet_costing_block=fs.costing,
+        costing_method=SSLWCostingData.cost_compressor,
+        costing_method_arguments={
+            "compressor_type": CompressorType.Screw,
+        },
+    )
     add_total_plant_cost(fs.water_compressor)
 
     fs.cmp04.ersatz_costing = pyo.Block()
@@ -223,19 +225,19 @@ def get_solo_soec_capital_costing(fs, CE_index_year):
         initialize=1, bounds=(0, 1e4), doc="total plant cost in $MM"
     )
     fs.cmp04.costing = UnitModelCostingBlock(
-            flowsheet_costing_block=fs.costing,
-            costing_method=SOFCPathwaysCostingData.cost_centrifugal_hydrogen_compressor,
-            costing_method_arguments={
-                "CE_index_year": CE_index_year,
-            },
+        flowsheet_costing_block=fs.costing,
+        costing_method=SOFCPathwaysCostingData.cost_centrifugal_hydrogen_compressor,
+        costing_method_arguments={
+            "CE_index_year": CE_index_year,
+        },
     )
 
     fs.heat_pump.costing = UnitModelCostingBlock(
-            flowsheet_costing_block=fs.costing,
-            costing_method=SOFCPathwaysCostingData.cost_heat_pump,
-            costing_method_arguments={
-                "CE_index_year": CE_index_year,
-            },
+        flowsheet_costing_block=fs.costing,
+        costing_method=SOFCPathwaysCostingData.cost_heat_pump,
+        costing_method_arguments={
+            "CE_index_year": CE_index_year,
+        },
     )
 
     ##########################################################################
@@ -262,7 +264,7 @@ def get_solo_soec_capital_costing(fs, CE_index_year):
             "tech": 6,
             "ccs": "A",
             "CE_index_year": CE_index_year,
-        }
+        },
     )
     # accounts with raw water withdrawal as the process parameter
     water_withdrawal_accounts = ["3.2", "3.4", "9.5", "14.6"]
@@ -290,16 +292,21 @@ def get_solo_soec_capital_costing(fs, CE_index_year):
     def raw_water_withdrawal(b, t):
         # Molar volume of water = 1.8068e-5 m^3/mol
         return pyo.units.convert(
-            1.8068e-5 * pyo.units.m**3/pyo.units.mol
+            1.8068e-5
+            * pyo.units.m**3
+            / pyo.units.mol
             * (b.water_demand[t] - b.water_recycle[t]),
-            pyo.units.gal/pyo.units.min
+            pyo.units.gal / pyo.units.min,
         )
 
-    fs.max_raw_water_withdrawal = pyo.Var(units=pyo.units.gal/pyo.units.min, initialize=3000, bounds=(0, None))
+    fs.max_raw_water_withdrawal = pyo.Var(
+        units=pyo.units.gal / pyo.units.min, initialize=3000, bounds=(0, None)
+    )
 
     @fs.Constraint(fs.time)
     def max_raw_water_withdrawal_ineq(b, t):
         return b.raw_water_withdrawal[t] <= b.max_raw_water_withdrawal
+
     @fs.Constraint(fs.time)
     def max_raw_water_withdrawal_eqn(b, t):
         return b.raw_water_withdrawal[t] == b.max_raw_water_withdrawal
@@ -319,18 +326,20 @@ def get_solo_soec_capital_costing(fs, CE_index_year):
             "tech": 6,
             "ccs": "A",
             "CE_index_year": CE_index_year,
-        }
+        },
     )
 
     # accounts with process water discharge as the process parameter
     water_discharge_accounts = ["3.7"]
 
     fs.discharge_system = UnitModelBlock()
+
     @fs.Expression(fs.time)
     def process_water_discharge(b, t):
         return pyo.units.convert(
             fs.heat_source.control_volume.properties_out[0].flow_vol,
-            pyo.units.gal/pyo.units.min)
+            pyo.units.gal / pyo.units.min,
+        )
 
     fs.discharge_system.costing = UnitModelCostingBlock(
         flowsheet_costing_block=fs.costing,
@@ -341,7 +350,7 @@ def get_solo_soec_capital_costing(fs, CE_index_year):
             "tech": 6,
             "ccs": "A",
             "CE_index_year": CE_index_year,
-        }
+        },
     )
 
     # accounts with net power as the process parameter
@@ -371,7 +380,7 @@ def get_solo_soec_capital_costing(fs, CE_index_year):
             "tech": 6,
             "ccs": "A",
             "CE_index_year": CE_index_year,
-        }
+        },
     )
 
     # costing for transformers
@@ -387,7 +396,7 @@ def get_solo_soec_capital_costing(fs, CE_index_year):
             "tech": 6,
             "ccs": "A",
             "CE_index_year": CE_index_year,
-        }
+        },
     )
 
     # accounts with auxiliary load (excluding the SOEC) as the process parameter
@@ -420,7 +429,7 @@ def get_solo_soec_capital_costing(fs, CE_index_year):
             "tech": 6,
             "ccs": "A",
             "CE_index_year": CE_index_year,
-        }
+        },
     )
 
     # adding expressions to group Fossil Energy Baseline costs
@@ -551,6 +560,7 @@ class SOFCPathwaysCostingData(FlowsheetCostingBlockData):
         and 1000 mA/cm^2 in SOEC mode.
         """
         CE_index_units = getattr(pyunits, "MUSD_" + CE_index_year)
+
         @blk.Expression()
         def total_plant_cost(c):
             extra_installed_area = 1.10  # accounts for cell degradation
@@ -567,10 +577,13 @@ class SOFCPathwaysCostingData(FlowsheetCostingBlockData):
         Cross flow heat exchangers
         """
         CE_index_units = getattr(pyunits, "MUSD_" + CE_index_year)
+
         @blk.Expression()
         def total_plant_cost(b):
             return pyunits.convert(
-                81.88 * pyunits.USD_2018 / pyo.units.ft**2
+                81.88
+                * pyunits.USD_2018
+                / pyo.units.ft**2
                 * pyo.units.convert(b.unit_model.area, pyo.units.ft**2),
                 to_units=CE_index_units,
             )
@@ -581,7 +594,10 @@ class SOFCPathwaysCostingData(FlowsheetCostingBlockData):
         """
         CE_index_units = getattr(pyunits, "MUSD_" + CE_index_year)
         # blk.max_heat_duty = pyo.Param(initialize=8e6, mutable=True, units=pyo.units.W)
-        blk.unit_model.max_heat_duty = pyo.Var(initialize=9e6, bounds=(0, None), units=pyo.units.W)
+        blk.unit_model.max_heat_duty = pyo.Var(
+            initialize=9e6, bounds=(0, None), units=pyo.units.W
+        )
+
         @blk.Expression()
         def total_plant_cost(b):
             U = 56 * pyo.units.W / pyo.units.m**2 / pyo.units.K
@@ -591,26 +607,35 @@ class SOFCPathwaysCostingData(FlowsheetCostingBlockData):
             # Add factor of two to pathways cost to account for corrosion-resistant materials for trim heaters
             return pyunits.convert(
                 2
-                * 81.88 * pyunits.USD_2018 / pyo.units.ft**2
+                * 81.88
+                * pyunits.USD_2018
+                / pyo.units.ft**2
                 * pyo.units.convert(area, pyo.units.ft**2),
                 to_units=CE_index_units,
             )
+
         @blk.unit_model.Constraint(blk.flowsheet().time)
         def max_heat_duty_ineq(b, t):
             return b.heat_duty[t] <= b.max_heat_duty
+
         @blk.unit_model.Constraint(blk.flowsheet().time)
         def max_heat_duty_eqn(b, t):
             return b.heat_duty[t] == b.max_heat_duty
 
         iscale.set_scaling_factor(blk.unit_model.max_heat_duty, 1e-6)
         for t in blk.flowsheet().time:
-            iscale.constraint_scaling_transform(blk.unit_model.max_heat_duty_ineq[t], 1e-6)
-            iscale.constraint_scaling_transform(blk.unit_model.max_heat_duty_eqn[t], 1e-6)
+            iscale.constraint_scaling_transform(
+                blk.unit_model.max_heat_duty_ineq[t], 1e-6
+            )
+            iscale.constraint_scaling_transform(
+                blk.unit_model.max_heat_duty_eqn[t], 1e-6
+            )
         blk.unit_model.max_heat_duty_ineq.deactivate()
 
     def cost_reciprocating_piston_hydrogen_compressor(blk, CE_index_year="2018"):
         # TODO determine if intercooling is taken into account
         CE_index_units = getattr(pyunits, "MUSD_" + CE_index_year)
+
         @blk.Expression()
         def total_plant_cost(b):
             # This is for one stage.  The original was for 2 hence the factor of 0.5
@@ -647,6 +672,7 @@ class SOFCPathwaysCostingData(FlowsheetCostingBlockData):
         """
         blk.number_units = pyo.Param(initialize=2, domain=pyo.Integers, mutable=True)
         CE_index_units = getattr(pyunits, "MUSD_" + CE_index_year)
+
         @blk.Expression()
         def total_plant_cost(b):
             ref_cost = (
@@ -668,8 +694,7 @@ class SOFCPathwaysCostingData(FlowsheetCostingBlockData):
                 pyo.units.kg / pyo.units.day,
             )
             return pyunits.convert(
-                ref_cost * (process_param / ref_param) ** alpha,
-                to_units=CE_index_units
+                ref_cost * (process_param / ref_param) ** alpha, to_units=CE_index_units
             )
 
     def cost_heat_pump(blk, CE_index_year="2018"):
@@ -682,7 +707,10 @@ class SOFCPathwaysCostingData(FlowsheetCostingBlockData):
         overestimating how much we need to pay for water so hopefully things will balance out
         """
         CE_index_units = getattr(pyunits, "MUSD_" + CE_index_year)
-        blk.unit_model.max_heat_duty = pyo.Var(initialize=7e6, bounds=(0, None), units=pyo.units.W)
+        blk.unit_model.max_heat_duty = pyo.Var(
+            initialize=7e6, bounds=(0, None), units=pyo.units.W
+        )
+
         @blk.Expression()
         def total_plant_cost(b):
             equipment_cost = (
@@ -700,20 +728,25 @@ class SOFCPathwaysCostingData(FlowsheetCostingBlockData):
             )
             alpha = 1
             return pyunits.convert(
-                ref_cost * (process_param / ref_param) ** alpha,
-                to_units=CE_index_units
+                ref_cost * (process_param / ref_param) ** alpha, to_units=CE_index_units
             )
+
         @blk.unit_model.Constraint(blk.flowsheet().time)
         def max_heat_duty_ineq(b, t):
             return -b.heat_out[t] <= b.max_heat_duty
+
         @blk.unit_model.Constraint(blk.flowsheet().time)
         def max_heat_duty_eqn(b, t):
             return -b.heat_out[t] == b.max_heat_duty
 
         iscale.set_scaling_factor(blk.unit_model.max_heat_duty, 1e-6)
         for t in blk.flowsheet().time:
-            iscale.constraint_scaling_transform(blk.unit_model.max_heat_duty_ineq[t], 1e-6)
-            iscale.constraint_scaling_transform(blk.unit_model.max_heat_duty_eqn[t], 1e-6)
+            iscale.constraint_scaling_transform(
+                blk.unit_model.max_heat_duty_ineq[t], 1e-6
+            )
+            iscale.constraint_scaling_transform(
+                blk.unit_model.max_heat_duty_eqn[t], 1e-6
+            )
         blk.unit_model.max_heat_duty_ineq.deactivate()
 
 
@@ -723,7 +756,7 @@ def initialize_flowsheet_costing(fs):
         # fs.product_flash02,
         fs.product_flash03,
         fs.product_flash04,
-        fs.product_flash05
+        fs.product_flash05,
     ]
     for flash in flash_vessels:
         flash.diameter.value = pyo.value(
@@ -793,6 +826,7 @@ def scale_flowsheet_costing(fs):
 
 def get_soec_OM_costing(fs, CE_index_year="2018"):
     CE_index_units = getattr(pyunits, "MUSD_" + CE_index_year)
+
     # fixed O&M costs
     @fs.costing.Expression()
     def annual_operating_labor_cost(b):
@@ -803,7 +837,7 @@ def get_soec_OM_costing(fs, CE_index_year="2018"):
             * 365.2425  # Average hours in Gregorian year
             * 1.3  # 30% Labor burden
             * pyunits.USD_2018,
-            to_units=CE_index_units
+            to_units=CE_index_units,
         )
 
     @fs.costing.Expression()
@@ -826,9 +860,8 @@ def get_soec_OM_costing(fs, CE_index_year="2018"):
     def annual_soec_replacement_cost(b):
         return pyunits.convert(
             4.2765 * fs.soec_module.number_cells * pyunits.USD_2018,
-            to_units=CE_index_units
+            to_units=CE_index_units,
         )
-
 
     @fs.costing.Expression()
     def annual_fixed_operations_and_maintenance_cost(b):
@@ -885,7 +918,7 @@ def get_soec_OM_costing(fs, CE_index_year="2018"):
             fs.total_electric_power[0]
             * b.plant_uptime
             * pyo.units.convert(b.electricity_price, pyo.units.USD_2018 / pyo.units.J),
-            to_units=CE_index_units
+            to_units=CE_index_units,
         )
 
     @fs.costing.Expression()
@@ -897,16 +930,14 @@ def get_soec_OM_costing(fs, CE_index_year="2018"):
             * pyo.units.kg
             / pyo.units.mol
             * (fs.water_demand[0] - fs.water_recycle[0]),
-            to_units=CE_index_units
+            to_units=CE_index_units,
         )
 
     @fs.costing.Expression()
     def annual_air_cost(b):
         return pyunits.convert(
-            b.air_price
-            * b.plant_uptime
-            * fs.sweep_blower.inlet.flow_mol[0],
-            to_units=CE_index_units
+            b.air_price * b.plant_uptime * fs.sweep_blower.inlet.flow_mol[0],
+            to_units=CE_index_units,
         )
 
 

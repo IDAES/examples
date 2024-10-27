@@ -94,7 +94,7 @@ To demonstrate how the tags work, we will add tags to a couple of these cells:
 2. Add the tag `noauto` to the cell with the print statement. This will skip this cell 
    in the versions of the notebook used for documentation and testing.
 3. Add the tag `testing` to the cell with the assert statement. This will only
-   include this cell in the version fo the notebook used for testing. 
+   include this cell in the version of the notebook used for testing. 
 
 ### Run preprocessing
 
@@ -237,15 +237,10 @@ To make sure the notebook code is formatted according to IDAES convention, you c
 idaesx black
 ```
 
-### Browse the notebooks
+### Use the notebooks
 
-There is a simple embedded GUI for browsing the notebooks.
-While, of course, you can navigate to the notebooks with Jupyter's file browser, the GUI has the
-advantage of giving notebook descriptions as you browse.
+Use the following command to start a Jupyter server for browsing and running the notebooks locally:
 
 ```
-idaesx gui
+idaesx serve
 ```
-
-Note #1: Due to the limitations of the Tk toolkit, the font is pretty ugly. Sorry.
-Note #2: The first markdown cell with a header is used for the description.

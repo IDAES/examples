@@ -47,7 +47,7 @@ def _valve_pressure_flow_cb(b):
 
     b.Cv = pyo.Var(
         initialize=0.1,
-        doc="Valve flow coefficent",
+        doc="Valve flow coefficient",
         units=umeta("amount") / umeta("time") / umeta("pressure"),
     )
     b.Cv.fix()
@@ -75,7 +75,7 @@ def create_model(
     """Create a test model and solver
 
     Args:
-        time_set (list): The begining and end point of the time domain
+        time_set (list): The beginning and end point of the time domain
         time_units (Pyomo Unit object): Units of time domain
         nfe (int): Number of finite elements argument for the DAE
             transformation.
@@ -127,6 +127,7 @@ def create_model(
         mv_bound_type=ControllerMVBoundType.SMOOTH_BOUND,
         controller_type=ControllerType.PI,
     )
+
     # The control volume block doesn't assume the two phases are in equilibrium
     # by default, so I'll make that assumption here, I don't actually expect
     # liquid to form but who knows. The phase_fraction in the control volume is
