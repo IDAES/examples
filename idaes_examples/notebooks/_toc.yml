@@ -20,7 +20,6 @@ parts:
     - file: docs/diagnostics/diagnostics_toolbox_doc
     - file: docs/diagnostics/degeneracy_hunter_doc
     - file: docs/diagnostics/structural_singularity_doc
-  chapters:
   - file: docs/scaling/index
     sections:
     - file: docs/scaling/scaler_workshop_doc
