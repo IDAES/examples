@@ -20,6 +20,9 @@ parts:
     - file: docs/diagnostics/diagnostics_toolbox_doc
     - file: docs/diagnostics/degeneracy_hunter_doc
     - file: docs/diagnostics/structural_singularity_doc
+  - file: docs/scaling/index
+    sections:
+    - file: docs/scaling/scaler_workshop_doc
   - file: docs/param_est/index
     sections:
     - file: docs/param_est/parameter_estimation_nrtl_using_state_block_doc
