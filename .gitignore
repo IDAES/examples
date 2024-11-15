@@ -151,6 +151,7 @@ idaes_examples/notebooks/docs/tut/sin_data.csv
 variables.*
 
 .mdl_wts.hdf5
+.mdl_wts.keras
 pysmo_kriging_surrogate.json
 AR_PFD.png
 pytest_pre.lock
