@@ -22,7 +22,12 @@ from mpl_toolkits import mplot3d
 def main():
     # Load the necessary data
     current_path = os.path.dirname(os.path.realpath(__file__))
-    data = pd.read_csv(os.path.join(current_path, 'data_files', 'six_hump_data_2400.txt'), sep='\s+', header=None, index_col=None)
+    data = pd.read_csv(
+        os.path.join(current_path, "data_files", "six_hump_data_2400.txt"),
+        sep="\s+",
+        header=None,
+        index_col=None,
+    )
 
     # Scale the features only - not compulsory as scaling is done at backend anyway.
     sd = sp.FeatureScaling()
@@ -32,7 +37,7 @@ def main():
 
     # Select 100 samples for Kriging training
     no_training_samples = 50
-    b = sp.HammersleySampling(data_scaled, no_training_samples, 'selection')
+    b = sp.HammersleySampling(data_scaled, no_training_samples, "selection")
     training_data = b.sample_points()
 
     # Kriging training
@@ -44,26 +49,28 @@ def main():
     list_vars = []
     for i in fv.keys():
         list_vars.append(fv[i])
-    print('The Kriging expression is: \n eq = ', aa.generate_expression(list_vars))
+    print("The Kriging expression is: \n eq = ", aa.generate_expression(list_vars))
 
     # Evaluate Kriging model at points not in the training dataset and calculate R^2
     x_pred = data_scaled[:, :-1]
     y_pred = aa.predict_output(x_pred)
     r2 = aa.r2_calculation(data_scaled[:, -1], y_pred)
-    print('The R^2 value is: ', r2)
+    print("The R^2 value is: ", r2)
 
     # 3D error (deviation) plot
     difference_vector = data_scaled[:, 2] - y_pred[:, 0]
     x1 = np.linspace(-3, 3, 61)
     x2 = np.linspace(-2, 2, 41)
-    X1, X2 = np.meshgrid(x1, x2, indexing='ij')  # ij indicates matrix arrangement which is what we have
+    X1, X2 = np.meshgrid(
+        x1, x2, indexing="ij"
+    )  # ij indicates matrix arrangement which is what we have
     Y = difference_vector.reshape(61, 41)
-    ax = plt.axes(projection='3d')
-    ax.plot_surface(X1, X2, Y, cmap='viridis', edgecolor='none')
+    ax = plt.axes(projection="3d")
+    ax.plot_surface(X1, X2, Y, cmap="viridis", edgecolor="none")
     # ax.scatter3D(training_data[:, 0], training_data[:, 1], training_data[:, 2]-y_training_pred[:, 0], c='r', marker='^', s=200, depthshade=False)
-    ax.set_xlabel('x1')
-    ax.set_ylabel('x2')
-    ax.set_zlabel('Error')
+    ax.set_xlabel("x1")
+    ax.set_ylabel("x2")
+    ax.set_zlabel("Error")
     plt.show()
 
 

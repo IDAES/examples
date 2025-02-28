@@ -19,6 +19,10 @@ parts:
     sections:
     - file: docs/diagnostics/diagnostics_toolbox_doc
     - file: docs/diagnostics/degeneracy_hunter_doc
+    - file: docs/diagnostics/structural_singularity_doc
+  - file: docs/scaling/index
+    sections:
+    - file: docs/scaling/scaler_workshop_doc
   - file: docs/param_est/index
     sections:
     - file: docs/param_est/parameter_estimation_nrtl_using_state_block_doc
@@ -103,6 +107,9 @@ parts:
     sections:
     - file: docs/power_gen/supercritical/supercritical_power_plant_doc
     - file: docs/power_gen/supercritical/supercritical_steam_cycle_doc
+  - file: docs/power_gen/ngcc/index
+    sections:
+    - file: docs/power_gen/ngcc/ngcc_doc
   - file: docs/power_gen/solid_oxide_cell/index
     sections:
     - file: docs/power_gen/solid_oxide_cell/soc_pid_control_doc
@@ -112,10 +119,5 @@ parts:
   # note: directory active/ will not be included in the docs, but
   # it is kept here so it is visible to the 'idaesx' command (e.g. for preprocessing or browsing)
   # The 'file' entry generates a warning, but it is required by the TOC format
-    - file: docs/power_gen/solid_oxide_cell/soc_steady_state_optimization_doc
-  - file: active/power_gen/ngcc/index
-    sections:
-    # Moved this one to 'held'
-    # - file: active/power_gen/ngcc/ngcc_soec_doc
-    - file: active/power_gen/ngcc/ngcc_doc
 root: index
+

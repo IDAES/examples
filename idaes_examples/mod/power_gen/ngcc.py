@@ -20,7 +20,7 @@ import idaes.models.unit_models as um  # um = unit models
 from idaes.core import FlowsheetBlockData, declare_process_block_class
 import idaes.core.util.scaling as iscale
 import idaes.logger as idaeslog
-from . import (gas_turbine, hrsg, steam_turbine)
+from . import gas_turbine, hrsg, steam_turbine
 import idaes.core.util as iutil
 from idaes.core.solvers import get_solver
 from idaes.core.util.initialization import propagate_state
@@ -360,7 +360,9 @@ class NgccFlowsheetData(FlowsheetBlockData):
 
         @self.Constraint(self.config.time)
         def net_power_constraint(b, t):
-            return b.net_power_mw[t] / 100.0 == -b.net_power[t] / 1e6 / 100.0
+            return b.net_power_mw[t] / 100.0 == pyo.units.convert(
+                -b.net_power[t] / 100.0, to_units=pyo.units.MW
+            )
 
         @self.Constraint(self.config.time)
         def lp_steam_temperature_eqn(b, t):
@@ -438,7 +440,6 @@ class NgccFlowsheetData(FlowsheetBlockData):
             self.cap_additional_reboiler_duty.fix()
             self.fuel_lhv.fix()
             self.fuel_hhv.fix()
-
             self.gt.initialize(
                 load_from="gas_turbine_init.json.gz",
                 save_to="gas_turbine_init.json.gz",

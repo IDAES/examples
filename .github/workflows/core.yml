@@ -34,7 +34,7 @@ concurrency:
 
 env:
   # default Python version to use for checks that do not require multiple versions
-  DEFAULT_PYTHON_VERSION: '3.8'
+  DEFAULT_PYTHON_VERSION: '3.10'
   IDAES_CONDA_ENV_NAME_DEV: idaes-examples-dev
   PYTEST_ADDOPTS: "--color=yes"
 
@@ -44,6 +44,23 @@ defaults:
     shell: bash -l {0}
 
 jobs:
+
+  code-formatting:
+    name: Check code formatting (Black)
+    # OS and/or Python version don't make a difference, so we choose ubuntu and 3.10 for performance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+      - name: Install Black
+        run: |
+          pip install --progress-bar off black[jupyter]==24.3.0
+      - name: Run Black to verify that the committed code is formatted
+        run: |
+          black --check .
+
   spell-check:
     name: Check Spelling
     runs-on: ubuntu-latest
@@ -57,14 +74,15 @@ jobs:
     # description: Run pytest with dev dependencies
     name: pytest (py${{ matrix.python-version }}/${{ matrix.os }})
     runs-on: ${{ matrix.runner-image }}
-    needs: [spell-check]
+    needs: [code-formatting, spell-check]
     strategy:
       fail-fast: false
       matrix:
         python-version:
-          - '3.8'
           - '3.9'
           - '3.10'
+          - '3.11'
+          - '3.12'
         os:
           - linux
           - win64
@@ -84,6 +102,9 @@ jobs:
         uses: ./.github/actions/install
         with:
           install-target: -r requirements-dev.txt
+      - name: Run pytest (repo root)
+        run: |
+          pytest -v .
       - name: Run pytest
         run: |
           pwd

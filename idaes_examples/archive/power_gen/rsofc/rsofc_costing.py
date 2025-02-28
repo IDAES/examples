@@ -24,22 +24,27 @@ from idaes.models_extra.power_generation.costing.power_plant_capcost import (
     QGESSCosting,
     QGESSCostingData,
 )
-from idaes.models.costing.SSLW import(
-    SSLWCosting,
-    SSLWCostingData,
-    HXType)
+from idaes.models.costing.SSLW import SSLWCosting, SSLWCostingData, HXType
 from idaes.core import FlowsheetBlock, UnitModelBlock, UnitModelCostingBlock
 
 
-def add_total_plant_cost(b, installation_labor=1.25, eng_fee=1.2,
-                         project_contingency=1.15, process_contingency=1.15,
-                         CE_index_units=pyo.units.MUSD_2018):
+def add_total_plant_cost(
+    b,
+    installation_labor=1.25,
+    eng_fee=1.2,
+    project_contingency=1.15,
+    process_contingency=1.15,
+    CE_index_units=pyo.units.MUSD_2018,
+):
 
     @b.costing.Expression()
     def total_plant_cost(c):
-        return (pyo.units.convert(c.capital_cost, CE_index_units) *
-                installation_labor * eng_fee *
-                (project_contingency + process_contingency))
+        return (
+            pyo.units.convert(c.capital_cost, CE_index_units)
+            * installation_labor
+            * eng_fee
+            * (project_contingency + process_contingency)
+        )
 
 
 def get_rsofc_sofc_capital_cost(fs, CE_index_year):
@@ -48,10 +53,13 @@ def get_rsofc_sofc_capital_cost(fs, CE_index_year):
     # SOEC-only cap costs for water-side equipment and H2 compr. will be added
     # NGFC_TPC = 752.55  # MM$
 
-    CE_index_units = getattr(pyo.units, "MUSD_"+CE_index_year)  # millions of USD in base year
+    CE_index_units = getattr(
+        pyo.units, "MUSD_" + CE_index_year
+    )  # millions of USD in base year
 
-    fs.NGFC_TPC = pyo.Var(initialize=752.55, units=CE_index_units,
-                            doc="total plant cost in $MM")
+    fs.NGFC_TPC = pyo.Var(
+        initialize=752.55, units=CE_index_units, doc="total plant cost in $MM"
+    )
 
     # build cost constraints
     fs.costing.build_process_costs(
@@ -69,9 +77,7 @@ def get_rsofc_sofc_capital_cost(fs, CE_index_year):
     # costing initialization
     QGESSCostingData.costing_initialization(fs.costing)
 
-    calculate_variable_from_constraint(
-        fs.costing.total_TPC,
-        fs.costing.total_TPC_eq)
+    calculate_variable_from_constraint(fs.costing.total_TPC, fs.costing.total_TPC_eq)
 
 
 def get_rsofc_soec_capital_cost(fs, CE_index_year):
@@ -81,7 +87,9 @@ def get_rsofc_soec_capital_cost(fs, CE_index_year):
     # For rsofc_soec mode - O2 and ng preheater costs are captured in NGFC_TPC
     # Water treatment and CO2 processing capcosts included in NGFC_TPC
 
-    CE_index_units = getattr(pyo.units, "MUSD_"+CE_index_year)  # millions of USD in base year
+    CE_index_units = getattr(
+        pyo.units, "MUSD_" + CE_index_year
+    )  # millions of USD in base year
 
     # U-tube HXs - bhx1, oxygen_preheater, and ng_preheater
     # costed with IDAES generic heat exchanger correlation
@@ -106,16 +114,17 @@ def get_rsofc_soec_capital_cost(fs, CE_index_year):
 
     @fs.fuel_recycle_heater.costing.Expression()
     def total_plant_cost(b):
-        U = 100 * pyo.units.W / pyo.units.m ** 2 / pyo.units.K
+        U = 100 * pyo.units.W / pyo.units.m**2 / pyo.units.K
         DT = 50 * pyo.units.K
         area = fs.fuel_recycle_heater.heat_duty[0] / U / DT
         # Add factor of two to pathways cost to account for corrosion-resistant materials for trim heaters
         return pyo.units.convert(
-            2*81.88 * pyo.value(
-                pyo.units.convert(area, pyo.units.ft**2)
-                ) *
-            pyo.units.USD_2018,
-            CE_index_units)
+            2
+            * 81.88
+            * pyo.value(pyo.units.convert(area, pyo.units.ft**2))
+            * pyo.units.USD_2018,
+            CE_index_units,
+        )
 
     # adding cost for air_preheater_2
     fs.air_preheater_2.costing = UnitModelCostingBlock(
@@ -129,11 +138,12 @@ def get_rsofc_soec_capital_cost(fs, CE_index_year):
     @fs.air_preheater_2.costing.Expression()
     def total_plant_cost(b):
         return pyo.units.convert(
-            2*81.88 * pyo.value(
-                pyo.units.convert(fs.air_preheater_2.area, pyo.units.ft**2)
-                ) *
-            pyo.units.USD_2018,
-            CE_index_units)
+            2
+            * 81.88
+            * pyo.value(pyo.units.convert(fs.air_preheater_2.area, pyo.units.ft**2))
+            * pyo.units.USD_2018,
+            CE_index_units,
+        )
 
     # H2 compressor
     fs.hcmp01.costing = UnitModelCostingBlock(
@@ -156,8 +166,7 @@ def get_rsofc_soec_capital_cost(fs, CE_index_year):
         ref_param = 44369 * pyo.units.lb / pyo.units.hr
         alpha = 0.7
         return pyo.units.convert(
-            2 * ref_cost * (h2_comp_process_param / ref_param) ** alpha,
-            CE_index_units
+            2 * ref_cost * (h2_comp_process_param / ref_param) ** alpha, CE_index_units
         )
 
     # build cost constraints
@@ -175,9 +184,7 @@ def get_rsofc_soec_capital_cost(fs, CE_index_year):
     # costing initialization
     QGESSCostingData.costing_initialization(fs.costing)
 
-    calculate_variable_from_constraint(
-        fs.costing.total_TPC,
-        fs.costing.total_TPC_eq)
+    calculate_variable_from_constraint(fs.costing.total_TPC, fs.costing.total_TPC_eq)
 
 
 def lock_rsofc_soec_capital_cost(fs):
@@ -198,7 +205,9 @@ def lock_rsofc_sofc_capital_cost(fs):
 
 
 def get_rsofc_sofc_fixed_OM_costing(
-    fs, design_rsofc_netpower=650 * pyo.units.MW, fixed_TPC=None,
+    fs,
+    design_rsofc_netpower=650 * pyo.units.MW,
+    fixed_TPC=None,
     CE_index_year="2018",
 ):
 
@@ -208,12 +217,14 @@ def get_rsofc_sofc_fixed_OM_costing(
 
     # fixed O&M costs
 
-    CE_index_units = getattr(pyo.units, "MUSD_"+CE_index_year)  # millions of USD in base year
+    CE_index_units = getattr(
+        pyo.units, "MUSD_" + CE_index_year
+    )  # millions of USD in base year
 
-    fs.fixed_TPC = pyo.Var(initialize=fixed_TPC, units=CE_index_units,
-                             doc="total plant cost in $MM")
-    fs.net_power = pyo.Var(initialize=design_rsofc_netpower,
-                             units=pyo.units.MW)
+    fs.fixed_TPC = pyo.Var(
+        initialize=fixed_TPC, units=CE_index_units, doc="total plant cost in $MM"
+    )
+    fs.net_power = pyo.Var(initialize=design_rsofc_netpower, units=pyo.units.MW)
     # build cost constraints
     fs.costing.build_process_costs(
         total_plant_cost=fs.fixed_TPC,
@@ -247,17 +258,21 @@ def get_rsofc_sofc_fixed_OM_costing(
 
 
 def get_rsofc_soec_fixed_OM_costing(
-    fs, design_rsofc_netpower=650 * pyo.units.MW, fixed_TPC=None,
+    fs,
+    design_rsofc_netpower=650 * pyo.units.MW,
+    fixed_TPC=None,
     CE_index_year="2018",
 ):
     # fixed O&M costs
 
-    CE_index_units = getattr(pyo.units, "MUSD_"+CE_index_year)  # millions of USD in base year
+    CE_index_units = getattr(
+        pyo.units, "MUSD_" + CE_index_year
+    )  # millions of USD in base year
 
-    fs.fixed_TPC = pyo.Var(initialize=fixed_TPC, units=CE_index_units,
-                             doc="total plant cost in $MM")
-    fs.net_power = pyo.Var(initialize=design_rsofc_netpower,
-                             units=pyo.units.MW)
+    fs.fixed_TPC = pyo.Var(
+        initialize=fixed_TPC, units=CE_index_units, doc="total plant cost in $MM"
+    )
+    fs.net_power = pyo.Var(initialize=design_rsofc_netpower, units=pyo.units.MW)
     # build cost constraints
     fs.costing.build_process_costs(
         total_plant_cost=fs.fixed_TPC,
@@ -295,7 +310,7 @@ def get_rsofc_soec_variable_OM_costing(fs, CE_index_year="2018"):
     @fs.Expression(fs.time)
     def water_withdrawal(fs, t):  # cm^3/s
         molar_mass = 18.015 * pyo.units.g / pyo.units.mol
-        density = 0.997 * pyo.units.g / pyo.units.cm ** 3
+        density = 0.997 * pyo.units.g / pyo.units.cm**3
         return (
             molar_mass
             / density
@@ -483,7 +498,7 @@ def get_rsofc_sofc_variable_OM_costing(fs, CE_index_year="2018"):
             3.2
             * syngas_flow
             / 611167
-            * pyo.units.m ** 3
+            * pyo.units.m**3
             / pyo.units.day
             * pyo.units.hr
             / pyo.units.lb
@@ -505,11 +520,12 @@ def get_rsofc_sofc_variable_OM_costing(fs, CE_index_year="2018"):
 
     prices = {
         "desulfur adsorbent": 6.0297 * pyo.units.USD_2018 / pyo.units.lb,
-        "methanation catalyst": 601.765 * pyo.units.USD_2018 / pyo.units.m ** 3,
+        "methanation catalyst": 601.765 * pyo.units.USD_2018 / pyo.units.m**3,
     }
 
-    fs.costing.get_variable_OM_costs(fs, fs.net_power, resources, rates, prices,
-                                       CE_index_year=CE_index_year)
+    fs.costing.get_variable_OM_costs(
+        fs, fs.net_power, resources, rates, prices, CE_index_year=CE_index_year
+    )
 
     # initialize variable costs
     QGESSCostingData.initialize_variable_OM_costs(fs.costing)
@@ -518,25 +534,32 @@ def get_rsofc_sofc_variable_OM_costing(fs, CE_index_year="2018"):
 def display_rsofc_costing(fs):
     print("Capital cost: ${:.0f}M".format(pyo.value(fs.costing.total_TPC)))
     print(
-        "Fixed O&M cost: ${:.1f}M/yr".format(
-            pyo.value(fs.costing.total_fixed_OM_cost)
-        )
+        "Fixed O&M cost: ${:.1f}M/yr".format(pyo.value(fs.costing.total_fixed_OM_cost))
     )
     print(
         "Electricity cost: ${:.2f}/kg H2".format(
-            pyo.value(fs.costing.variable_operating_costs[0, "electricity"]
-                      * fs.net_power[0] / fs.h2_product_rate_mass[0])
+            pyo.value(
+                fs.costing.variable_operating_costs[0, "electricity"]
+                * fs.net_power[0]
+                / fs.h2_product_rate_mass[0]
+            )
         )
     )
     print(
         "Fuel cost: ${:.2f}/kg H2".format(
-            pyo.value(fs.costing.variable_operating_costs[0, "natural_gas"]
-                      * fs.net_power[0] / fs.h2_product_rate_mass[0])
+            pyo.value(
+                fs.costing.variable_operating_costs[0, "natural_gas"]
+                * fs.net_power[0]
+                / fs.h2_product_rate_mass[0]
+            )
         )
     )
     print(
         "Total variable O&M cost: ${:.2f}/kg H2".format(
-            pyo.value(fs.costing.total_variable_OM_cost[0]
-                      * fs.net_power[0] / fs.h2_product_rate_mass[0])
+            pyo.value(
+                fs.costing.total_variable_OM_cost[0]
+                * fs.net_power[0]
+                / fs.h2_product_rate_mass[0]
+            )
         )
     )

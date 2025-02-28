@@ -78,7 +78,8 @@ class CapturedSolver:
             filename = opath.name
             result = {}
             tailed = Thread(
-                target=self._tail_file, args=(filename, self._outsep, self._outcb, result)
+                target=self._tail_file,
+                args=(filename, self._outsep, self._outcb, result),
             )
             proc = Thread(
                 target=self._run_captured,
@@ -140,8 +141,6 @@ class CapturedSolver:
         if num_sep >= 2:
             n1 = all_data.index(sep)
             n2 = all_data.index(sep, n1 + 1)
-            json_text = "".join(all_data[n1 + 1: n2])
+            json_text = "".join(all_data[n1 + 1 : n2])
             r = json.loads(json_text)
             result.update(r)
-
-

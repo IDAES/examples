@@ -44,9 +44,7 @@ __author__ = "Alex Noring"
 import json
 import numpy as np
 
-from pyomo.environ import (
-    SolverFactory, Constraint, Param, Var, Set, exp, value
-)
+from pyomo.environ import SolverFactory, Constraint, Param, Var, Set, exp, value
 
 from idaes.core import declare_process_block_class, UnitModelBlockData
 from idaes.core.util.model_statistics import degrees_of_freedom
@@ -127,9 +125,9 @@ class SofcRomData(UnitModelBlockData):
         # get the list of all_sets from the list of all weights
         for i, w in enumerate(all_weights):
             if i == layers - 1:
-                set_name = 'Y_set'
+                set_name = "Y_set"
             else:
-                set_name = 'hl%d_set' % (i+1)
+                set_name = "hl%d_set" % (i + 1)
 
             n_nodes = np.shape(w)[1]
             set_value = Set(initialize=np.arange(n_nodes))
@@ -140,21 +138,21 @@ class SofcRomData(UnitModelBlockData):
 
         # Standardization of inputs and outputs
 
-        self.mean_X = Param(self.X_set,
-                            mutable=False,
-                            initialize=build_dict(self.X_set, meanX))
+        self.mean_X = Param(
+            self.X_set, mutable=False, initialize=build_dict(self.X_set, meanX)
+        )
 
-        self.std_X = Param(self.X_set,
-                           mutable=False,
-                           initialize=build_dict(self.X_set, stdX))
+        self.std_X = Param(
+            self.X_set, mutable=False, initialize=build_dict(self.X_set, stdX)
+        )
 
-        self.mean_Y = Param(self.Y_set,
-                            mutable=False,
-                            initialize=build_dict(self.Y_set, meanY))
+        self.mean_Y = Param(
+            self.Y_set, mutable=False, initialize=build_dict(self.Y_set, meanY)
+        )
 
-        self.std_Y = Param(self.Y_set,
-                           mutable=False,
-                           initialize=build_dict(self.Y_set, stdY))
+        self.std_Y = Param(
+            self.Y_set, mutable=False, initialize=build_dict(self.Y_set, stdY)
+        )
 
         self.input = Var(self.X_set, initialize=0)
 
@@ -165,50 +163,59 @@ class SofcRomData(UnitModelBlockData):
         self.norm_output = Var(self.Y_set, initialize=0)
 
         def norm_input_rule(b, i):
-            return b.norm_input[i] == (b.input[i] - b.mean_X[i])/b.std_X[i]
+            return b.norm_input[i] == (b.input[i] - b.mean_X[i]) / b.std_X[i]
+
         self.norm_input_constraint = Constraint(self.X_set, rule=norm_input_rule)
 
         def output_rule(b, i):
-            return b.output[i] == b.norm_output[i]*b.std_Y[i] + b.mean_Y[i]
+            return b.output[i] == b.norm_output[i] * b.std_Y[i] + b.mean_Y[i]
+
         self.output_constraint = Constraint(self.Y_set, rule=output_rule)
 
         # this loop creates parameter and variables
         for lr in range(layers):
             # in this section we create the parameters for the weights and biases
             previous_set = all_sets[lr]
-            current_set = all_sets[lr+1]
+            current_set = all_sets[lr + 1]
 
-            w = Param(previous_set, current_set,
-                      initialize=build_matrix(previous_set, current_set,
-                                              all_weights[lr]),
-                      mutable=False)
-            setattr(self, 'w%d' % (lr+1), w)
+            w = Param(
+                previous_set,
+                current_set,
+                initialize=build_matrix(previous_set, current_set, all_weights[lr]),
+                mutable=False,
+            )
+            setattr(self, "w%d" % (lr + 1), w)
 
-            b = Param(current_set,
-                      initialize=build_dict(current_set, all_biases[lr]),
-                      mutable=False)
-            setattr(self, 'b%d' % (lr+1), b)
+            b = Param(
+                current_set,
+                initialize=build_dict(current_set, all_biases[lr]),
+                mutable=False,
+            )
+            setattr(self, "b%d" % (lr + 1), b)
 
             # this section creates the input and output vars for each hidden layer
             if lr != 0:  # not the output layer
 
                 hl_input = Var(previous_set, initialize=0)
-                setattr(self, 'hl%d_input' % (lr), hl_input)
+                setattr(self, "hl%d_input" % (lr), hl_input)
 
                 hl_output = Var(previous_set, initialize=0)
-                setattr(self, 'hl%d_output' % (lr), hl_output)
+                setattr(self, "hl%d_output" % (lr), hl_output)
 
         # Creating Hidden Layer Constraints
         # current layer input, previous layer output, weights, biases
-        def build_layer_input_constraint(previous_output, current_input,
-                                         weights, biases):
+        def build_layer_input_constraint(
+            previous_output, current_input, weights, biases
+        ):
             i_set = current_input.index_set()
             j_set = previous_output.index_set()
 
             def layer_input_rule(b, i):
-                return (current_input[i] ==
-                        sum(previous_output[j]*weights[j, i] for j in j_set)
-                        + biases[i])
+                return (
+                    current_input[i]
+                    == sum(previous_output[j] * weights[j, i] for j in j_set)
+                    + biases[i]
+                )
 
             return Constraint(i_set, rule=layer_input_rule)
 
@@ -216,48 +223,48 @@ class SofcRomData(UnitModelBlockData):
             i_set = current_input.index_set()
 
             def sigmoid(b, i):
-                return current_output[i] == 1/(1 + exp(-1*current_input[i]))
+                return current_output[i] == 1 / (1 + exp(-1 * current_input[i]))
 
             return Constraint(i_set, rule=sigmoid)
 
         # this loop creates constraints
         for lr in range(layers):
             if lr == 0:  # case for norm_input to hl1_input
-                self.hl1_input_constraint = \
-                    build_layer_input_constraint(self.norm_input, self.hl1_input,
-                                                 self.w1, self.b1)
+                self.hl1_input_constraint = build_layer_input_constraint(
+                    self.norm_input, self.hl1_input, self.w1, self.b1
+                )
 
-                self.hl1_output_constraint = \
-                    build_layer_output_constraint(self.hl1_input, self.hl1_output)
+                self.hl1_output_constraint = build_layer_output_constraint(
+                    self.hl1_input, self.hl1_output
+                )
 
-            elif lr == layers-1:  # case for last hidden layer to output layer
-                previous_output = getattr(self, 'hl%d_output' % (lr))
-                w = getattr(self, 'w%d' % (lr+1))
-                b = getattr(self, 'b%d' % (lr+1))
+            elif lr == layers - 1:  # case for last hidden layer to output layer
+                previous_output = getattr(self, "hl%d_output" % (lr))
+                w = getattr(self, "w%d" % (lr + 1))
+                b = getattr(self, "b%d" % (lr + 1))
 
-                self.norm_output_constraint = \
-                    build_layer_input_constraint(previous_output, self.norm_output,
-                                                 w, b)
+                self.norm_output_constraint = build_layer_input_constraint(
+                    previous_output, self.norm_output, w, b
+                )
 
             else:  # case for one hidden layer to the next
-                previous_output = getattr(self, 'hl%d_output' % (lr))
-                current_input = getattr(self, 'hl%d_input' % (lr+1))
-                current_output = getattr(self, 'hl%d_output' % (lr+1))
-                w = getattr(self, 'w%d' % (lr+1))
-                b = getattr(self, 'b%d' % (lr+1))
+                previous_output = getattr(self, "hl%d_output" % (lr))
+                current_input = getattr(self, "hl%d_input" % (lr + 1))
+                current_output = getattr(self, "hl%d_output" % (lr + 1))
+                w = getattr(self, "w%d" % (lr + 1))
+                b = getattr(self, "b%d" % (lr + 1))
 
-                hl_input_constraint = \
-                    build_layer_input_constraint(previous_output, current_input,
-                                                 w, b)
+                hl_input_constraint = build_layer_input_constraint(
+                    previous_output, current_input, w, b
+                )
 
-                setattr(self, 'hl%d_input_constraint' % (lr+1),
-                        hl_input_constraint)
+                setattr(self, "hl%d_input_constraint" % (lr + 1), hl_input_constraint)
 
-                hl_output_constraint = \
-                    build_layer_output_constraint(current_input, current_output)
+                hl_output_constraint = build_layer_output_constraint(
+                    current_input, current_output
+                )
 
-                setattr(self, 'hl%d_output_constraint' % (lr+1),
-                        hl_output_constraint)
+                setattr(self, "hl%d_output_constraint" % (lr + 1), hl_output_constraint)
 
         # constraints for input vars
         self.current_density = Var(initialize=4000, bounds=(2000, 6000))
@@ -270,15 +277,17 @@ class SofcRomData(UnitModelBlockData):
         self.air_util = Var(initialize=0.5, bounds=(0.125, 0.833))
         self.pressure = Var(initialize=1, bounds=(1, 5))
 
-        input_dict = {0: self.current_density,
-                      1: self.fuel_temperature,
-                      2: self.internal_reforming,
-                      3: self.air_temperature,
-                      4: self.air_recirculation,
-                      5: self.OTC,
-                      6: self.fuel_util,
-                      7: self.air_util,
-                      8: self.pressure}
+        input_dict = {
+            0: self.current_density,
+            1: self.fuel_temperature,
+            2: self.internal_reforming,
+            3: self.air_temperature,
+            4: self.air_recirculation,
+            5: self.OTC,
+            6: self.fuel_util,
+            7: self.air_util,
+            8: self.pressure,
+        }
 
         def input_rule(b, i):
             return b.input[i] == input_dict[i]
@@ -294,28 +303,30 @@ class SofcRomData(UnitModelBlockData):
 
         def anode_outlet_rule(b):
             return b.anode_outlet_temperature == b.output[10]
+
         self.anode_outlet_eq = Constraint(rule=anode_outlet_rule)
 
         def cathode_outlet_rule(b):
             return b.cathode_outlet_temperature == b.output[12]
+
         self.cathode_outlet_eq = Constraint(rule=cathode_outlet_rule)
 
         def stack_voltage_rule(b):
             return b.stack_voltage == b.output[0]
+
         self.stack_voltage_eq = Constraint(rule=stack_voltage_rule)
 
         def max_cell_temp_rule(b):
             return b.max_cell_temperature == b.output[7]
+
         self.max_cell_temp_eq = Constraint(rule=max_cell_temp_rule)
 
         def deltaT_cell_rule(b):
             return b.deltaT_cell == b.output[9]
+
         self.deltaT_cell_eq = Constraint(rule=deltaT_cell_rule)
 
-    def initialize(self,
-                   outlvl=idaeslog.NOTSET,
-                   solver='ipopt',
-                   optarg={'tol': 1e-6}):
+    def initialize(self, outlvl=idaeslog.NOTSET, solver="ipopt", optarg={"tol": 1e-6}):
 
         init_log = idaeslog.getInitLogger(self.name, outlvl, tag="unit")
         solve_log = idaeslog.getSolveLogger(self.name, outlvl, tag="unit")
@@ -329,10 +340,17 @@ class SofcRomData(UnitModelBlockData):
         if degrees_of_freedom(self) != 0:
             unfix_vars = True
             # fix all input vars
-            input_vars = [self.current_density, self.fuel_temperature,
-                          self.internal_reforming, self.air_temperature,
-                          self.air_recirculation, self.OTC, self.fuel_util,
-                          self.air_util, self.pressure]
+            input_vars = [
+                self.current_density,
+                self.fuel_temperature,
+                self.internal_reforming,
+                self.air_temperature,
+                self.air_recirculation,
+                self.OTC,
+                self.fuel_util,
+                self.air_util,
+                self.pressure,
+            ]
 
             vars_to_unfix = []
             for var in input_vars:
@@ -341,11 +359,13 @@ class SofcRomData(UnitModelBlockData):
                 var.fix()
 
             # unfix all output vars
-            output_vars = [self.anode_outlet_temperature,
-                           self.cathode_outlet_temperature,
-                           self.stack_voltage,
-                           self.max_cell_temperature,
-                           self.deltaT_cell]
+            output_vars = [
+                self.anode_outlet_temperature,
+                self.cathode_outlet_temperature,
+                self.stack_voltage,
+                self.max_cell_temperature,
+                self.deltaT_cell,
+            ]
 
             vars_to_refix = []
             var_values = []
@@ -358,9 +378,7 @@ class SofcRomData(UnitModelBlockData):
         # solve model
         with idaeslog.solver_log(solve_log, idaeslog.DEBUG) as slc:
             res = opt.solve(self, tee=slc.tee)
-        init_log.info_high(
-                "Initialization Step 1 {}.".format(idaeslog.condition(res))
-            )
+        init_log.info_high("Initialization Step 1 {}.".format(idaeslog.condition(res)))
         init_log.info_high("Initialization Step 1 Complete.")
 
         # return variables to original state

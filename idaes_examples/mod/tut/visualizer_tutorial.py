@@ -22,41 +22,51 @@ import logging
 import re
 import sys
 import warnings
+
 # NGCC
 import pyomo.environ as pyo
 import idaes
 from idaes.core.util.model_statistics import degrees_of_freedom
-from pyomo.environ import (Constraint,
-                           Var,
-                           ConcreteModel,
-                           Expression,
-                           Objective,
-                           SolverFactory,
-                           TransformationFactory,
-                           value)
+from pyomo.environ import (
+    Constraint,
+    Var,
+    ConcreteModel,
+    Expression,
+    Objective,
+    SolverFactory,
+    TransformationFactory,
+    value,
+)
 from pyomo.network import Arc, SequentialDecomposition
 from idaes.core import FlowsheetBlock
-from idaes.models.unit_models import (PressureChanger,
-                                      Mixer,
-                                      Separator as Splitter,
-                                      Heater,
-                                      StoichiometricReactor,
-                                      Flash)
+from idaes.models.unit_models import (
+    PressureChanger,
+    Mixer,
+    Separator as Splitter,
+    Heater,
+    StoichiometricReactor,
+    Flash,
+)
+
 # Import thermodynamic and reaction property packages
 from idaes_examples.mod.hda import hda_ideal_VLE as thermo_props
 from idaes_examples.mod.hda import hda_reaction as reaction_props
 
 from idaes.models.unit_models.pressure_changer import ThermodynamicAssumption
 from idaes.core.util.model_statistics import degrees_of_freedom
+from idaes.core.solvers import get_solver
+from idaes.core.util.exceptions import InitializationError
 
 try:
     import idaes_ui
 except ImportError:
-    print("*** ERROR ***\n"
-          "Cannot import 'idaes_ui'.\n"
-          "To install IDAES with the UI enabled, run:\n"
-          "     pip install idaes-pse[ui]\n"
-          "Until this module is installed, the visualizer will NOT work!")
+    print(
+        "*** ERROR ***\n"
+        "Cannot import 'idaes_ui'.\n"
+        "To install IDAES with the UI enabled, run:\n"
+        "     pip install idaes-pse[ui]\n"
+        "Until this module is installed, the visualizer will NOT work!"
+    )
     idaes_ui = None
 
 # Import idaes logger to set output levels
@@ -79,8 +89,14 @@ def quiet():
         for h in g.handlers:
             g.removeHandler(h)
 
-    for logname in "idaes", "idaes.solve", "idaes.solve.fs", \
-            "idaes.init", "idaes.init.fs", "pyomo":
+    for logname in (
+        "idaes",
+        "idaes.solve",
+        "idaes.solve.fs",
+        "idaes.init",
+        "idaes.init.fs",
+        "pyomo",
+    ):
         logger = logging.getLogger(logname)
         remove_handlers(logger)
         logger.addHandler(logging.NullHandler())
@@ -88,8 +104,9 @@ def quiet():
 
     warnings.simplefilter("ignore")
 
+
 def function_markdown(f):
-    
+
     def find_indent(s):
         for i, c in enumerate(s):
             if c != " ":
@@ -99,7 +116,7 @@ def function_markdown(f):
     def fixup(s):
         s = re.sub(r":\w+:(`.*`)", r"\1", s)
         return s
-    
+
     raw_docstr = f.__doc__
     lines = raw_docstr.split("\n")
     state = "desc"
@@ -112,7 +129,7 @@ def function_markdown(f):
                 rlines.append(sline)
             else:
                 state = "ext"
-        elif  state == "ext":
+        elif state == "ext":
             m = re.match(r"([a-zA-Z]+):", sline)
             if m:
                 rlines.append(f"{m.group(1)}:")
@@ -142,71 +159,110 @@ def function_markdown(f):
 def create_model(second_flash=False) -> pyo.ConcreteModel:
     """# Create an IDAES flowsheet for hydrodealkylation (HDA)
 
-## About HDA
+    ## About HDA
 
-Hydrodealkylation (HDA) is a chemical reaction that often involves reacting
-an aromatic hydrocarbon in the presence of hydrogen gas to form a
-simpler aromatic hydrocarbon devoid of functional groups. In this
-example, toluene will be reacted with hydrogen gas at high temperatures
- to form benzene via the following reaction:
+    Hydrodealkylation (HDA) is a chemical reaction that often involves reacting
+    an aromatic hydrocarbon in the presence of hydrogen gas to form a
+    simpler aromatic hydrocarbon devoid of functional groups. In this
+    example, toluene will be reacted with hydrogen gas at high temperatures
+     to form benzene via the following reaction:
 
-**C<sub>6</sub>H<sub>5</sub>CH<sub>3</sub> + H<sub>2</sub> → C<sub>6</sub>H<sub>6</sub> + CH<sub>4</sub>**
+    **C<sub>6</sub>H<sub>5</sub>CH<sub>3</sub> + H<sub>2</sub> → C<sub>6</sub>H<sub>6</sub> + CH<sub>4</sub>**
 
-This reaction is often accompanied by an equilibrium side reaction
-which forms diphenyl, which we will not cover in this example.
+    This reaction is often accompanied by an equilibrium side reaction
+    which forms diphenyl, which we will not cover in this example.
 
-## References
+    ## References
 
-This example is based on the 1967 AIChE Student Contest problem as
-present by Douglas, J.M., Chemical  Design of Chemical Processes, 1988,
-McGraw-Hill.
+    This example is based on the 1967 AIChE Student Contest problem as
+    present by Douglas, J.M., Chemical  Design of Chemical Processes, 1988,
+    McGraw-Hill.
     """
     m = pyo.ConcreteModel()
     m.fs = FlowsheetBlock(dynamic=False)
     m.fs.thermo_params = thermo_props.HDAParameterBlock()
-    m.fs.reaction_params = reaction_props.HDAReactionParameterBlock(property_package=m.fs.thermo_params)
-    m.fs.M101 = Mixer(property_package=m.fs.thermo_params, inlet_list=['toluene_feed', 'hydrogen_feed', 'vapor_recycle'])
+    m.fs.reaction_params = reaction_props.HDAReactionParameterBlock(
+        property_package=m.fs.thermo_params
+    )
+    m.fs.M101 = Mixer(
+        property_package=m.fs.thermo_params,
+        inlet_list=["toluene_feed", "hydrogen_feed", "vapor_recycle"],
+    )
 
-    m.fs.H101 = Heater(property_package=m.fs.thermo_params, has_pressure_change=False, has_phase_equilibrium=True)
-    m.fs.R101 = StoichiometricReactor(property_package=m.fs.thermo_params, reaction_package=m.fs.reaction_params, has_heat_of_reaction=True, has_heat_transfer=True, has_pressure_change=False)
-    m.fs.F101 = Flash(property_package=m.fs.thermo_params, has_heat_transfer=True, has_pressure_change=True)
-    m.fs.S101 = Splitter(property_package=m.fs.thermo_params, ideal_separation=False, outlet_list=['purge', 'recycle'])
+    m.fs.H101 = Heater(
+        property_package=m.fs.thermo_params,
+        has_pressure_change=False,
+        has_phase_equilibrium=True,
+    )
+    m.fs.R101 = StoichiometricReactor(
+        property_package=m.fs.thermo_params,
+        reaction_package=m.fs.reaction_params,
+        has_heat_of_reaction=True,
+        has_heat_transfer=True,
+        has_pressure_change=False,
+    )
+    m.fs.F101 = Flash(
+        property_package=m.fs.thermo_params,
+        has_heat_transfer=True,
+        has_pressure_change=True,
+    )
+    m.fs.S101 = Splitter(
+        property_package=m.fs.thermo_params,
+        ideal_separation=False,
+        outlet_list=["purge", "recycle"],
+    )
 
-    m.fs.C101 = PressureChanger(property_package=m.fs.thermo_params, compressor=True, thermodynamic_assumption=ThermodynamicAssumption.isothermal)
+    m.fs.C101 = PressureChanger(
+        property_package=m.fs.thermo_params,
+        compressor=True,
+        thermodynamic_assumption=ThermodynamicAssumption.isothermal,
+    )
 
     if second_flash:
-        m.fs.F102 = Flash(property_package=m.fs.thermo_params, has_heat_transfer=True, has_pressure_change=True)
+        m.fs.F102 = Flash(
+            property_package=m.fs.thermo_params,
+            has_heat_transfer=True,
+            has_pressure_change=True,
+        )
     m.fs.s03 = Arc(source=m.fs.M101.outlet, destination=m.fs.H101.inlet)
     m.fs.s04 = Arc(source=m.fs.H101.outlet, destination=m.fs.R101.inlet)
     m.fs.s05 = Arc(source=m.fs.R101.outlet, destination=m.fs.F101.inlet)
     m.fs.s06 = Arc(source=m.fs.F101.vap_outlet, destination=m.fs.S101.inlet)
     m.fs.s08 = Arc(source=m.fs.S101.recycle, destination=m.fs.C101.inlet)
-    m.fs.s09 = Arc(source=m.fs.C101.outlet,
-                   destination=m.fs.M101.vapor_recycle)
+    m.fs.s09 = Arc(source=m.fs.C101.outlet, destination=m.fs.M101.vapor_recycle)
     if second_flash:
         m.fs.s10 = Arc(source=m.fs.F101.liq_outlet, destination=m.fs.F102.inlet)
     TransformationFactory("network.expand_arcs").apply_to(m)
     if second_flash:
         m.fs.purity = Expression(
-         expr=m.fs.F102.vap_outlet.flow_mol_phase_comp[0, "Vap", "benzene"] /
-              (m.fs.F102.vap_outlet.flow_mol_phase_comp[0, "Vap", "benzene"]
-               + m.fs.F102.vap_outlet.flow_mol_phase_comp[0, "Vap", "toluene"]))
+            expr=m.fs.F102.vap_outlet.flow_mol_phase_comp[0, "Vap", "benzene"]
+            / (
+                m.fs.F102.vap_outlet.flow_mol_phase_comp[0, "Vap", "benzene"]
+                + m.fs.F102.vap_outlet.flow_mol_phase_comp[0, "Vap", "toluene"]
+            )
+        )
     else:
         m.fs.purity = Expression(
-        expr=m.fs.F101.vap_outlet.flow_mol_phase_comp[0, "Vap", "benzene"] /
-             (m.fs.F101.vap_outlet.flow_mol_phase_comp[0, "Vap", "benzene"]
-              + m.fs.F101.vap_outlet.flow_mol_phase_comp[0, "Vap", "toluene"]))
-    m.fs.cooling_cost = Expression(expr=0.212e-7 * (-m.fs.F101.heat_duty[0]) +
-                                        0.212e-7 * (-m.fs.R101.heat_duty[0]))
+            expr=m.fs.F101.vap_outlet.flow_mol_phase_comp[0, "Vap", "benzene"]
+            / (
+                m.fs.F101.vap_outlet.flow_mol_phase_comp[0, "Vap", "benzene"]
+                + m.fs.F101.vap_outlet.flow_mol_phase_comp[0, "Vap", "toluene"]
+            )
+        )
+    m.fs.cooling_cost = Expression(
+        expr=0.212e-7 * (-m.fs.F101.heat_duty[0]) + 0.212e-7 * (-m.fs.R101.heat_duty[0])
+    )
     if second_flash:
-        m.fs.heating_cost = Expression(expr=2.2e-7 * m.fs.H101.heat_duty[0] +
-                                          1.9e-7 * m.fs.F102.heat_duty[0])
+        m.fs.heating_cost = Expression(
+            expr=2.2e-7 * m.fs.H101.heat_duty[0] + 1.9e-7 * m.fs.F102.heat_duty[0]
+        )
     else:
-        m.fs.heating_cost = Expression(expr=2.2e-7 * m.fs.H101.heat_duty[0] +
-                                         1.9e-7 * m.fs.F101.heat_duty[0])
-    m.fs.operating_cost = Expression(expr=(3600 * 24 * 365 *
-                                           (m.fs.heating_cost +
-                                            m.fs.cooling_cost)))
+        m.fs.heating_cost = Expression(
+            expr=2.2e-7 * m.fs.H101.heat_duty[0] + 1.9e-7 * m.fs.F101.heat_duty[0]
+        )
+    m.fs.operating_cost = Expression(
+        expr=(3600 * 24 * 365 * (m.fs.heating_cost + m.fs.cooling_cost))
+    )
     return fix_initial_values(m, second_flash=second_flash)
 
 
@@ -239,10 +295,13 @@ def fix_initial_values(m: ConcreteModel, second_flash: bool = False) -> Concrete
     m.fs.R101.conversion = Var(initialize=0.75, bounds=(0, 1))
 
     m.fs.R101.conv_constraint = Constraint(
-        expr=m.fs.R101.conversion * m.fs.R101.inlet.
-            flow_mol_phase_comp[0, "Vap", "toluene"] ==
-             (m.fs.R101.inlet.flow_mol_phase_comp[0, "Vap", "toluene"] -
-              m.fs.R101.outlet.flow_mol_phase_comp[0, "Vap", "toluene"]))
+        expr=m.fs.R101.conversion
+        * m.fs.R101.inlet.flow_mol_phase_comp[0, "Vap", "toluene"]
+        == (
+            m.fs.R101.inlet.flow_mol_phase_comp[0, "Vap", "toluene"]
+            - m.fs.R101.outlet.flow_mol_phase_comp[0, "Vap", "toluene"]
+        )
+    )
 
     m.fs.R101.conversion.fix(0.75)
     m.fs.R101.heat_duty.fix(0)
@@ -281,15 +340,22 @@ def initialize_model(m: ConcreteModel) -> ConcreteModel:
             (0, "Liq", "benzene"): 1e-5,
             (0, "Liq", "toluene"): 0.30,
             (0, "Liq", "hydrogen"): 1e-5,
-            (0, "Liq", "methane"): 1e-5},
+            (0, "Liq", "methane"): 1e-5,
+        },
         "temperature": {0: 303},
-        "pressure": {0: 350000}}
+        "pressure": {0: 350000},
+    }
 
     # Pass the tear_guess to the SD tool
     seq.set_guesses_for(m.fs.H101.inlet, tear_guesses)
 
     def initialize_unit(unit):
-        unit.initialize(outlvl=idaeslog.DEBUG)
+        try:
+            initializer = unit.default_initializer()
+            initializer.initialize(unit, output_level=idaeslog.INFO)
+        except InitializationError:
+            solver = get_solver()
+            solver.solve(unit)
 
     seq.run(m, initialize_unit)
     return m
@@ -297,8 +363,8 @@ def initialize_model(m: ConcreteModel) -> ConcreteModel:
 
 def solve_model(m: ConcreteModel):
     # Get solver
-    solver = SolverFactory('ipopt')
-    solver.options = {'tol': 1e-6, 'max_iter': 5000}
+    solver = SolverFactory("ipopt")
+    solver.options = {"tol": 1e-6, "max_iter": 5000}
     # Solve the model
     results = solver.solve(m, tee=False)
     return results
@@ -317,4 +383,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-

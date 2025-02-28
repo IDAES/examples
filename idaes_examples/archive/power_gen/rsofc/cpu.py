@@ -67,10 +67,7 @@ from idaes.core.util.exceptions import InitializationError
 import idaes.logger as idaeslog
 
 # Import Pyomo environment and network
-from pyomo.environ import (Var,
-                           units as pyunits,
-                           Constraint,
-                           assert_optimal_termination)
+from pyomo.environ import Var, units as pyunits, Constraint, assert_optimal_termination
 from pyomo.network import Port
 
 import cpu_surrogate_methods as sm
@@ -126,15 +123,15 @@ class CPUData(UnitModelBlockData):
         self.vent.add(self.vent_mole_frac_comp, "mole_frac_comp")
 
     def make_vars(self):
-        """ This section is for creating all the vars for this model.
-            There are 1 inlet and 3 outlet streams.
-            These streams are names as inlet, pureco2, water, vent
-            For each of these streams, the following variables are defined:
-            (1) Total mole flow [mol/s]: [stream_name]_flow_mol
-            (2) Component molar fraction: [stream_name]_mole_frac_comp
-            (3) Component mole flows [mol/s]: [stream_name]_flow_mol_comp
-            (4) Temperature [K]: [stream_name]_temperature
-            (5) Pressure [Pa]: [stream_name]_pressure
+        """This section is for creating all the vars for this model.
+        There are 1 inlet and 3 outlet streams.
+        These streams are names as inlet, pureco2, water, vent
+        For each of these streams, the following variables are defined:
+        (1) Total mole flow [mol/s]: [stream_name]_flow_mol
+        (2) Component molar fraction: [stream_name]_mole_frac_comp
+        (3) Component mole flows [mol/s]: [stream_name]_flow_mol_comp
+        (4) Temperature [K]: [stream_name]_temperature
+        (5) Pressure [Pa]: [stream_name]_pressure
 
         """
         # units declaration for vars
@@ -281,7 +278,7 @@ class CPUData(UnitModelBlockData):
         )
 
     def add_material_balances(self):
-        """ This section is for material balance constraints"""
+        """This section is for material balance constraints"""
 
         # Sum of all components mole fractions in a stream equals 1
         @self.Constraint(
@@ -372,7 +369,7 @@ class CPUData(UnitModelBlockData):
             )
 
     def add_surrogates(self):
-        """ This section is to add the surrogate models"""
+        """This section is to add the surrogate models"""
 
         # Compressure heat duty
         @self.Expression(

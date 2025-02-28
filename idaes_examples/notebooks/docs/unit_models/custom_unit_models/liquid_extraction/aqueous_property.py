@@ -76,7 +76,7 @@ class AqPhaseData(PhysicalParameterBlock):
         self.KNO3 = Solute()
         self.CaSO4 = Solute()
         self.H2O = Solvent()
-        
+
         # Heat capacity of solvent
         self.cp_mass = Param(
             mutable=True,

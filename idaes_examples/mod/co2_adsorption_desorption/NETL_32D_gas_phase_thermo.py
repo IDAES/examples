@@ -391,10 +391,13 @@ class PhysicalParameterData(PhysicalParameterBlock):
                 "diffusion_comp": {"method": "_diffusion_comp"},
             }
         )
-        
+
         obj.define_custom_properties(
             {
-                "mole_frac_comp_max": {"method": "_mole_frac_comp_max", "units": pyunits.dimensionless},
+                "mole_frac_comp_max": {
+                    "method": "_mole_frac_comp_max",
+                    "units": pyunits.dimensionless,
+                },
             }
         )
 
@@ -590,7 +593,7 @@ class _GasPhaseStateBlock(StateBlock):
 @declare_process_block_class("GasPhaseStateBlock", block_class=_GasPhaseStateBlock)
 class GasPhaseStateBlockData(StateBlockData):
     """
-    Property package for gas phase properties 
+    Property package for gas phase properties
     """
 
     def build(self):
@@ -696,9 +699,7 @@ class GasPhaseStateBlockData(StateBlockData):
             temperature = pyunits.convert(b.temperature, to_units=pyunits.K)
             eps = 1e-8 * pyunits.K  # epsilon parameter for smoothing
             temperature_smooth = (temperature**2 + eps**2) ** 0.5
-            dens_mol = pyunits.convert(
-                b.dens_mol, to_units=pyunits.mol / pyunits.m**3
-            )
+            dens_mol = pyunits.convert(b.dens_mol, to_units=pyunits.mol / pyunits.m**3)
             gas_constant = pyunits.convert(
                 Constants.gas_constant, to_units=pyunits.J / pyunits.mol / pyunits.K
             )
