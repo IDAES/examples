@@ -1467,20 +1467,11 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
 
     def _make_temperature_gradient_terms(self):
         soec = self.soc_module.solid_oxide_cell
-<<<<<<< HEAD
         # dz = soec.zfaces.at(2) - soec.zfaces.at(1)
         # # Going to assume that the zfaces are evenly spaced
         # for iz in soec.iznodes:
         #     assert abs(soec.zfaces.at(iz + 1) - soec.zfaces.at(iz) - dz) < 1e-8
         # dz = dz * soec.length_z
-=======
-        dz = soec.zfaces.at(2) - soec.zfaces.at(1)
-        # Going to assume that the zfaces are evenly spaced
-        for iz in soec.iznodes:
-            assert abs(soec.zfaces.at(iz + 1) - soec.zfaces.at(iz) - dz) < 1e-8
-        dz = dz * soec.length_z
-
->>>>>>> main
         def finite_difference(expr, t, ix, iz):
             # Since this is mostly for reference, no need to worry about upwinding or whatever
             if iz == soec.iznodes.first():
@@ -1612,7 +1603,7 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
         set_indexed_variable_bounds(self.feed_heater.electric_heat_duty, (0, 2e6))
         set_indexed_variable_bounds(self.sweep_heater.electric_heat_duty, (0, 4e6))
 
-        # set_indexed_variable_bounds(self.soc_module.solid_oxide_cell.fuel_electrode.dtemperature_dz, (-750, 750))
+        set_indexed_variable_bounds(self.soc_module.solid_oxide_cell.fuel_electrode.dtemperature_dz, (-750, 750))
         
         for t in self.time:
             self.feed_recycle_split.split_fraction[t, "recycle"].bounds = (1e-4, 1)
