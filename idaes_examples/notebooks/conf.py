@@ -7,7 +7,7 @@ author = "The IDAES Team"
 bibtex_bibfiles = ["references.bib"]
 bibtex_reference_style = "author_year"
 comments_config = {"hypothesis": False, "utterances": False}
-copyright = "2022"
+copyright = "2025"
 exclude_patterns = [
     "active",
     "conf.py",
