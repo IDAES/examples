@@ -13,5 +13,5 @@ path_exclude:
    - '.jupyter_cache'
 verbose: 1
 sep-len: 80
-jupyter: '_src.ipynb'
+jupyter: '.ipynb'
 ...
