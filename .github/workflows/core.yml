@@ -112,7 +112,7 @@ jobs:
           pytest -v idaes_examples --ignore=idaes_examples/notebooks/docs/surrogates/sco2/alamo/
       - name: Upload pytest-xdist worker logs
         if: success() || failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: pytest_worker_logs
           path: "tests_*.log"
