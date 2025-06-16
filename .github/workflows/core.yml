@@ -40,8 +40,7 @@ env:
 
 defaults:
   run:
-    # -l: login shell, needed when using Conda run:
-    shell: bash -l {0}
+    shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash -l {0}' }}
 
 jobs:
 
@@ -78,19 +77,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version:
-          - '3.9'
-          - '3.10'
-          - '3.11'
-          - '3.12'
-        os:
-          - linux
-          - win64
-        include:
-          - os: linux
-            runner-image: ubuntu-20.04
-          - os: win64
-            runner-image: windows-2022
+        python-version: [3.9, 3.10, 3.11, 3.12]
+        os: [ubuntu-20.04, windows-2022]
     steps:
       - uses: actions/checkout@v4
       - name: Set up Conda environment
@@ -111,8 +99,8 @@ jobs:
           ls idaes_examples
           pytest -v idaes_examples --ignore=idaes_examples/notebooks/docs/surrogates/sco2/alamo/ 
       - name: Upload pytest-xdist worker logs
-        if: success() || failure()
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pytest_worker_logs
-          path: "tests_*.log"
+          name: pytest_worker_logs-${{ matrix.os }}-py${{ matrix.python-version }}
+          path: tests_*.log
