@@ -66,7 +66,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
       - name: Run Spell Checker
         uses: crate-ci/typos@master
 
@@ -78,10 +78,21 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.9, 3.10, 3.11, 3.12]
-        os: [ubuntu-20.04, windows-2022]
+        python-version:
+          - '3.9'
+          - '3.10'
+          - '3.11'
+          - '3.12'
+        os:
+          - linux
+          - win64
+        include:
+          - os: linux
+            runner-image: ubuntu-20.04
+          - os: win64
+            runner-image: windows-2022
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
       - name: Set up Conda environment
         uses: conda-incubator/setup-miniconda@v2.2.0
         with:
@@ -98,10 +109,10 @@ jobs:
         run: |
           pwd
           ls idaes_examples
-          pytest -v idaes_examples --ignore=idaes_examples/notebooks/docs/surrogates/sco2/alamo/ 
+          pytest -v idaes_examples --ignore=idaes_examples/notebooks/docs/surrogates/sco2/alamo/
       - name: Upload pytest-xdist worker logs
-        if: always()
-        uses: actions/upload-artifact@v4
+        if: success() || failure()
+        uses: actions/upload-artifact@v3
         with:
-          name: pytest_worker_logs-${{ matrix.os }}-py${{ matrix.python-version }}
-          path: tests_*.log
+          name: pytest_worker_logs
+          path: "tests_*.log"
