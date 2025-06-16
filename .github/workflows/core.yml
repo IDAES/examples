@@ -40,7 +40,8 @@ env:
 
 defaults:
   run:
-    shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash -l {0}' }}
+    # -l: login shell, needed when using Conda run:
+    shell: bash -l {0}
 
 jobs:
 
