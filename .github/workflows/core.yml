@@ -114,5 +114,5 @@ jobs:
         if: success() || failure()
         uses: actions/upload-artifact@v4
         with:
-          name: pytest_worker_logs
+          name: pytest-xdist-logs-${{ matrix.python-version }}-${{ runner.os }}
           path: "tests_*.log"
