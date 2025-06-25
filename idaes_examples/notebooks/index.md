@@ -25,10 +25,14 @@ The online examples have been created with the
 
 ### Prerequisites
 
-Examples in this documentation are rigorously *tested* to ensure that they work with the *latest* version of the IDAES 
+**Install the latest version of IDAES.** Examples in this documentation are rigorously *tested* to ensure that they work with the *latest* version of the IDAES 
 software. 
 For more information on installing IDAES on your platform,
 please refer to the [IDAES documentation](https://idaes-pse.readthedocs.io/en/latest/index.html).
+
+**Learn about mathematical optimization and Pyomo.** IDAES is a state-of-the-art equation-oriented modeling and optimization environment. Below are recommended topics and references:
+* *Mathematical optimization* especially nonlinear programs (optimization problems) and chemical engineering applications. {cite}`Postek2025`, along with the [companion website](https://mobook.github.io/MO-book/intro.html) and [overview video](https://www.youtube.com/watch?v=DPv-7TeSTNs), are the best resources for a user new to mathematical optimization. {cite}`biegler1997systematic`, {cite}`biegler2010nonlinear`, and {cite}`grossmann2021advanced` are excellent references for advanced users. The [Prof. Dowling's course website](https://ndcbe.github.io/optimization/intro.html) includes Jupyter notebooks and Pyomo examples inspired by these texts.
+* *Pyomo*. IDAES is built upon Pyomo, which is an open-source algebraic modeling environment. New users will likely find {cite}`Postek2025` along its [companion website](https://mobook.github.io/MO-book/intro.html) and the [ND Pyomo Cookbook](https://ndcbe.github.io/ND-Pyomo-Cookbook/README.html) as the easiest introduction to Pyomo. Other excellent resources include {cite}`bynum2021pyomo` and the [Pyomo documentation](https://pyomo.readthedocs.io/en/stable/).
 
 ### Getting the source code
 The full source code for these examples is available from the 
