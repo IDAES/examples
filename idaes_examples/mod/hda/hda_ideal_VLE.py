@@ -550,7 +550,7 @@ class _IdealStateBlock(StateBlock):
 
         # Also need to deactivate sum of mole fraction constraint
         for k in blk.values():
-            if not k.config.defined_state:
+            if not k.config.defined_state and k.config.has_phase_equilibrium:
                 k.equilibrium_constraint.deactivate()
 
 
