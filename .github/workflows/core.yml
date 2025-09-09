@@ -114,5 +114,5 @@ jobs:
         if: success() || failure()
         uses: actions/upload-artifact@v4
         with:
-          name: pytest_worker_logs-${{ github.job }}-${{github.run_attempt}}
+          name: pytest_worker_logs-${{ github.job }}-${{github.run_attempt}}-py${{ matrix.python-version }}
           path: "tests_*.log"
