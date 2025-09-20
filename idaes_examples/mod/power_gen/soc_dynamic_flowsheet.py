@@ -828,6 +828,8 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
         cst = iscale.constraint_scaling_transform
         scale_indexed_constraint(self.total_electric_power_eqn, 1e-8)
         scale_indexed_constraint(self.soec_water_consumption_rate_eqn, 1e-3)
+        ssf(self.feed_heater.control_volume.area, 1e-1)
+        ssf(self.sweep_heater.control_volume.area, 1e-1)
         for t in self.time:
             ssf(self.total_electric_power[t], 1e-8)
             ssf(self.soec_water_consumption_rate[t], 1e-3)
@@ -839,8 +841,6 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
             ssf(self.condenser_flash.control_volume.heat[t], 1e-7)
 
             ssf(self.feed_heater.electric_heat_duty[t], 1e-6)
-            ssf(self.feed_heater.control_volume.area, 1e-1)
-            ssf(self.sweep_heater.control_volume.area, 1e-1)
             for x in self.feed_heater.control_volume.length_domain:
                 ssf(self.feed_heater.control_volume.enthalpy_flow_dx[t, x, "Vap"], 1e-7)
                 ssf(self.feed_heater.heat_holdup[t, x], 1e-9)
@@ -898,12 +898,6 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
             )
             ssf(self.sweep_blower.properties_isentropic[t].enth_mol_phase["Vap"], 1e-4)
             ssf(self.sweep_blower.control_volume.work[t], 1e-6)
-
-            for x in self.condenser_hx.hot_side.length_domain:
-                ssf(self.condenser_hx.cold_side.heat[t, x], 1e-8)
-                ssf(self.condenser_hx.hot_side.heat[t, x], 1e-8)
-                ssf(self.condenser_hx.heat_transfer_coefficient[t, x], 1e-3)
-            ssf(self.condenser_hx.area, 1e-3)
 
             ssf(self.stack_fuel_inlet_temperature[t], 1e-2)
             ssf(self.stack_sweep_inlet_temperature[t], 1e-2)
