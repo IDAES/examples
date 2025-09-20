@@ -86,12 +86,12 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
     CONFIG.declare(
         "soc_zfaces",
         ConfigValue(
-            default=[0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], 
+            default=[0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
             domain=ListOf(float),
             description="List containing coordinates of control volume faces "
             "in z direction. Coordinates must start with zero, be strictly "
             "increasing, and end with one",
-        )
+        ),
     )
     CONFIG.declare(
         "quasi_steady_state",
@@ -104,6 +104,19 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
                 **Valid values:** {
                 **True** - Force steady state units,
                 **False** - Create dynamic unit models where appropriate.}""",
+        ),
+    )
+    CONFIG.declare(
+        "soc_heat_loss",
+        ConfigValue(
+            default=False,
+            domain=Bool,
+            description="If True, add heat loss term to the SOC",
+            doc="""If True, add heat loss term to the SOC,
+                **default** - False.
+                **Valid values:** {
+                **True** - Heat loss term for the SOC,
+                **False** - No heat loss term created in SOC.}""",
         ),
     )
 
@@ -407,6 +420,7 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
             solid_oxide_cell_config=soc_cell_config,
             fuel_property_package=self.h2_side_prop_params,
             oxygen_property_package=self.o2_side_prop_params,
+            has_heat_loss_term=self.config.soc_heat_loss,
         )
 
         self.sweep_recycle_split = gum.Separator(
@@ -449,20 +463,21 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
                 "dynamic": False,
                 "has_holdup": False,
                 "has_pressure_change": False,
-                "transformation_method": "dae.finite_difference",
-                "transformation_scheme": "BACKWARD",
+                "transformation_method": "dae.collocation",
+                "transformation_scheme": "LAGRANGE-LEGENDRE",
             },
             hot_side={
                 "property_package": self.o2_side_prop_params,
                 "dynamic": False,
                 "has_holdup": False,
                 "has_pressure_change": False,
-                "transformation_method": "dae.finite_difference",
-                "transformation_scheme": "BACKWARD",
+                "transformation_method": "dae.collocation",
+                "transformation_scheme": "LAGRANGE-LEGENDRE",
             },
             shell_is_hot=True,
             flow_type=HeatExchangerFlowPattern.countercurrent,
-            finite_elements=10,
+            finite_elements=6,
+            collocation_points=1,
             tube_arrangement="in-line",
         )
         self.feed_hot_exchanger = CrossFlowHeatExchanger1D(
@@ -473,20 +488,21 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
                 "has_holdup": False,
                 "dynamic": False,
                 "has_pressure_change": False,
-                "transformation_method": "dae.finite_difference",
-                "transformation_scheme": "BACKWARD",
+                "transformation_method": "dae.collocation",
+                "transformation_scheme": "LAGRANGE-LEGENDRE",
             },
             hot_side={
                 "property_package": self.h2_side_prop_params,
                 "has_holdup": False,
                 "dynamic": False,
                 "has_pressure_change": False,
-                "transformation_method": "dae.finite_difference",
-                "transformation_scheme": "BACKWARD",
+                "transformation_method": "dae.collocation",
+                "transformation_scheme": "LAGRANGE-LEGENDRE",
             },
             shell_is_hot=True,
             flow_type=HeatExchangerFlowPattern.countercurrent,
-            finite_elements=12,
+            finite_elements=6,
+            collocation_points=1,
             tube_arrangement="staggered",
         )
         self.feed_medium_exchanger = CrossFlowHeatExchanger1D(
@@ -497,19 +513,20 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
                 "has_holdup": False,
                 "dynamic": False,
                 "has_pressure_change": False,
-                "transformation_method": "dae.finite_difference",
-                "transformation_scheme": "BACKWARD",
+                "transformation_method": "dae.collocation",
+                "transformation_scheme": "LAGRANGE-LEGENDRE",
             },
             hot_side={
                 "property_package": self.o2_side_prop_params,
                 "has_holdup": False,
                 "dynamic": False,
                 "has_pressure_change": False,
-                "transformation_method": "dae.finite_difference",
-                "transformation_scheme": "BACKWARD",
+                "transformation_method": "dae.collocation",
+                "transformation_scheme": "LAGRANGE-LEGENDRE",
             },
             shell_is_hot=True,
             finite_elements=6,
+            collocation_points=1,
             flow_type=HeatExchangerFlowPattern.countercurrent,
             tube_arrangement="staggered",
         )
@@ -522,7 +539,10 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
             dynamic=dynamic_unit_models,
             has_fluid_holdup=False,
             has_pressure_change=False,
-            finite_elements=4,
+            transformation_method="dae.collocation",
+            transformation_scheme="LAGRANGE-RADAU",
+            finite_elements=2,
+            collocation_points=2,
             tube_arrangement="in-line",
         )
         self.sweep_heater = Heater1D(
@@ -531,7 +551,10 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
             dynamic=dynamic_unit_models,
             has_fluid_holdup=False,
             has_pressure_change=False,
-            finite_elements=4,
+            transformation_method="dae.collocation",
+            transformation_scheme="LAGRANGE-RADAU",
+            finite_elements=2,
+            collocation_points=2,
             tube_arrangement="in-line",
         )
         self.condenser_flash = gum.Flash(
@@ -761,12 +784,20 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
 
         z0 = self.soc_module.solid_oxide_cell.iznodes.first()
         zend = self.soc_module.solid_oxide_cell.iznodes.last()
+
         @self.Constraint(self.time)
         def stack_fuel_inlet_temperature_eqn(b, t):
-            return b.stack_fuel_inlet_temperature[t] == b.soc_module.solid_oxide_cell.interconnect.temperature[t, 1, z0]
+            return (
+                b.stack_fuel_inlet_temperature[t]
+                == b.soc_module.solid_oxide_cell.interconnect.temperature[t, 1, z0]
+            )
+
         @self.Constraint(self.time)
         def stack_sweep_inlet_temperature_eqn(b, t):
-            return b.stack_sweep_inlet_temperature[t] == b.soc_module.solid_oxide_cell.interconnect.temperature[t, 1, zend]
+            return (
+                b.stack_sweep_inlet_temperature[t]
+                == b.soc_module.solid_oxide_cell.interconnect.temperature[t, 1, zend]
+            )
 
         @self.Constraint(self.time)
         def stack_core_temperature_eqn(b, t):
@@ -774,60 +805,71 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
             if len(iznodes) % 2 == 0:
                 zlo = len(iznodes) / 2
                 zhi = len(iznodes) / 2 + 1
-                return b.stack_core_temperature[t] == (
-                    b.soc_module.solid_oxide_cell.interconnect.temperature[t, 1, zlo]
-                    + b.soc_module.solid_oxide_cell.interconnect.temperature[t, 1, zhi]
-                ) / 2
+                return (
+                    b.stack_core_temperature[t]
+                    == (
+                        b.soc_module.solid_oxide_cell.interconnect.temperature[
+                            t, 1, zlo
+                        ]
+                        + b.soc_module.solid_oxide_cell.interconnect.temperature[
+                            t, 1, zhi
+                        ]
+                    )
+                    / 2
+                )
             else:
-                zmid = pyo.ceil(len(iznodes)/2)
+                zmid = pyo.ceil(len(iznodes) / 2)
                 return b.stack_core_temperature[t] == (
                     b.soc_module.solid_oxide_cell.interconnect.temperature[t, 1, zmid]
                 )
 
-
-
     def _scaling(self):
         ssf = iscale.set_scaling_factor
         cst = iscale.constraint_scaling_transform
-
-        ssf(self.total_electric_power, 1e-8)
-        ssf(self.soec_water_consumption_rate, 1e-3)
-        ssf(self.feed_recycle_split.recycle_ratio, 1)
-        ssf(self.sweep_recycle_split.recycle_ratio, 1)
-        ssf(self.condenser_split.recycle_ratio, 1)
-        ssf(self.h2_mass_production, 1)
-
         scale_indexed_constraint(self.total_electric_power_eqn, 1e-8)
         scale_indexed_constraint(self.soec_water_consumption_rate_eqn, 1e-3)
+        for t in self.time:
+            ssf(self.total_electric_power[t], 1e-8)
+            ssf(self.soec_water_consumption_rate[t], 1e-3)
+            ssf(self.feed_recycle_split.recycle_ratio[t], 1)
+            ssf(self.sweep_recycle_split.recycle_ratio[t], 1)
+            ssf(self.condenser_split.recycle_ratio[t], 1)
+            ssf(self.h2_mass_production[t], 1)
 
-        ssf(self.condenser_flash.control_volume.heat, 1e-7)
+            ssf(self.condenser_flash.control_volume.heat[t], 1e-7)
 
-        ssf(self.feed_heater.control_volume.area, 1e-1)
-        ssf(self.sweep_heater.control_volume.area, 1e-1)
-        ssf(self.feed_heater.control_volume.heat, 1e-6)
-        ssf(self.feed_heater.electric_heat_duty, 1e-6)
-        ssf(self.feed_heater.control_volume._enthalpy_flow, 1e-8)
-        ssf(self.feed_heater.control_volume.enthalpy_flow_dx, 1e-7)
-        ssf(self.feed_heater.heat_holdup, 1e-9)
+            ssf(self.feed_heater.electric_heat_duty[t], 1e-6)
+            ssf(self.feed_heater.control_volume.area, 1e-1)
+            ssf(self.sweep_heater.control_volume.area, 1e-1)
+            for x in self.feed_heater.control_volume.length_domain:
+                ssf(self.feed_heater.control_volume.enthalpy_flow_dx[t, x, "Vap"], 1e-7)
+                ssf(self.feed_heater.heat_holdup[t, x], 1e-9)
+                ssf(self.feed_heater.control_volume.heat[t, x], 1e-6)
+                ssf(self.feed_heater.control_volume._enthalpy_flow[t, x, "Vap"], 1e-8)
 
-        ssf(self.sweep_heater.control_volume.heat, 1e-6)
-        ssf(self.sweep_heater.electric_heat_duty, 1e-6)
-        ssf(self.sweep_heater.control_volume._enthalpy_flow, 1e-8)
-        ssf(self.sweep_heater.control_volume.enthalpy_flow_dx, 1e-7)
-        ssf(self.sweep_heater.heat_holdup, 1e-9)
+            ssf(self.sweep_heater.electric_heat_duty[t], 1e-6)
+            for x in self.sweep_heater.control_volume.length_domain:
+                ssf(self.sweep_heater.control_volume.heat[t, x], 1e-6)
+                ssf(self.sweep_heater.control_volume._enthalpy_flow[t, x, "Vap"], 1e-8)
+                ssf(
+                    self.sweep_heater.control_volume.enthalpy_flow_dx[t, x, "Vap"], 1e-7
+                )
+                ssf(self.sweep_heater.heat_holdup[t, x], 1e-9)
 
         def scale_hx(hx):
             shell = hx.hot_side
             tube = hx.cold_side
-            ssf(shell.area, 1e-1)
-            ssf(hx.hot_side.heat, 1e-6)
             ssf(tube.area, 1)
-            ssf(hx.cold_side.heat, 1e-6)
-            ssf(shell._enthalpy_flow, 1e-8)
-            ssf(tube._enthalpy_flow, 1e-8)
-            ssf(shell.enthalpy_flow_dx, 1e-7)
-            ssf(tube.enthalpy_flow_dx, 1e-7)
-            ssf(hx.heat_holdup, 1e-8)
+            ssf(shell.area, 1e-1)
+            for t in hx.flowsheet().time:
+                for x in shell.length_domain:
+                    ssf(hx.hot_side.heat[t, x], 1e-6)
+                    ssf(hx.cold_side.heat[t, x], 1e-6)
+                    ssf(shell._enthalpy_flow[t, x, "Vap"], 1e-8)
+                    ssf(tube._enthalpy_flow[t, x, "Vap"], 1e-8)
+                    ssf(shell.enthalpy_flow_dx[t, x, "Vap"], 1e-7)
+                    ssf(tube.enthalpy_flow_dx[t, x, "Vap"], 1e-7)
+                    ssf(hx.heat_holdup[t, x], 1e-8)
 
         scale_hx(self.sweep_exchanger)
         scale_hx(self.feed_medium_exchanger)
@@ -856,6 +898,12 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
             )
             ssf(self.sweep_blower.properties_isentropic[t].enth_mol_phase["Vap"], 1e-4)
             ssf(self.sweep_blower.control_volume.work[t], 1e-6)
+
+            for x in self.condenser_hx.hot_side.length_domain:
+                ssf(self.condenser_hx.cold_side.heat[t, x], 1e-8)
+                ssf(self.condenser_hx.hot_side.heat[t, x], 1e-8)
+                ssf(self.condenser_hx.heat_transfer_coefficient[t, x], 1e-3)
+            ssf(self.condenser_hx.area, 1e-3)
 
             ssf(self.stack_fuel_inlet_temperature[t], 1e-2)
             ssf(self.stack_sweep_inlet_temperature[t], 1e-2)
@@ -965,6 +1013,9 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
         self.feed_hot_exchanger.number_passes.fix(12)
         self.feed_hot_exchanger.number_columns_per_pass.fix(50)
         self.feed_hot_exchanger.number_rows_per_pass.fix(25)
+
+        if self.config.soc_heat_loss:
+            self.soc_module.total_heat_loss.fix(0)
 
     def initialize_build(
         self,
@@ -1169,6 +1220,7 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
         propagate_state(self.hstrm02)
         propagate_state(self.hstrm03)
 
+        self.sweep_exchanger.lagrange_legendre_deactivation()
         self.sweep_exchanger.default_initializer(
             solver=solver, solver_options=optarg, output_level=outlvl
         ).initialize(model=self.sweep_exchanger)
@@ -1179,12 +1231,14 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
 
         propagate_state(self.feed00)
 
+        self.feed_medium_exchanger.lagrange_legendre_deactivation()
         self.feed_medium_exchanger.default_initializer(
             solver=solver, solver_options=optarg, output_level=outlvl
         ).initialize(model=self.feed_medium_exchanger)
 
         propagate_state(self.feed01)
 
+        self.feed_hot_exchanger.lagrange_legendre_deactivation()
         self.feed_hot_exchanger.default_initializer(
             solver=solver, solver_options=optarg, output_level=outlvl
         ).initialize(model=self.feed_hot_exchanger)
@@ -1375,7 +1429,7 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
             display_units=pyo.units.MW,
         )
         tag_group["total_electric_power"] = iutil.ModelTag(
-            doc="Total electric power for SOEC and auxiliaries",
+            doc="Total electric power for SOC and auxiliaries",
             expr=self.total_electric_power[t0],
             format_string="{:.3f}",
             display_units=pyo.units.MW,
@@ -1386,6 +1440,13 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
             format_string="{:.1f}",
             display_units=pyo.units.dimensionless,
         )
+        if self.config.soc_heat_loss:
+            tag_group["soc_heat_loss"] = iutil.ModelTag(
+                doc="SOC heat loss",
+                expr=self.soc_module.total_heat_loss[t0],
+                format_string="{:.1f}",
+                display_units=pyo.units.MW,
+            )
         tag_group = iutil.ModelTagGroup()
         self.tags_input = tag_group
 
@@ -1402,7 +1463,7 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
         rows = set()
         cols = set()
         tags = []
-        for tag, stream, col in SoecStandaloneFlowsheetData._stream_col_gen(tag_group):
+        for tag, stream, col in SocStandaloneFlowsheetData._stream_col_gen(tag_group):
             rows.add(stream)
             cols.add(col)
             tags.append((tag, stream, col))
@@ -1467,43 +1528,39 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
 
     def _make_temperature_gradient_terms(self):
         soec = self.soc_module.solid_oxide_cell
-        # dz = soec.zfaces.at(2) - soec.zfaces.at(1)
-        # # Going to assume that the zfaces are evenly spaced
-        # for iz in soec.iznodes:
-        #     assert abs(soec.zfaces.at(iz + 1) - soec.zfaces.at(iz) - dz) < 1e-8
-        # dz = dz * soec.length_z
+
         def finite_difference(expr, t, ix, iz):
             # Since this is mostly for reference, no need to worry about upwinding or whatever
             if iz == soec.iznodes.first():
                 z0 = soec.znodes.at(iz) * soec.length_z
-                z1 = soec.znodes.at(iz+1) * soec.length_z
-                z2 = soec.znodes.at(iz+2) * soec.length_z
+                z1 = soec.znodes.at(iz + 1) * soec.length_z
+                z2 = soec.znodes.at(iz + 2) * soec.length_z
                 weights = [
                     1 / (z0 - z1) + 1 / (z0 - z2),
                     (z0 - z2) / ((z1 - z0) * (z1 - z2)),
-                    (z0 - z1) / ((z2 - z0)*(z2 - z1))
+                    (z0 - z1) / ((z2 - z0) * (z2 - z1)),
                 ]
                 if ix is None:
                     return sum(weights[i] * expr[t, iz + i] for i in range(3))
                 else:
                     return sum(weights[i] * expr[t, ix, iz + i] for i in range(3))
             elif iz == soec.iznodes.last():
-                z0 = soec.znodes.at(iz-2) * soec.length_z
-                z1 = soec.znodes.at(iz-1) * soec.length_z
+                z0 = soec.znodes.at(iz - 2) * soec.length_z
+                z1 = soec.znodes.at(iz - 1) * soec.length_z
                 z2 = soec.znodes.at(iz) * soec.length_z
                 weights = [
-                    (z2 - z1)/((z0 - z1) * (z0 - z2)),
-                    (z2 - z0)/((z1 - z0) * (z1 - z2)),
-                    1 / (z2 - z0) + 1 / (z2 - z1)
+                    (z2 - z1) / ((z0 - z1) * (z0 - z2)),
+                    (z2 - z0) / ((z1 - z0) * (z1 - z2)),
+                    1 / (z2 - z0) + 1 / (z2 - z1),
                 ]
                 if ix is None:
                     return sum(weights[i] * expr[t, iz + i - 2] for i in range(3))
                 else:
                     return sum(weights[i] * expr[t, ix, iz + i - 2] for i in range(3))
             else:
-                z0 = soec.znodes.at(iz-1) * soec.length_z
+                z0 = soec.znodes.at(iz - 1) * soec.length_z
                 z1 = soec.znodes.at(iz) * soec.length_z
-                z2 = soec.znodes.at(iz+1) * soec.length_z
+                z2 = soec.znodes.at(iz + 1) * soec.length_z
                 weights = [
                     (z1 - z2) / ((z0 - z1) * (z0 - z2)),
                     1 / (z1 - z2) + 1 / (z1 - z0),
@@ -1603,8 +1660,10 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
         set_indexed_variable_bounds(self.feed_heater.electric_heat_duty, (0, 2e6))
         set_indexed_variable_bounds(self.sweep_heater.electric_heat_duty, (0, 4e6))
 
-        set_indexed_variable_bounds(self.soc_module.solid_oxide_cell.fuel_electrode.dtemperature_dz, (-750, 750))
-        
+        set_indexed_variable_bounds(
+            self.soc_module.solid_oxide_cell.fuel_electrode.dtemperature_dz, (-750, 750)
+        )
+
         for t in self.time:
             self.feed_recycle_split.split_fraction[t, "recycle"].bounds = (1e-4, 1)
             self.sweep_recycle_split.split_fraction[t, "recycle"].bounds = (1e-4, 1)
@@ -1631,25 +1690,34 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
 
         z0 = self.soc_module.solid_oxide_cell.iznodes.first()
         zend = self.soc_module.solid_oxide_cell.iznodes.last()
+
         @self.Constraint(self.time)
         def thermal_gradient_eqn_1(b, t):
-            return (b.soc_module.solid_oxide_cell.fuel_electrode.temperature[t, 1, z0]
-                    - b.soc_module.solid_oxide_cell.fuel_electrode.temperature[t, 1, zend]) <= delta_T_limit
+            return (
+                b.soc_module.solid_oxide_cell.fuel_electrode.temperature[t, 1, z0]
+                - b.soc_module.solid_oxide_cell.fuel_electrode.temperature[t, 1, zend]
+            ) <= delta_T_limit
 
         @self.Constraint(self.time)
         def thermal_gradient_eqn_2(b, t):
-            return (b.soc_module.solid_oxide_cell.fuel_electrode.temperature[t, 1, zend]
-                    - b.soc_module.solid_oxide_cell.fuel_electrode.temperature[t, 1, z0]) <= delta_T_limit
+            return (
+                b.soc_module.solid_oxide_cell.fuel_electrode.temperature[t, 1, zend]
+                - b.soc_module.solid_oxide_cell.fuel_electrode.temperature[t, 1, z0]
+            ) <= delta_T_limit
 
         @self.Constraint(self.time)
         def thermal_gradient_eqn_3(b, t):
-            return (b.soc_module.solid_oxide_cell.fuel_electrode.temperature[t, 1, z0]
-                    - b.soc_module.solid_oxide_cell.fuel_electrode.temperature[t, 1, zend]) >= -delta_T_limit
+            return (
+                b.soc_module.solid_oxide_cell.fuel_electrode.temperature[t, 1, z0]
+                - b.soc_module.solid_oxide_cell.fuel_electrode.temperature[t, 1, zend]
+            ) >= -delta_T_limit
 
         @self.Constraint(self.time)
         def thermal_gradient_eqn_4(b, t):
-            return (b.soc_module.solid_oxide_cell.fuel_electrode.temperature[t, 1, zend]
-                    - b.soc_module.solid_oxide_cell.fuel_electrode.temperature[t, 1, z0]) >= -delta_T_limit
+            return (
+                b.soc_module.solid_oxide_cell.fuel_electrode.temperature[t, 1, zend]
+                - b.soc_module.solid_oxide_cell.fuel_electrode.temperature[t, 1, z0]
+            ) >= -delta_T_limit
 
         iscale.constraint_scaling_transform(self.thermal_gradient_eqn_1[t0], 1e-2)
         iscale.constraint_scaling_transform(self.thermal_gradient_eqn_2[t0], 1e-2)
