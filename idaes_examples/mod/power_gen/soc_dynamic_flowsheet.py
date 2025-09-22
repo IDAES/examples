@@ -530,6 +530,11 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
             flow_type=HeatExchangerFlowPattern.countercurrent,
             tube_arrangement="staggered",
         )
+        # Need to deactivate unnecessary equations for LL collocation
+        self.sweep_exchanger.lagrange_legendre_deactivation()
+        self.feed_medium_exchanger.lagrange_legendre_deactivation()
+        self.feed_hot_exchanger.lagrange_legendre_deactivation()
+
         self.sweep_blower = gum.Compressor(
             doc="Sweep blower", property_package=self.o2_side_prop_params, dynamic=False
         )
@@ -1214,7 +1219,6 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
         propagate_state(self.hstrm02)
         propagate_state(self.hstrm03)
 
-        self.sweep_exchanger.lagrange_legendre_deactivation()
         self.sweep_exchanger.default_initializer(
             solver=solver, solver_options=optarg, output_level=outlvl
         ).initialize(model=self.sweep_exchanger)
@@ -1225,14 +1229,12 @@ class SocStandaloneFlowsheetData(FlowsheetBlockData):
 
         propagate_state(self.feed00)
 
-        self.feed_medium_exchanger.lagrange_legendre_deactivation()
         self.feed_medium_exchanger.default_initializer(
             solver=solver, solver_options=optarg, output_level=outlvl
         ).initialize(model=self.feed_medium_exchanger)
 
         propagate_state(self.feed01)
 
-        self.feed_hot_exchanger.lagrange_legendre_deactivation()
         self.feed_hot_exchanger.default_initializer(
             solver=solver, solver_options=optarg, output_level=outlvl
         ).initialize(model=self.feed_hot_exchanger)
