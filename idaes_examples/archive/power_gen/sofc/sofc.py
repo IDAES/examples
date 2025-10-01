@@ -849,7 +849,7 @@ def scale_flowsheet(m):
         m.fs.flash.control_volume.properties_out[0].mole_frac_comp, 1e1
     )
 
-    # hide missing scaling factor wornings
+    # hide missing scaling factor warnings
     scaling_log = idaeslog.getLogger("idaes.core.util.scaling", level=idaeslog.ERROR)
 
     iscale.calculate_scaling_factors(m)

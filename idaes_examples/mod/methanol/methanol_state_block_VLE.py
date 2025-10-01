@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Property package for ideal VLE calucations for the methanol synthesis problem.
+Property package for ideal VLE calculations for the methanol synthesis problem.
 Correlations from Turkay and Grossmann paper. See Latex files for details.
 """
 

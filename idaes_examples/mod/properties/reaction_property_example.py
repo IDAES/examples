@@ -140,7 +140,7 @@ class HDAReactionBlockData(ReactionBlockDataBase):
             units=pyunits.mol / pyunits.m**3 / pyunits.s / pyunits.Pa**2,
         )
 
-        self.k_eq = Param(initialize=10000, doc="Equlibrium constant", units=pyunits.Pa)
+        self.k_eq = Param(initialize=10000, doc="Equilibrium constant", units=pyunits.Pa)
 
         self.reaction_rate = Var(
             self.params.rate_reaction_idx,
