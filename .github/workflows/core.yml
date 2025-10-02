@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+  schedule:
+    # run Sundays at 3:00 am UTC (10 pm ET/7 pm PT)
+    - cron: '0 3 * * 0'
   repository_dispatch:
     # to run this, send a POST API call at repos/IDAES/idaes-pse/dispatches with the specified event_type
     # e.g. `gh repos/IDAES/idaes-pse/dispatches -F event_type=ci_run_tests`
