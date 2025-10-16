@@ -521,7 +521,7 @@ class SteamTurbineFlowsheetData(FlowsheetBlockData):
                 format_string="{:.3f}",
                 display_units=pyo.units.kJ / pyo.units.mol,
             )
-        # Tag some important model quntities
+        # Tag some important model quantities
         self.tags = iutil.ModelTagGroup()
         self.tags["power"] = iutil.ModelTag(
             doc=f"Steam turbine electric power output",

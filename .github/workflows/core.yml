@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+  schedule:
+    # run Sundays at 3:00 am UTC (10 pm ET/7 pm PT)
+    - cron: '0 3 * * 0'
   repository_dispatch:
     # to run this, send a POST API call at repos/IDAES/idaes-pse/dispatches with the specified event_type
     # e.g. `gh repos/IDAES/idaes-pse/dispatches -F event_type=ci_run_tests`
@@ -59,7 +62,7 @@ jobs:
           pip install --progress-bar off black[jupyter]==24.3.0
       - name: Run Black to verify that the committed code is formatted
         run: |
-          black --check .
+          black --check --diff .
 
   spell-check:
     name: Check Spelling
@@ -88,7 +91,7 @@ jobs:
           - win64
         include:
           - os: linux
-            runner-image: ubuntu-20.04
+            runner-image: ubuntu-22.04
           - os: win64
             runner-image: windows-2022
     steps:
@@ -112,7 +115,7 @@ jobs:
           pytest -v idaes_examples --ignore=idaes_examples/notebooks/docs/surrogates/sco2/alamo/ 
       - name: Upload pytest-xdist worker logs
         if: success() || failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: pytest_worker_logs
+          name: pytest_worker_logs--${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ runner.os }}-py${{ matrix.python-version }}
           path: "tests_*.log"

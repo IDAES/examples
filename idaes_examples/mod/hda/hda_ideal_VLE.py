@@ -11,7 +11,7 @@
 # at the URL "https://github.com/IDAES/idaes-pse".
 ##############################################################################
 """
-Example ideal parameter block for the VLE calucations for a
+Example ideal parameter block for the VLE calculations for a
 Benzene-Toluene-o-Xylene system.
 """
 
@@ -550,7 +550,7 @@ class _IdealStateBlock(StateBlock):
 
         # Also need to deactivate sum of mole fraction constraint
         for k in blk.values():
-            if not k.config.defined_state:
+            if not k.config.defined_state and k.config.has_phase_equilibrium:
                 k.equilibrium_constraint.deactivate()
 
 
