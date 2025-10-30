@@ -1,6 +1,7 @@
 --editable .[dev,omlt]
 
-idaes-pse @ git+https://github.com/IDAES/idaes-pse@main
+# idaes-pse @ git+https://github.com/IDAES/idaes-pse@main
+idaes-pse @ git+https://github.com/IDAES/idaes-pse@refs/pull/1667/merge
 # if you want to install idaes-pse from a PR instead of the main branch,
 # uncomment the line below replacing XYZ with the PR number
 # idaes-pse @ git+https://github.com/IDAES/idaes-pse@refs/pull/XYZ/merge
