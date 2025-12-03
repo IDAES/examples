@@ -23,6 +23,7 @@ from pyomo.environ import (
     log,
     NonNegativeReals,
     Var,
+    value,
     Set,
     Param,
     sqrt,
@@ -45,6 +46,7 @@ from idaes.core import (
     LiquidPhase,
     VaporPhase,
 )
+from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.util.constants import Constants as const
 from idaes.core.util.initialization import fix_state_vars, solve_indexed_blocks
 from idaes.core.initialization import InitializerBase
@@ -548,10 +550,10 @@ class _IdealStateBlock(StateBlock):
         # Fix state variables
         fix_state_vars(blk)
 
-        # Also need to deactivate sum of mole fraction constraint
-        for k in blk.values():
-            if not k.config.defined_state:
-                k.equilibrium_constraint.deactivate()
+        # # Also need to deactivate sum of mole fraction constraint
+        # for k in blk.values():
+        #     if not k.config.defined_state:
+        #         k.equilibrium_constraint.deactivate()
 
 
 @declare_process_block_class("IdealStateBlock", block_class=_IdealStateBlock)
@@ -1011,7 +1013,7 @@ class IdealStateBlockData(StateBlockData):
     # as needed
     def _temperature_bubble(self):
         self.temperature_bubble = Param(
-            initialize=33.0, units=pyunits.K, doc="Bubble point temperature"
+            initialize=298.15, units=pyunits.K, doc="Bubble point temperature"
         )
 
     def _temperature_dew(self):
@@ -1039,7 +1041,7 @@ class IdealStateBlockData(StateBlockData):
             )
 
             def rule_temp_dew(b):
-                return (
+                ans = (
                     b.pressure
                     * sum(
                         b.mole_frac_comp[i] / b._p_sat_dewT[i]
@@ -1048,6 +1050,7 @@ class IdealStateBlockData(StateBlockData):
                     - 1
                     == 0
                 )
+                return ans
 
             self.eq_temperature_dew = Constraint(rule=rule_temp_dew)
         except AttributeError:

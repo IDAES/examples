@@ -35,7 +35,9 @@ from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
 from idaes.models.properties.modular_properties.phase_equil.forms import fugacity
 from idaes.models.properties.modular_properties.pure import Perrys
 from idaes.models.properties.modular_properties.pure import RPP5
-from idaes.models.properties.modular_properties.reactions.rate_forms import power_law_rate
+from idaes.models.properties.modular_properties.reactions.rate_forms import (
+    power_law_rate,
+)
 from idaes.models.properties.modular_properties.reactions.dh_rxn import constant_dh_rxn
 from idaes.models.properties.modular_properties.reactions.rate_constant import arrhenius
 from idaes.models.properties.modular_properties.base.utility import ConcentrationForm
@@ -54,8 +56,7 @@ _log = idaeslog.getLogger(__name__)
 #     Retrieved 1st December, 2019
 
 reaction_config = {
-
-    'rate_reactions': {
+    "rate_reactions": {
         "hydrodealkylation": {
             "stoichiometry": {
                 ("Vap", "benzene"): 1,
@@ -69,17 +70,20 @@ reaction_config = {
             "concentration_form": ConcentrationForm.partialPressure,
             "parameter_data": {
                 "dh_rxn_ref": (-1.08e5, pyunits.J / pyunits.mol),
-                "arrhenius_const": (6.3e10, pyunits.mol * pyunits.m ** -3 * pyunits.s ** -1 * pyunits.Pa ** -1.5),
+                "arrhenius_const": (
+                    6.3e10,
+                    pyunits.mol * pyunits.m**-3 * pyunits.s**-1 * pyunits.Pa**-1.5,
+                ),
                 "energy_activation": (217.6e3, pyunits.J / pyunits.mol),
                 "reaction_order": {
                     ("Vap", "benzene"): 0,
                     ("Vap", "toluene"): 1.0,
-                    ("Vap", "hydrogen"): .5,
-                    ("Vap", "methane"): 0, }
-            }
+                    ("Vap", "hydrogen"): 0.5,
+                    ("Vap", "methane"): 0,
+                },
+            },
         }
     },
-
     # Set base units of measurement
     "base_units": {
         "time": pyunits.s,
