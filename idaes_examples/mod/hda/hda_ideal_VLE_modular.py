@@ -32,6 +32,7 @@ from idaes.core.util.math import smooth_max
 from idaes.core.util.constants import Constants
 
 from idaes.models.properties.modular_properties.state_definitions.FpTPxpc import FpTPxpc
+from idaes.models.properties.modular_properties.state_definitions.FpcTP import FpcTP
 from idaes.models.properties.modular_properties.eos.ideal import Ideal
 from idaes.models.properties.modular_properties.phase_equil import SmoothVLE
 from idaes.models.properties.modular_properties.phase_equil.bubble_dew import (
@@ -159,8 +160,8 @@ thermo_config = {
                     "4": (0, pyunits.J / pyunits.kmol / pyunits.K**4),
                     "5": (0, pyunits.J / pyunits.kmol / pyunits.K**5),
                 },
-                "enth_mol_form_liq_comp_ref": (49.0e3, pyunits.J / pyunits.mol),  # [3]
-                "enth_mol_form_vap_comp_ref": (82.9e3, pyunits.J / pyunits.mol),  # [3]
+                "enth_mol_form_liq_comp_ref": (0.0, pyunits.J / pyunits.mol),  # [3]
+                "enth_mol_form_vap_comp_ref": (3.387e4, pyunits.J / pyunits.mol),  # [3]
                 "pressure_sat_comp_coeff": {
                     "A": (4.202, pyunits.dimensionless),  # [1]
                     "B": (1322, pyunits.K),
@@ -197,8 +198,8 @@ thermo_config = {
                     "4": (0, pyunits.J / pyunits.kmol / pyunits.K**4),
                     "5": (0, pyunits.J / pyunits.kmol / pyunits.K**5),
                 },
-                "enth_mol_form_liq_comp_ref": (12.0e3, pyunits.J / pyunits.mol),  # [3]
-                "enth_mol_form_vap_comp_ref": (50.1e3, pyunits.J / pyunits.mol),  # [3]
+                "enth_mol_form_liq_comp_ref": (0.0, pyunits.J / pyunits.mol),  # [3]
+                "enth_mol_form_vap_comp_ref": (3.8262e4, pyunits.J / pyunits.mol),  # [3]
                 "pressure_sat_comp_coeff": {
                     "A": (4.216, pyunits.dimensionless),  # [1]
                     "B": (1435, pyunits.K),
@@ -216,25 +217,10 @@ thermo_config = {
                 "mw": (2.016e-3, pyunits.kg / pyunits.mol),  # [1]
                 "pressure_crit": (12.9e5, pyunits.Pa),  # [1]
                 "temperature_crit": (33.0, pyunits.K),  # [1]
-                # "dens_mol_liq_comp_coeff": {
-                #     "eqn_type": 1,
-                #     "1": (5.414, pyunits.kmol * pyunits.m ** -3),  # [2] pg. 2-98
-                #     "2": (0.34893, None),
-                #     "3": (33.19, pyunits.K),
-                #     "4": (0.2706, None),
-                # },
                 "cp_mol_ig_comp_coeff": {
                     f"a{k}": (cp_ig_data["hydrogen", k], pyunits.K**-k)
                     for k in range(5)
                 },
-                # "cp_mol_liq_comp_coeff": {
-                #     "1": (0, pyunits.J / pyunits.kmol / pyunits.K),  # [2]
-                #     "2": (0, pyunits.J / pyunits.kmol / pyunits.K ** 2),
-                #     "3": (0, pyunits.J / pyunits.kmol / pyunits.K ** 3),
-                #     "4": (0, pyunits.J / pyunits.kmol / pyunits.K ** 4),
-                #     "5": (0, pyunits.J / pyunits.kmol / pyunits.K ** 5),
-                # },
-                # "enth_mol_form_liq_comp_ref": (0.0, pyunits.J / pyunits.mol),  # [3]
                 "enth_mol_form_vap_comp_ref": (0.0, pyunits.J / pyunits.mol),  # [3]
                 "pressure_sat_comp_coeff": {
                     "A": (3.543, pyunits.dimensionless),  # [1]
@@ -253,28 +239,8 @@ thermo_config = {
                 "mw": (16.043e-3, pyunits.kg / pyunits.mol),  # [1]
                 "pressure_crit": (4.599e6, pyunits.Pa),  # [1]
                 "temperature_crit": (190.564, pyunits.K),  # [1]
-                # "dens_mol_liq_comp_coeff": {
-                #     "eqn_type": 1,
-                #     "1": (2.9214, pyunits.kmol * pyunits.m ** -3),  # [2] pg. 2-98
-                #     "2": (0.28976, None),
-                #     "3": (190.56, pyunits.K),
-                #     "4": (0.28881, None),
-                # },
-                "cp_mol_ig_comp_coeff": {
-                    f"a{k}": (cp_ig_data["methane", k], pyunits.K**-k) for k in range(5)
-                },
-                # "cp_mol_liq_comp_coeff": {
-                #     "1": (0, pyunits.J / pyunits.kmol / pyunits.K),  # [2]
-                #     "2": (0, pyunits.J / pyunits.kmol / pyunits.K ** 2),
-                #     "3": (0, pyunits.J / pyunits.kmol / pyunits.K ** 3),
-                #     "4": (0, pyunits.J / pyunits.kmol / pyunits.K ** 4),
-                #     "5": (0, pyunits.J / pyunits.kmol / pyunits.K ** 5),
-                # },
-                # "enth_mol_form_liq_comp_ref": (-74.52e3, pyunits.J / pyunits.mol),  # [3]
-                "enth_mol_form_vap_comp_ref": (
-                    -74.52e3,
-                    pyunits.J / pyunits.mol,
-                ),  # [3]
+                "cp_mol_ig_comp_coeff": {f"a{k}": (cp_ig_data["methane", k], pyunits.K**-k) for k in range(5)},
+                "enth_mol_form_vap_comp_ref": (0.0, pyunits.J / pyunits.mol,),  # [3]
                 "pressure_sat_comp_coeff": {
                     "A": (3.990, pyunits.dimensionless),  # [1]
                     "B": (443.0, pyunits.K),
@@ -300,7 +266,7 @@ thermo_config = {
     # # Specifying state definition
     "state_definition": FpTPxpc,
     "state_bounds": {
-        "flow_mol_phase": (1e-12, 0.5, 100, pyunits.mol / pyunits.s),
+        "flow_mol_phase": (0.0, 0.5, 100, pyunits.mol / pyunits.s),
         "temperature": (273.15, 298.15, 1500, pyunits.K),
         "pressure": (100000, 101325, 1000000, pyunits.Pa),
     },
@@ -318,3 +284,4 @@ thermo_config_vapor["phases"].pop("Liq")
 thermo_config_vapor.pop("phases_in_equilibrium")
 thermo_config_vapor.pop("phase_equilibrium_state")
 thermo_config_vapor.pop("bubble_dew_method")
+
