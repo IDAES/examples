@@ -3,6 +3,7 @@ from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes.core.solvers import get_solver
 import idaes.logger as idaeslog
 
+
 def FpcTP_to_FpTPxpc(flow_mol_phase_comp):
 
     flow_mol_phase = {
@@ -11,9 +12,9 @@ def FpcTP_to_FpTPxpc(flow_mol_phase_comp):
     }
     mole_frac_phase_comp = {}
 
-    for (p, c) in flow_mol_phase_comp.keys():
+    for p, c in flow_mol_phase_comp.keys():
         flow_mol_phase[p] += flow_mol_phase_comp[(p, c)]
-    for (p, c) in flow_mol_phase_comp.keys():
+    for p, c in flow_mol_phase_comp.keys():
         if flow_mol_phase[p] == 0.0:
             mole_frac_phase_comp[p, c] = 0.0
         else:
@@ -34,38 +35,66 @@ def fix_inlet_states(m):
         ("Liq", "toluene"): 0.30,
     }
 
-    flow_mol_phase_101, mole_frac_phase_comp_101 = FpcTP_to_FpTPxpc(flow_mol_phase_comp_101)
+    flow_mol_phase_101, mole_frac_phase_comp_101 = FpcTP_to_FpTPxpc(
+        flow_mol_phase_comp_101
+    )
 
     m.fs.I101.flow_mol_phase[0, "Vap"].fix(flow_mol_phase_101["Vap"])
     m.fs.I101.flow_mol_phase[0, "Liq"].fix(flow_mol_phase_101["Liq"])
-    m.fs.I101.mole_frac_phase_comp[0, "Vap", "benzene"].fix(mole_frac_phase_comp_101["Vap", "benzene"])
-    m.fs.I101.mole_frac_phase_comp[0, "Vap", "toluene"].fix(mole_frac_phase_comp_101["Vap", "toluene"])
-    m.fs.I101.mole_frac_phase_comp[0, "Vap", "hydrogen"].fix(mole_frac_phase_comp_101["Vap", "hydrogen"])
-    m.fs.I101.mole_frac_phase_comp[0, "Vap", "methane"].fix(mole_frac_phase_comp_101["Vap", "methane"])
-    m.fs.I101.mole_frac_phase_comp[0, "Liq", "benzene"].fix(mole_frac_phase_comp_101["Liq", "benzene"])
-    m.fs.I101.mole_frac_phase_comp[0, "Liq", "toluene"].fix(mole_frac_phase_comp_101["Liq", "toluene"])
+    m.fs.I101.mole_frac_phase_comp[0, "Vap", "benzene"].fix(
+        mole_frac_phase_comp_101["Vap", "benzene"]
+    )
+    m.fs.I101.mole_frac_phase_comp[0, "Vap", "toluene"].fix(
+        mole_frac_phase_comp_101["Vap", "toluene"]
+    )
+    m.fs.I101.mole_frac_phase_comp[0, "Vap", "hydrogen"].fix(
+        mole_frac_phase_comp_101["Vap", "hydrogen"]
+    )
+    m.fs.I101.mole_frac_phase_comp[0, "Vap", "methane"].fix(
+        mole_frac_phase_comp_101["Vap", "methane"]
+    )
+    m.fs.I101.mole_frac_phase_comp[0, "Liq", "benzene"].fix(
+        mole_frac_phase_comp_101["Liq", "benzene"]
+    )
+    m.fs.I101.mole_frac_phase_comp[0, "Liq", "toluene"].fix(
+        mole_frac_phase_comp_101["Liq", "toluene"]
+    )
     m.fs.I101.temperature.fix(303.2)
     m.fs.I101.pressure.fix(350000)
 
     flow_mol_phase_comp_102 = {
         ("Vap", "benzene"): eps,
         ("Vap", "toluene"): eps,
-        ("Vap", "hydrogen"): .30,
-        ("Vap", "methane"): .02,
+        ("Vap", "hydrogen"): 0.30,
+        ("Vap", "methane"): 0.02,
         ("Liq", "benzene"): eps,
         ("Liq", "toluene"): eps,
     }
 
-    flow_mol_phase_102, mole_frac_phase_comp_102 = FpcTP_to_FpTPxpc(flow_mol_phase_comp_102)
+    flow_mol_phase_102, mole_frac_phase_comp_102 = FpcTP_to_FpTPxpc(
+        flow_mol_phase_comp_102
+    )
 
     m.fs.I102.flow_mol_phase[0, "Vap"].fix(flow_mol_phase_102["Vap"])
     m.fs.I102.flow_mol_phase[0, "Liq"].fix(flow_mol_phase_102["Liq"])
-    m.fs.I102.mole_frac_phase_comp[0, "Vap", "benzene"].fix(mole_frac_phase_comp_102["Vap", "benzene"])
-    m.fs.I102.mole_frac_phase_comp[0, "Vap", "toluene"].fix(mole_frac_phase_comp_102["Vap", "toluene"])
-    m.fs.I102.mole_frac_phase_comp[0, "Vap", "hydrogen"].fix(mole_frac_phase_comp_102["Vap", "hydrogen"])
-    m.fs.I102.mole_frac_phase_comp[0, "Vap", "methane"].fix(mole_frac_phase_comp_102["Vap", "methane"])
-    m.fs.I102.mole_frac_phase_comp[0, "Liq", "benzene"].fix(mole_frac_phase_comp_102["Liq", "benzene"])
-    m.fs.I102.mole_frac_phase_comp[0, "Liq", "toluene"].fix(mole_frac_phase_comp_102["Liq", "toluene"])
+    m.fs.I102.mole_frac_phase_comp[0, "Vap", "benzene"].fix(
+        mole_frac_phase_comp_102["Vap", "benzene"]
+    )
+    m.fs.I102.mole_frac_phase_comp[0, "Vap", "toluene"].fix(
+        mole_frac_phase_comp_102["Vap", "toluene"]
+    )
+    m.fs.I102.mole_frac_phase_comp[0, "Vap", "hydrogen"].fix(
+        mole_frac_phase_comp_102["Vap", "hydrogen"]
+    )
+    m.fs.I102.mole_frac_phase_comp[0, "Vap", "methane"].fix(
+        mole_frac_phase_comp_102["Vap", "methane"]
+    )
+    m.fs.I102.mole_frac_phase_comp[0, "Liq", "benzene"].fix(
+        mole_frac_phase_comp_102["Liq", "benzene"]
+    )
+    m.fs.I102.mole_frac_phase_comp[0, "Liq", "toluene"].fix(
+        mole_frac_phase_comp_102["Liq", "toluene"]
+    )
     m.fs.I102.temperature.fix(303.2)
     m.fs.I102.pressure.fix(350000)
 
@@ -132,13 +161,19 @@ def manual_propagation(m, tear_guesses):
 
     solver = get_solver(solver_options=optarg)
 
-    initialize_unit(m.fs.H101) # Initialize Heater
+    initialize_unit(m.fs.H101)  # Initialize Heater
     propagate_state(m.fs.s04)  # Establish connection between Heater and Reactor
-    initialize_unit(m.fs.R101) # Initialize Reactor
-    propagate_state(m.fs.s05)  # Establish connection between Reactor and First Flash Unit
+    initialize_unit(m.fs.R101)  # Initialize Reactor
+    propagate_state(
+        m.fs.s05
+    )  # Establish connection between Reactor and First Flash Unit
     initialize_unit(m.fs.F101)  # Initialize First Flash Unit
-    propagate_state(m.fs.s06)  # Establish connection between First Flash Unit and Splitter
-    propagate_state(m.fs.s07)  # Establish connection between First Flash Unit and Second Flash Unit
+    propagate_state(
+        m.fs.s06
+    )  # Establish connection between First Flash Unit and Splitter
+    propagate_state(
+        m.fs.s07
+    )  # Establish connection between First Flash Unit and Second Flash Unit
     initialize_unit(m.fs.S101)  # Initialize Splitter
     propagate_state(m.fs.s08)  # Establish connection between Splitter and Compressor
     initialize_unit(m.fs.C101)  # Initialize Compressor
@@ -150,8 +185,12 @@ def manual_propagation(m, tear_guesses):
     initialize_unit(m.fs.M101)  # Initialize Mixer
     propagate_state(m.fs.s03)  # Establish connection between Mixer and Heater
     solver.solve(m.fs.F102)
-    propagate_state(m.fs.s10)  # Establish connection between Second Flash Unit and Benzene Product
-    propagate_state(m.fs.s11)  # Establish connection between Second Flash Unit and Toluene Product
+    propagate_state(
+        m.fs.s10
+    )  # Establish connection between Second Flash Unit and Benzene Product
+    propagate_state(
+        m.fs.s11
+    )  # Establish connection between Second Flash Unit and Toluene Product
     propagate_state(m.fs.s12)  # Establish connection between Splitter and Purge Product
 
     optarg = {
@@ -171,10 +210,10 @@ def manual_propagation(m, tear_guesses):
     print(
         f"The DOF is {degrees_of_freedom(m)} after unfixing the values and reactivating the tear stream"
     )
-    
-    
+
+
 def automatic_propagation(m, tear_guesses):
-    
+
     from pyomo.network import SequentialDecomposition
 
     seq = SequentialDecomposition()
@@ -190,11 +229,9 @@ def automatic_propagation(m, tear_guesses):
     # Pass the tear_guess to the SD tool
     seq.set_guesses_for(heuristic_tear_set[0].destination, tear_guesses)
 
-    print(f'Tear Stream starts at: {heuristic_tear_set[0].destination.name}')
+    print(f"Tear Stream starts at: {heuristic_tear_set[0].destination.name}")
 
     for o in order:
         print(o[0].name)
 
     seq.run(m, initialize_unit)
-
-

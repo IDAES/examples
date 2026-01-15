@@ -32,7 +32,11 @@ from idaes.models.properties.modular_properties.base.generic_reaction import (
 
 from idaes_examples.mod.hda.hda_ideal_VLE_modular import thermo_config
 from idaes_examples.mod.hda.hda_reaction_modular import reaction_config
-from idaes_examples.mod.hda.hda_flowsheet_extras import manual_propagation, automatic_propagation, fix_inlet_states
+from idaes_examples.mod.hda.hda_flowsheet_extras import (
+    manual_propagation,
+    automatic_propagation,
+    fix_inlet_states,
+)
 
 
 if __name__ == "__main__":
@@ -111,14 +115,16 @@ if __name__ == "__main__":
 
     m.fs.purity = Expression(
         expr=m.fs.F102.control_volume.properties_out[0].flow_mol_phase_comp[
-                 "Vap", "benzene"
-             ]
-             / (
-                     m.fs.F102.control_volume.properties_out[0].flow_mol_phase_comp["Vap", "benzene"]
-                     + m.fs.F102.control_volume.properties_out[0].flow_mol_phase_comp[
-                         "Vap", "toluene"
-                     ]
-             )
+            "Vap", "benzene"
+        ]
+        / (
+            m.fs.F102.control_volume.properties_out[0].flow_mol_phase_comp[
+                "Vap", "benzene"
+            ]
+            + m.fs.F102.control_volume.properties_out[0].flow_mol_phase_comp[
+                "Vap", "toluene"
+            ]
+        )
     )
 
     m.fs.cooling_cost = Expression(
@@ -143,10 +149,19 @@ if __name__ == "__main__":
 
     m.fs.R101.conv_constraint = Constraint(
         expr=m.fs.R101.control_volume.conversion
-             * (m.fs.R101.control_volume.properties_in[0].flow_mol_phase_comp["Vap", "toluene"])
-             == (
-                     m.fs.R101.control_volume.properties_in[0].flow_mol_phase_comp["Vap", "toluene"] -
-                     m.fs.R101.control_volume.properties_out[0].flow_mol_phase_comp["Vap", "toluene"])
+        * (
+            m.fs.R101.control_volume.properties_in[0].flow_mol_phase_comp[
+                "Vap", "toluene"
+            ]
+        )
+        == (
+            m.fs.R101.control_volume.properties_in[0].flow_mol_phase_comp[
+                "Vap", "toluene"
+            ]
+            - m.fs.R101.control_volume.properties_out[0].flow_mol_phase_comp[
+                "Vap", "toluene"
+            ]
+        )
     )
 
     m.fs.R101.control_volume.conversion.fix(0.75)
@@ -216,15 +231,20 @@ if __name__ == "__main__":
     m.fs.F102.vap_outlet.pressure[0].setub(110000)
 
     m.fs.overhead_loss = Constraint(
-        expr=m.fs.F101.control_volume.properties_out[0].flow_mol_phase_comp["Vap", "benzene"] <= 0.20
-             * m.fs.R101.control_volume.properties_out[0].flow_mol_phase_comp["Vap", "benzene"]
+        expr=m.fs.F101.control_volume.properties_out[0].flow_mol_phase_comp[
+            "Vap", "benzene"
+        ]
+        <= 0.20
+        * m.fs.R101.control_volume.properties_out[0].flow_mol_phase_comp[
+            "Vap", "benzene"
+        ]
     )
 
     m.fs.product_flow = Constraint(
         expr=m.fs.F102.control_volume.properties_out[0].flow_mol_phase_comp[
-                 "Vap", "benzene"
-             ]
-             >= 0.15
+            "Vap", "benzene"
+        ]
+        >= 0.15
     )
 
     m.fs.product_purity = Constraint(expr=m.fs.purity >= 0.80)
@@ -269,6 +289,10 @@ if __name__ == "__main__":
 
     assert value(m.fs.H101.outlet.temperature[0]) == pytest.approx(500, abs=1e-3)
     # assert value(m.fs.R101.outlet.temperature[0]) == pytest.approx(862.907, abs=1e-3)
-    assert value(m.fs.F101.vap_outlet.temperature[0]) == pytest.approx(301.881, abs=1e-3)
-    assert value(m.fs.F102.vap_outlet.temperature[0]) == pytest.approx(362.935, abs=1e-3)
+    assert value(m.fs.F101.vap_outlet.temperature[0]) == pytest.approx(
+        301.881, abs=1e-3
+    )
+    assert value(m.fs.F102.vap_outlet.temperature[0]) == pytest.approx(
+        362.935, abs=1e-3
+    )
     assert value(m.fs.F102.vap_outlet.pressure[0]) == pytest.approx(105000, abs=1e-2)
