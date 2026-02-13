@@ -156,12 +156,14 @@ extend-exclude = [
 [tool.typos.default.extend-words]
 # Ignore IDAES
 IDAES = "IDAES"
-# Ignore HDA, assumes it's on purpose and not a typo of "had"
+# Ignore HDA, assume it's on purpose and not a typo of "had"
 HDA = "HDA" 
 # Ignore Attemp - assume it is abbreviating attemperator
 Attemp = "Attemp"
-# Ignore equil, assumes it's on purpose and not a typo of "equal"
+# Ignore equil, assume it's on purpose and not a typo of "equal"
 equil = "equil"
+# Ignore iz, assume it's on purpose and not a typo of "is"
+iz = "iz"
 # Atomic elements
 Nd = "Nd"
 Ba = "Ba" # ba is also used in block names in RSOFC-SOEC example
