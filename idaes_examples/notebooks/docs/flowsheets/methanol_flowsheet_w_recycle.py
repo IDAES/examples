@@ -916,8 +916,26 @@ def main(m):
 
     print()
     print("Solving optimization problem...")
+
+    # Pass 1: smoothed VLE transition
+    eps_nominal = value(m.fs.F101.control_volume.properties_in[0.0].eps_2_Vap_Liq)
+    m.fs.F101.control_volume.properties_in[0.0].eps_2_Vap_Liq.set_value(
+        eps_nominal * 2.5
+    )
+    m.fs.F101.control_volume.properties_out[0.0].eps_2_Vap_Liq.set_value(
+        eps_nominal * 2.5
+    )
+
     opt_res = solver.solve(m, tee=True)
     assert opt_res.solver.termination_condition == TerminationCondition.optimal
+
+    # Pass 2: restore default smoothness
+    m.fs.F101.control_volume.properties_in[0.0].eps_2_Vap_Liq.set_value(eps_nominal)
+    m.fs.F101.control_volume.properties_out[0.0].eps_2_Vap_Liq.set_value(eps_nominal)
+
+    opt_res = solver.solve(m, tee=True)
+    assert opt_res.solver.termination_condition == TerminationCondition.optimal
+
     print("Optimal solution process results:")
     report(m)
 
