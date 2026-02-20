@@ -919,8 +919,12 @@ def main(m):
 
     # Pass 1: smoothed VLE transition
     eps_nominal = value(m.fs.F101.control_volume.properties_in[0.0].eps_2_Vap_Liq)
-    m.fs.F101.control_volume.properties_in[0.0].eps_2_Vap_Liq.set_value(eps_nominal * 2.5)
-    m.fs.F101.control_volume.properties_out[0.0].eps_2_Vap_Liq.set_value(eps_nominal * 2.5)
+    m.fs.F101.control_volume.properties_in[0.0].eps_2_Vap_Liq.set_value(
+        eps_nominal * 2.5
+    )
+    m.fs.F101.control_volume.properties_out[0.0].eps_2_Vap_Liq.set_value(
+        eps_nominal * 2.5
+    )
 
     opt_res = solver.solve(m, tee=True)
     assert opt_res.solver.termination_condition == TerminationCondition.optimal
