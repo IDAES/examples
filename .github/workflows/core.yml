@@ -69,7 +69,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Run Spell Checker
         uses: crate-ci/typos@master
 
@@ -95,7 +95,7 @@ jobs:
           - os: win64
             runner-image: windows-2022
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Conda environment
         uses: conda-incubator/setup-miniconda@v2.2.0
         with:
