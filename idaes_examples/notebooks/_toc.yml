@@ -23,6 +23,7 @@ parts:
   - file: docs/scaling/index
     sections:
     - file: docs/scaling/scaler_workshop_doc
+    - file: docs/scaling/advanced_scaling_techniques_doc
   - file: docs/param_est/index
     sections:
     - file: docs/param_est/parameter_estimation_nrtl_using_state_block_doc
