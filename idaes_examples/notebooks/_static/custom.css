@@ -1,0 +1,8 @@
+/* Custom CSS for IDAES Examples */
+
+/* For some reason this is needed */
+.bd-main .bd-content {
+  flex-direction: column;
+  flex-wrap: nowrap;
+}
+
