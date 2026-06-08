@@ -54,7 +54,7 @@ omlt = [
     "tensorflow >= 2.16.1",
 ]
 idaes = [
-    "idaes-pse",  # installing IDAES (from release) is opt-in
+    "idaes-pse @ git+https://github.com/sufikaur/idaes-pse@issue-1802",  # installing IDAES (from release) is opt-in
 ]
 testing = [
     # parallel pytest
