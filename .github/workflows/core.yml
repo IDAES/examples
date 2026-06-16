@@ -101,6 +101,9 @@ jobs:
         with:
           activate-environment: ${{ env.IDAES_CONDA_ENV_NAME_DEV }}
           python-version: ${{ matrix.python-version }}
+          miniforge-version: latest
+          channels: conda-forge
+          conda-remove-defaults: 'true'
       - name: Install the code
         uses: ./.github/actions/install
         with:
